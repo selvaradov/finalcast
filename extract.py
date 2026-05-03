@@ -347,27 +347,37 @@ class SubjectAggregatesParser(Parser):
     def extract(self, report_year: int, text: str) -> list[dict]:
         results = []
 
-        # Pattern 1: "The average marks were (YYYY figures in brackets): for all scripts, X.X (Y.Y); for Philosophy, X.X (Y.Y); ..."
-        # This covers 2011-2015ish
-        avg_pattern = re.compile(
-            r"average marks? (?:were|was|for each subject were)\s*"
-            r"(?:\((\d{4}) figures? in brackets?\))?\s*:?\s*"
-            r"(.*?)(?:\.|The standard)",
-            re.IGNORECASE | re.DOTALL,
-        )
-        for m in avg_pattern.finditer(text):
-            prev_year = int(m.group(1)) if m.group(1) else None
-            body = m.group(2)
+        # Join the text into a single string for multi-line matching
+        flat = " ".join(text.split())
 
-            # Extract current year values: "for Philosophy, 65.6"
-            for sm in re.finditer(
-                r"(?:for\s+)?(all scripts|philosophy|politics|economics)[,:]?\s*([\d.]+)",
-                body, re.IGNORECASE,
-            ):
-                subject = sm.group(1).strip().title()
+        # Detect the previous-year reference
+        prev_year = None
+        m = re.search(r"\((\d{4}) figures? in brackets?\)", flat, re.IGNORECASE)
+        if m:
+            prev_year = int(m.group(1))
+
+        # --- Extract means ---
+        # Pattern A (2011): "Philosophy, 65.6 (65.3); Politics, 65.2 (64.8); Economics, 64.7 (64.9)"
+        # Pattern B (2012+): "for all scripts, 65.4 (64.7); for Philosophy, 65.5 (64.6); ..."
+        # Both follow "average marks..." and have "Subject, VALUE (PREV_VALUE);" structure
+        subjects = ["all scripts", "philosophy", "politics", "economics"]
+        for subj in subjects:
+            # Match "Subject, VALUE" or "for Subject, VALUE" with optional (PREV)
+            pattern = re.compile(
+                r"(?:for\s+)?" + re.escape(subj) + r"[,:]?\s*([\d.]+)\s*(?:\(([\d.]+)\))?",
+                re.IGNORECASE,
+            )
+            for sm in pattern.finditer(flat):
+                # Only match if it's near an "average mark" context
+                context_start = max(0, sm.start() - 200)
+                context = flat[context_start:sm.start()]
+                if "average mark" not in context.lower():
+                    continue
+
+                subject = subj.title()
                 if subject == "All Scripts":
                     subject = "All"
-                val = float(sm.group(2))
+                val = float(sm.group(1))
                 results.append({
                     "report_year": report_year,
                     "data_year": report_year,
@@ -375,77 +385,59 @@ class SubjectAggregatesParser(Parser):
                     "mean": val,
                     "sd": None,
                 })
-
-            # Extract previous year values in brackets: "(65.3)"
-            if prev_year:
-                for sm in re.finditer(
-                    r"(?:for\s+)?(all scripts|philosophy|politics|economics)[,:]?\s*[\d.]+\s*\(([\d.]+)\)",
-                    body, re.IGNORECASE,
-                ):
-                    subject = sm.group(1).strip().title()
-                    if subject == "All Scripts":
-                        subject = "All"
-                    val = float(sm.group(2))
+                if sm.group(2) and prev_year:
                     results.append({
                         "report_year": report_year,
                         "data_year": prev_year,
                         "subject": subject,
-                        "mean": val,
+                        "mean": float(sm.group(2)),
                         "sd": None,
                     })
 
-        # Also extract "Philosophy, 65.6; Politics, 65.2; Economics, 64.7" style
-        subject_list_pattern = re.compile(
-            r"(?:were|was)\s*\([^)]*\)\s*:\s*"
-            r"Philosophy[,:]?\s*([\d.]+)\s*\(([\d.]+)\)[;,]\s*"
-            r"Politics[,:]?\s*([\d.]+)\s*\(([\d.]+)\)[;,]\s*"
-            r"Economics[,:]?\s*([\d.]+)\s*\(([\d.]+)\)",
-            re.IGNORECASE,
-        )
-        for m in subject_list_pattern.finditer(text):
-            # Current year
-            for subject, val in [("Philosophy", m.group(1)), ("Politics", m.group(3)), ("Economics", m.group(5))]:
-                entry = {"report_year": report_year, "data_year": report_year, "subject": subject, "mean": float(val), "sd": None}
-                if entry not in results:
-                    results.append(entry)
+        # --- Extract SDs ---
+        # Pattern A (2011): "standard deviation of marks ... was 5.5 (4.8) in Philosophy, 4.9 (4.9) in Politics and 7.4 (6.7) in Economics"
+        # Pattern B (2012+): "standard deviations were ... for Philosophy 5.0 (6.1); for Politics 4.8 (4.9); for Economics 8.9 (7.4)"
+        # Pattern C: "for all scripts, 6.06 (N/A for 2013), for Philosophy, 5.14 (5.0); ..."
 
-        # Standard deviations
-        sd_pattern = re.compile(
-            r"standard deviations? (?:were|was)\s*(?:\((\d{4}) figures? in brackets?\))?\s*:?\s*(.*?)(?:\.\s*\n|\.\s*$)",
-            re.IGNORECASE | re.DOTALL,
-        )
-        for m in sd_pattern.finditer(text):
-            prev_year = int(m.group(1)) if m.group(1) else None
-            body = m.group(2)
+        # Find the SD sentence region
+        sd_match = re.search(r"standard deviations? (?:of marks )?(?:in the three subjects )?(?:were|was)\b(.*?)(?:\.\s+(?:[A-Z]|\d+\.))", flat, re.IGNORECASE)
+        if sd_match:
+            sd_body = sd_match.group(1)
 
-            for sm in re.finditer(
-                r"(?:for\s+)?(all scripts|philosophy|politics|economics)[,:]?\s*([\d.]+)",
-                body, re.IGNORECASE,
-            ):
-                subject = sm.group(1).strip().title()
-                if subject == "All Scripts":
-                    subject = "All"
-                sd_val = float(sm.group(2))
-                # Find matching mean entry and update it
-                for r in results:
-                    if r["data_year"] == report_year and r["subject"] == subject and r["sd"] is None:
-                        r["sd"] = sd_val
-                        break
-
-            # Previous year SDs in brackets
-            if prev_year:
-                for sm in re.finditer(
-                    r"(?:for\s+)?(all scripts|philosophy|politics|economics)[,:]?\s*[\d.]+\s*\(([\d.]+)\)",
-                    body, re.IGNORECASE,
-                ):
-                    subject = sm.group(1).strip().title()
+            for subj in subjects:
+                # "for Subject VALUE (PREV)" or "VALUE (PREV) in Subject"
+                p1 = re.search(
+                    r"(?:for\s+)?" + re.escape(subj) + r"[,:]?\s*([\d.]+)\s*(?:\(([\d.]+)\))?",
+                    sd_body, re.IGNORECASE,
+                )
+                p2 = re.search(
+                    r"([\d.]+)\s*\(([\d.]+)\)\s+in\s+" + re.escape(subj),
+                    sd_body, re.IGNORECASE,
+                )
+                sm = p2 or p1
+                if sm:
+                    subject = subj.title()
                     if subject == "All Scripts":
                         subject = "All"
-                    sd_val = float(sm.group(2))
+                    sd_val = float(sm.group(1))
+                    # Update matching mean entry
                     for r in results:
-                        if r["data_year"] == prev_year and r["subject"] == subject and r["sd"] is None:
+                        if r["data_year"] == report_year and r["subject"] == subject and r["sd"] is None:
                             r["sd"] = sd_val
                             break
+                    # Previous year
+                    if sm.group(2) and prev_year:
+                        try:
+                            prev_sd = float(sm.group(2))
+                            for r in results:
+                                if r["data_year"] == prev_year and r["subject"] == subject and r["sd"] is None:
+                                    r["sd"] = prev_sd
+                                    break
+                        except ValueError:
+                            pass
+
+        # --- Also extract from branch stats tables (2016+) ---
+        self._extract_from_branch_table(report_year, text, results)
 
         # Deduplicate
         seen = set()
@@ -456,6 +448,155 @@ class SubjectAggregatesParser(Parser):
                 seen.add(key)
                 deduped.append(r)
         return deduped
+
+    def _extract_from_branch_table(self, report_year: int, text: str, results: list[dict]):
+        """Extract from branch statistics tables (2016+). Three formats:
+        A (2016-2018): labeled rows like "Philosophy (Avg) 65.1 65.8"
+        B (2019-2023): compact "Phil Pol Econ All" columns with Avg./St. D. rows
+        C (2024-2025): hierarchical indented "2023/24 MT" -> "Phil" -> "F"/"M"
+        """
+        lines = text.split("\n")
+
+        # Find the branch stats table header (skip TOC entries by requiring line > 50)
+        start = None
+        patterns = [
+            r"(?:average mark|standard deviation).*(?:each branch|in each branch)",
+            r"average mark.*standard deviation.*(?:total|subject)",
+        ]
+        for pat in patterns:
+            for i, line in enumerate(lines):
+                if i > 50 and re.search(pat, line, re.IGNORECASE):
+                    start = i
+                    break
+            if start is not None:
+                break
+        if start is None:
+            return
+
+        # Detect format by scanning lines after header
+        for i in range(start + 1, min(start + 15, len(lines))):
+            line = lines[i]
+            if re.search(r"\(Avg\)", line):
+                self._parse_branch_labeled(report_year, lines, start, results)
+                return
+            if re.search(r"Phil\s+Pol\s+Econ\s+All", line):
+                self._parse_branch_compact(report_year, lines, start, results)
+                return
+            if re.match(r"Avg|Average", line.strip(), re.IGNORECASE):
+                self._parse_branch_compact(report_year, lines, start, results)
+                return
+            if re.search(r"\d{4}/\d{2}\s+MT", line):
+                self._parse_branch_hierarchical(report_year, lines, start, results)
+                return
+
+    def _parse_branch_labeled(self, report_year: int, lines: list[str], start: int, results: list[dict]):
+        """Format A (2016-2018): 'Subject (Avg) val1 val2 val3' rows."""
+        years = []
+        for i in range(start, min(start + 10, len(lines))):
+            year_matches = list(re.finditer(r"\b(20\d{2})\b", lines[i]))
+            if len(year_matches) >= 2:
+                years = [int(m.group(1)) for m in year_matches]
+                break
+        if not years:
+            return
+
+        subject_map = {"all scripts": "All", "all subjects": "All", "philosophy": "Philosophy", "politics": "Politics", "economics": "Economics"}
+        for line in lines[start:start + 40]:
+            for key, subj in subject_map.items():
+                if key in line.lower().replace("*", ""):
+                    nums = re.findall(r"\d+\.\d+", line)
+                    if "(avg)" in line.lower():
+                        for yi, yr in enumerate(years):
+                            if yi < len(nums):
+                                results.append({
+                                    "report_year": report_year, "data_year": yr,
+                                    "subject": subj, "mean": float(nums[yi]), "sd": None,
+                                })
+                    elif "(st dev)" in line.lower():
+                        for yi, yr in enumerate(years):
+                            if yi < len(nums):
+                                for r in results:
+                                    if r["report_year"] == report_year and r["data_year"] == yr and r["subject"] == subj and r["sd"] is None:
+                                        r["sd"] = float(nums[yi])
+                                        break
+                    break
+
+    def _parse_branch_compact(self, report_year: int, lines: list[str], start: int, results: list[dict]):
+        """Format B (2019-2023): compact table with 'Phil Pol Econ All' column groups."""
+        years = []
+        for i in range(start, min(start + 10, len(lines))):
+            year_matches = list(re.finditer(r"\b(20\d{2})\b", lines[i]))
+            if len(year_matches) >= 2:
+                years = [int(m.group(1)) for m in year_matches]
+                break
+        if not years:
+            return
+
+        for line in lines[start:start + 15]:
+            stripped = line.strip()
+            if re.match(r"Avg|Average", stripped, re.IGNORECASE):
+                nums = re.findall(r"\d+\.\d+", stripped)
+                if len(nums) >= 4:
+                    per_year = len(nums) // len(years)
+                    for yi, yr in enumerate(years):
+                        offset = yi * per_year
+                        for si, subj in enumerate(["Philosophy", "Politics", "Economics", "All"]):
+                            if offset + si < len(nums):
+                                results.append({
+                                    "report_year": report_year, "data_year": yr,
+                                    "subject": subj, "mean": float(nums[offset + si]), "sd": None,
+                                })
+            elif re.match(r"St", stripped, re.IGNORECASE):
+                nums = re.findall(r"\d+\.\d+", stripped)
+                if len(nums) >= 4:
+                    per_year = len(nums) // len(years)
+                    for yi, yr in enumerate(years):
+                        offset = yi * per_year
+                        for si, subj in enumerate(["Philosophy", "Politics", "Economics", "All"]):
+                            if offset + si < len(nums):
+                                for r in results:
+                                    if r["report_year"] == report_year and r["data_year"] == yr and r["subject"] == subj and r["sd"] is None:
+                                        r["sd"] = float(nums[offset + si])
+                                        break
+
+    def _parse_branch_hierarchical(self, report_year: int, lines: list[str], start: int, results: list[dict]):
+        """Format C (2024-2025): hierarchical indented year/branch/gender rows."""
+        branch_map = {"phil": "Philosophy", "pol": "Politics", "econ": "Economics"}
+        current_year = None
+
+        for line in lines[start:start + 100]:
+            # Year header: "2023/24 MT"
+            ym = re.match(r"\s*(20\d{2})/(\d{2})\s+MT", line)
+            if ym:
+                current_year = int(ym.group(1)) + 1  # "2023/24" -> data_year 2024
+                nums = re.findall(r"\d+\.\d+", line)
+                if len(nums) >= 2:
+                    results.append({
+                        "report_year": report_year, "data_year": current_year,
+                        "subject": "All", "mean": float(nums[0]), "sd": float(nums[1]),
+                    })
+                continue
+            if current_year is None:
+                continue
+            # Branch line (1 level indent): "  Phil   542   65.2   5.0"
+            bm = re.match(r"\s{2,4}(Phil|Pol|Econ)\b", line)
+            if bm and not re.match(r"\s{4,}", line):
+                branch = branch_map.get(bm.group(1).lower())
+                if branch:
+                    nums = re.findall(r"\d+\.\d+", line)
+                    if len(nums) >= 2:
+                        results.append({
+                            "report_year": report_year, "data_year": current_year,
+                            "subject": branch, "mean": float(nums[0]), "sd": float(nums[1]),
+                        })
+                continue
+            # Skip gender lines (deeper indent) and Total lines
+            if re.match(r"\s{4,}[FM]", line) or re.match(r"\s+Total", line, re.IGNORECASE):
+                continue
+            # Stop if we hit the next section
+            if re.match(r"\s*c\.\s", line) or re.match(r"\s*Page\s+\d+", line, re.IGNORECASE):
+                if current_year:
+                    break
 
 
 # ---------------------------------------------------------------------------
