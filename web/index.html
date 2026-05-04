@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PPE Finals — Grade Prior Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="nav-inner">
+      <span class="nav-title">PPE Finals</span>
+      <div class="nav-links">
+        <a href="#calculator" class="nav-link active">Calculator</a>
+        <a href="#explorer" class="nav-link">Explorer</a>
+        <a href="#overview" class="nav-link">Overview</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <header class="hero">
+      <h1>What are your chances?</h1>
+      <p class="hero-sub">Pick your 8 papers, tell us how you're doing, and we'll estimate your classification probabilities from 15 years of examiners' report data.</p>
+      <p class="disclaimer">This is a prior based on historical data. Not a prediction.</p>
+    </header>
+
+    <!-- Step indicator -->
+    <div class="steps">
+      <div class="step active" data-step="1">
+        <span class="step-num">1</span>
+        <span class="step-label">Papers</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" data-step="2">
+        <span class="step-num">2</span>
+        <span class="step-label">Ability</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" data-step="3">
+        <span class="step-num">3</span>
+        <span class="step-label">Results</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Paper Picker -->
+    <section id="step-papers" class="card step-section active-section">
+      <h2>Choose your 8 papers</h2>
+      <div class="picker-controls">
+        <input type="text" id="paper-search" class="search-input" placeholder="Search papers…">
+        <span class="paper-count"><span id="selected-count">0</span> / 8 selected</span>
+      </div>
+      <div id="paper-lists" class="paper-lists">
+        <!-- Populated by JS -->
+      </div>
+      <div class="step-actions">
+        <button id="btn-to-ability" class="btn btn-primary" disabled>Next: Ability →</button>
+      </div>
+    </section>
+
+    <!-- Step 2: Ability Slider -->
+    <section id="step-ability" class="card step-section">
+      <h2>How would you rate yourself?</h2>
+      <p class="section-note">This shifts the model's baseline — a higher self-assessment increases all your expected paper marks.</p>
+
+      <div class="ability-widget">
+        <div class="ability-presets">
+          <button class="preset-btn" data-pct="25">Lower third</button>
+          <button class="preset-btn active" data-pct="50">About average</button>
+          <button class="preset-btn" data-pct="75">Upper third</button>
+        </div>
+        <div class="slider-container">
+          <input type="range" id="ability-slider" min="5" max="95" value="50" class="chalk-slider">
+          <div class="slider-labels">
+            <span>Struggling</span>
+            <span>Average</span>
+            <span>Top of cohort</span>
+          </div>
+        </div>
+        <p class="ability-readout">Percentile: <strong id="ability-pct">50th</strong> — shifts paper means by <strong id="ability-shift">+0.0</strong> marks</p>
+      </div>
+
+      <div class="step-actions">
+        <button id="btn-back-papers" class="btn btn-secondary">← Papers</button>
+        <button id="btn-to-results" class="btn btn-primary">See results →</button>
+      </div>
+    </section>
+
+    <!-- Step 3: Results -->
+    <section id="step-results" class="card step-section">
+      <h2>Your estimated classification</h2>
+
+      <div class="result-headline" id="result-headline">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="results-grid">
+        <div class="result-chart-container">
+          <canvas id="result-chart" width="300" height="300"></canvas>
+        </div>
+        <div class="result-table" id="result-table">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="context-panels" id="context-panels">
+        <!-- Route comparison, swap suggestion -->
+      </div>
+
+      <div class="step-actions">
+        <button id="btn-back-ability" class="btn btn-secondary">← Adjust</button>
+        <button id="btn-restart" class="btn btn-secondary">Start over</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Built from 15 years of Oxford PPE examiners' reports (2011–2025). 81 papers fitted, 100k Monte Carlo simulations. <a href="#about">Methodology</a></p>
+    <p class="footer-caveat">Estimates reflect historical priors, not predictions. Uncertainty roughly ±3pp.</p>
+  </footer>
+
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

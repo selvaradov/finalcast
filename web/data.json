@@ -1,0 +1,1692 @@
+{
+  "sigma_ability": 2.7406426426722583,
+  "paper_catalogue": {
+    "Supervised Dissertation in Politics": {
+      "subject": "Politics",
+      "mu": 71.7,
+      "sigma": 3.5,
+      "pct_first": 68.6,
+      "pct_21": 31.3,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": 0.054,
+      "p_first_as_8th": 0.2862
+    },
+    "Thesis in Politics": {
+      "subject": "Politics",
+      "mu": 70.94,
+      "sigma": 6.56,
+      "pct_first": 55.7,
+      "pct_21": 39.5,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": 0.0478,
+      "p_first_as_8th": 0.28,
+      "trend_slope": 0.3754,
+      "trend_p": 0.024583,
+      "latest_candidates": 11
+    },
+    "The Politics of the European Union": {
+      "subject": "Politics",
+      "mu": 70.18,
+      "sigma": 1.18,
+      "pct_first": 56.1,
+      "pct_21": 43.9,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0364,
+      "p_first_as_8th": 0.2686,
+      "latest_candidates": 3
+    },
+    "Special Subject in Philosophy: Feminist Theory": {
+      "subject": "Philosophy",
+      "mu": 69.84,
+      "sigma": 1.18,
+      "pct_first": 44.6,
+      "pct_21": 55.4,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0322,
+      "p_first_as_8th": 0.2644,
+      "latest_candidates": 31
+    },
+    "International Relations in the Era of Two World Wars": {
+      "subject": "Politics",
+      "mu": 69.54,
+      "sigma": 1.14,
+      "pct_first": 34.3,
+      "pct_21": 65.7,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0283,
+      "p_first_as_8th": 0.2605,
+      "latest_candidates": 2
+    },
+    "Special Subject in Philosophy: Feminism and Philosophy": {
+      "subject": "Philosophy",
+      "mu": 69.24,
+      "sigma": 1.44,
+      "pct_first": 29.9,
+      "pct_21": 70.1,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0248,
+      "p_first_as_8th": 0.257
+    },
+    "Politics in South Asia": {
+      "subject": "Politics",
+      "mu": 69.19,
+      "sigma": 5.74,
+      "pct_first": 44.4,
+      "pct_21": 50.1,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0276,
+      "p_first_as_8th": 0.2598,
+      "trend_slope": 0.5065,
+      "trend_p": 0.078488,
+      "latest_candidates": 9
+    },
+    "Special Subject in Politics: Comparative Political Economy": {
+      "subject": "Politics",
+      "mu": 68.92,
+      "sigma": 1.29,
+      "pct_first": 20.1,
+      "pct_21": 79.9,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0214,
+      "p_first_as_8th": 0.2536
+    },
+    "Philosophy of Cognitive Science": {
+      "subject": "Philosophy",
+      "mu": 68.7,
+      "sigma": 3.3,
+      "pct_first": 34.7,
+      "pct_21": 64.9,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0197,
+      "p_first_as_8th": 0.2519,
+      "latest_candidates": 1
+    },
+    "The Philosophy of Wittgenstein": {
+      "subject": "Philosophy",
+      "mu": 68.55,
+      "sigma": 5.67,
+      "pct_first": 39.9,
+      "pct_21": 53.5,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": 0.0208,
+      "p_first_as_8th": 0.253,
+      "latest_candidates": 2
+    },
+    "Behavioural and Experimental Economics": {
+      "subject": "Economics",
+      "mu": 68.46,
+      "sigma": 5.06,
+      "pct_first": 38.0,
+      "pct_21": 57.2,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0188,
+      "p_first_as_8th": 0.251
+    },
+    "Philosophy of Science": {
+      "subject": "Philosophy",
+      "mu": 68.4,
+      "sigma": 4.1,
+      "pct_first": 34.8,
+      "pct_21": 63.2,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0173,
+      "p_first_as_8th": 0.2495,
+      "latest_candidates": 1
+    },
+    "Special Subject in Economics: Environmental Economics and Climate Change": {
+      "subject": "Economics",
+      "mu": 68.37,
+      "sigma": 3.69,
+      "pct_first": 32.9,
+      "pct_21": 65.9,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0163,
+      "p_first_as_8th": 0.2485,
+      "trend_slope": -0.3208,
+      "trend_p": 0.090249,
+      "latest_candidates": 12
+    },
+    "Economics of Developing Countries": {
+      "subject": "Economics",
+      "mu": 68.26,
+      "sigma": 3.53,
+      "pct_first": 31.1,
+      "pct_21": 67.9,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0149,
+      "p_first_as_8th": 0.2471,
+      "latest_candidates": 12
+    },
+    "Marx and Marxism": {
+      "subject": "Politics",
+      "mu": 68.13,
+      "sigma": 4.45,
+      "pct_first": 33.7,
+      "pct_21": 62.9,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0149,
+      "p_first_as_8th": 0.2471,
+      "latest_candidates": 15
+    },
+    "The Philosophy and Economics of the Environment": {
+      "subject": "Economics",
+      "mu": 68.1,
+      "sigma": 4.3,
+      "pct_first": 32.9,
+      "pct_21": 64.1,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0143,
+      "p_first_as_8th": 0.2465
+    },
+    "Thesis in Philosophy": {
+      "subject": "Philosophy",
+      "mu": 68.03,
+      "sigma": 5.27,
+      "pct_first": 35.4,
+      "pct_21": 58.2,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0144,
+      "p_first_as_8th": 0.2466,
+      "latest_candidates": 11
+    },
+    "Thesis in Economics": {
+      "subject": "Economics",
+      "mu": 68.0,
+      "sigma": 2.0,
+      "pct_first": 15.9,
+      "pct_21": 84.1,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0116,
+      "p_first_as_8th": 0.2438
+    },
+    "Special Subjects in Philosophy (other)": {
+      "subject": "Philosophy",
+      "mu": 68.0,
+      "sigma": 6.2,
+      "pct_first": 37.4,
+      "pct_21": 52.8,
+      "pct_below_50": 0.2,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0152,
+      "p_first_as_8th": 0.2474
+    },
+    "Politics in Sub-Saharan Africa": {
+      "subject": "Politics",
+      "mu": 67.98,
+      "sigma": 5.69,
+      "pct_first": 36.1,
+      "pct_21": 55.8,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": 0.0142,
+      "p_first_as_8th": 0.2464,
+      "latest_candidates": 14
+    },
+    "Politics in Russia and the Former Soviet Union": {
+      "subject": "Politics",
+      "mu": 67.9,
+      "sigma": 10.26,
+      "pct_first": 41.8,
+      "pct_21": 36.1,
+      "pct_below_50": 4.1,
+      "method": "mle_bands",
+      "delta_first": 0.0199,
+      "p_first_as_8th": 0.2521,
+      "trend_slope": 0.567,
+      "trend_p": 0.089662,
+      "latest_candidates": 13
+    },
+    "Mathematical Methods": {
+      "subject": "Economics",
+      "mu": 67.8,
+      "sigma": 5.9,
+      "pct_first": 35.5,
+      "pct_21": 55.2,
+      "pct_below_50": 0.1,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0128,
+      "p_first_as_8th": 0.245
+    },
+    "Money and Banking": {
+      "subject": "Economics",
+      "mu": 67.73,
+      "sigma": 5.54,
+      "pct_first": 34.1,
+      "pct_21": 57.8,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": 0.0113,
+      "p_first_as_8th": 0.2435,
+      "trend_slope": -0.1942,
+      "trend_p": 0.066429,
+      "latest_candidates": 27
+    },
+    "Public Economics": {
+      "subject": "Economics",
+      "mu": 67.7,
+      "sigma": 4.36,
+      "pct_first": 29.9,
+      "pct_21": 66.2,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0102,
+      "p_first_as_8th": 0.2424,
+      "trend_slope": 0.3792,
+      "trend_p": 0.073007,
+      "latest_candidates": 24
+    },
+    "International Economics": {
+      "subject": "Economics",
+      "mu": 67.53,
+      "sigma": 5.69,
+      "pct_first": 33.2,
+      "pct_21": 57.5,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": 0.0097,
+      "p_first_as_8th": 0.2419,
+      "latest_candidates": 3
+    },
+    "Advanced Paper in Theories of Justice": {
+      "subject": "Politics",
+      "mu": 67.52,
+      "sigma": 5.53,
+      "pct_first": 32.7,
+      "pct_21": 58.6,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": 0.0094,
+      "p_first_as_8th": 0.2416,
+      "latest_candidates": 17
+    },
+    "Medieval Philosophy: Aquinas": {
+      "subject": "Philosophy",
+      "mu": 67.5,
+      "sigma": 2.5,
+      "pct_first": 15.9,
+      "pct_21": 84.0,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0058,
+      "p_first_as_8th": 0.238
+    },
+    "Frege, Russell, and Wittgenstein": {
+      "subject": "Philosophy",
+      "mu": 67.5,
+      "sigma": 7.5,
+      "pct_first": 36.9,
+      "pct_21": 47.2,
+      "pct_below_50": 1.0,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0117,
+      "p_first_as_8th": 0.2439
+    },
+    "Command and Transitional Economies": {
+      "subject": "Economics",
+      "mu": 67.5,
+      "sigma": 5.5,
+      "pct_first": 32.5,
+      "pct_21": 58.9,
+      "pct_below_50": 0.1,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0093,
+      "p_first_as_8th": 0.2415
+    },
+    "Politics in the Middle East": {
+      "subject": "Politics",
+      "mu": 67.48,
+      "sigma": 4.3,
+      "pct_first": 27.9,
+      "pct_21": 68.0,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0073,
+      "p_first_as_8th": 0.2395,
+      "latest_candidates": 23
+    },
+    "Microeconomic Analysis": {
+      "subject": "Economics",
+      "mu": 67.36,
+      "sigma": 8.25,
+      "pct_first": 37.4,
+      "pct_21": 43.9,
+      "pct_below_50": 1.8,
+      "method": "mle_bands",
+      "delta_first": 0.0114,
+      "p_first_as_8th": 0.2436,
+      "trend_slope": 1.6507,
+      "trend_p": 0.005347,
+      "latest_candidates": 5
+    },
+    "Development of the World Economy since 1800": {
+      "subject": "Economics",
+      "mu": 67.31,
+      "sigma": 5.29,
+      "pct_first": 30.6,
+      "pct_21": 61.1,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": 0.0071,
+      "p_first_as_8th": 0.2393,
+      "latest_candidates": 61
+    },
+    "British Economic History since 1870": {
+      "subject": "Economics",
+      "mu": 67.3,
+      "sigma": 3.7,
+      "pct_first": 23.3,
+      "pct_21": 74.3,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0046,
+      "p_first_as_8th": 0.2368
+    },
+    "The Government and Politics of Japan": {
+      "subject": "Politics",
+      "mu": 67.3,
+      "sigma": 0.94,
+      "pct_first": 0.2,
+      "pct_21": 99.8,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0036,
+      "p_first_as_8th": 0.2358
+    },
+    "Government and Politics of the United States": {
+      "subject": "Politics",
+      "mu": 67.29,
+      "sigma": 5.09,
+      "pct_first": 29.7,
+      "pct_21": 62.7,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0069,
+      "p_first_as_8th": 0.2391,
+      "trend_slope": 0.3312,
+      "trend_p": 0.097614,
+      "latest_candidates": 20
+    },
+    "Special Subject in Politics: International Security and Conflict": {
+      "subject": "Politics",
+      "mu": 67.21,
+      "sigma": 4.33,
+      "pct_first": 26.0,
+      "pct_21": 69.2,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0045,
+      "p_first_as_8th": 0.2367,
+      "latest_candidates": 44
+    },
+    "Special Subject in Politics: Feminist Theory": {
+      "subject": "Politics",
+      "mu": 67.21,
+      "sigma": 4.38,
+      "pct_first": 26.2,
+      "pct_21": 68.8,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0046,
+      "p_first_as_8th": 0.2368,
+      "latest_candidates": 23
+    },
+    "The Sociology of Post-Industrial Societies": {
+      "subject": "Politics",
+      "mu": 67.11,
+      "sigma": 5.49,
+      "pct_first": 29.9,
+      "pct_21": 60.3,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": 0.0051,
+      "p_first_as_8th": 0.2373
+    },
+    "Comparative Political Economy": {
+      "subject": "Politics",
+      "mu": 67.04,
+      "sigma": 5.08,
+      "pct_first": 28.0,
+      "pct_21": 63.7,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.004,
+      "p_first_as_8th": 0.2362,
+      "latest_candidates": 20
+    },
+    "International Relations in the Era of the Cold War": {
+      "subject": "Politics",
+      "mu": 66.96,
+      "sigma": 4.73,
+      "pct_first": 26.0,
+      "pct_21": 66.9,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0025,
+      "p_first_as_8th": 0.2347,
+      "latest_candidates": 16
+    },
+    "Modern British Government and Politics": {
+      "subject": "Politics",
+      "mu": 66.9,
+      "sigma": 4.24,
+      "pct_first": 23.2,
+      "pct_21": 71.6,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0011,
+      "p_first_as_8th": 0.2333,
+      "latest_candidates": 31
+    },
+    "Post-Kantian Philosophy": {
+      "subject": "Philosophy",
+      "mu": 66.89,
+      "sigma": 5.13,
+      "pct_first": 27.2,
+      "pct_21": 63.8,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0025,
+      "p_first_as_8th": 0.2347,
+      "latest_candidates": 9
+    },
+    "Politics in China": {
+      "subject": "Politics",
+      "mu": 66.89,
+      "sigma": 6.26,
+      "pct_first": 31.0,
+      "pct_21": 55.5,
+      "pct_below_50": 0.3,
+      "method": "mle_bands",
+      "delta_first": 0.0037,
+      "p_first_as_8th": 0.2359,
+      "latest_candidates": 23
+    },
+    "Labour Economics and Inequality": {
+      "subject": "Economics",
+      "mu": 66.88,
+      "sigma": 5.71,
+      "pct_first": 29.2,
+      "pct_21": 59.3,
+      "pct_below_50": 0.2,
+      "method": "mle_bands",
+      "delta_first": 0.0028,
+      "p_first_as_8th": 0.235,
+      "latest_candidates": 7
+    },
+    "Philosophy of Religion": {
+      "subject": "Philosophy",
+      "mu": 66.86,
+      "sigma": 3.82,
+      "pct_first": 20.6,
+      "pct_21": 75.8,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": -0.0001,
+      "p_first_as_8th": 0.2321,
+      "latest_candidates": 17
+    },
+    "Political Thought: Bentham to Weber": {
+      "subject": "Politics",
+      "mu": 66.84,
+      "sigma": 4.37,
+      "pct_first": 23.5,
+      "pct_21": 70.6,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": 0.0005,
+      "p_first_as_8th": 0.2327,
+      "trend_slope": 0.4067,
+      "trend_p": 0.082316,
+      "latest_candidates": 7
+    },
+    "Special Subject in Philosophy: The Ethics of AI and Digital Technology": {
+      "subject": "Philosophy",
+      "mu": 66.8,
+      "sigma": 5.1,
+      "pct_first": 26.5,
+      "pct_21": 64.4,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": 0.0014,
+      "p_first_as_8th": 0.2336,
+      "latest_candidates": 7
+    },
+    "Sociological Theory": {
+      "subject": "Politics",
+      "mu": 66.77,
+      "sigma": 5.2,
+      "pct_first": 26.7,
+      "pct_21": 63.6,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": 0.0014,
+      "p_first_as_8th": 0.2336,
+      "latest_candidates": 5
+    },
+    "Philosophy of Logic and Language": {
+      "subject": "Philosophy",
+      "mu": 66.68,
+      "sigma": 6.7,
+      "pct_first": 31.0,
+      "pct_21": 53.1,
+      "pct_below_50": 0.6,
+      "method": "mle_bands",
+      "delta_first": 0.0021,
+      "p_first_as_8th": 0.2343,
+      "latest_candidates": 6
+    },
+    "International Relations": {
+      "subject": "Politics",
+      "mu": 66.62,
+      "sigma": 6.28,
+      "pct_first": 29.5,
+      "pct_21": 55.9,
+      "pct_below_50": 0.4,
+      "method": "mle_bands",
+      "latest_candidates": 126
+    },
+    "Comparative Government": {
+      "subject": "Politics",
+      "mu": 66.57,
+      "sigma": 5.76,
+      "pct_first": 27.6,
+      "pct_21": 59.7,
+      "pct_below_50": 0.2,
+      "method": "mle_bands",
+      "delta_first": 0.0,
+      "p_first_as_8th": 0.2322,
+      "trend_slope": 0.114,
+      "trend_p": 0.094819,
+      "latest_candidates": 58
+    },
+    "Theory of Politics": {
+      "subject": "Philosophy",
+      "mu": 66.52,
+      "sigma": 5.54,
+      "pct_first": 26.5,
+      "pct_21": 61.5,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "latest_candidates": 119
+    },
+    "Game Theory": {
+      "subject": "Economics",
+      "mu": 66.43,
+      "sigma": 12.27,
+      "pct_first": 38.4,
+      "pct_21": 31.5,
+      "pct_below_50": 9.1,
+      "method": "mle_bands",
+      "delta_first": 0.0072,
+      "p_first_as_8th": 0.2394,
+      "trend_slope": 0.4194,
+      "trend_p": 0.054093,
+      "latest_candidates": 29
+    },
+    "The Later Philosophy of Wittgenstein": {
+      "subject": "Philosophy",
+      "mu": 66.41,
+      "sigma": 4.27,
+      "pct_first": 20.0,
+      "pct_21": 73.3,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": -0.0041,
+      "p_first_as_8th": 0.2281
+    },
+    "Political Thought: Plato to Rousseau": {
+      "subject": "Politics",
+      "mu": 66.31,
+      "sigma": 4.44,
+      "pct_first": 20.3,
+      "pct_21": 71.9,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": -0.0051,
+      "p_first_as_8th": 0.2271,
+      "trend_slope": 0.2623,
+      "trend_p": 0.067109,
+      "latest_candidates": 11
+    },
+    "Practical Ethics": {
+      "subject": "Philosophy",
+      "mu": 66.27,
+      "sigma": 5.07,
+      "pct_first": 23.1,
+      "pct_21": 66.1,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": -0.0045,
+      "p_first_as_8th": 0.2277,
+      "latest_candidates": 37
+    },
+    "Economics of Industry": {
+      "subject": "Economics",
+      "mu": 66.25,
+      "sigma": 5.82,
+      "pct_first": 26.0,
+      "pct_21": 59.9,
+      "pct_below_50": 0.3,
+      "method": "mle_bands",
+      "delta_first": -0.0031,
+      "p_first_as_8th": 0.2291,
+      "latest_candidates": 18
+    },
+    "Comparative Demographic Systems": {
+      "subject": "Economics",
+      "mu": 66.2,
+      "sigma": 3.1,
+      "pct_first": 11.0,
+      "pct_21": 86.7,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": -0.008,
+      "p_first_as_8th": 0.2242,
+      "latest_candidates": 5
+    },
+    "Political Sociology": {
+      "subject": "Politics",
+      "mu": 66.05,
+      "sigma": 5.05,
+      "pct_first": 21.7,
+      "pct_21": 66.7,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": -0.0068,
+      "p_first_as_8th": 0.2254,
+      "latest_candidates": 71
+    },
+    "Microeconomics": {
+      "subject": "Economics",
+      "mu": 65.88,
+      "sigma": 8.91,
+      "pct_first": 32.2,
+      "pct_21": 42.3,
+      "pct_below_50": 3.7,
+      "method": "mle_bands",
+      "latest_candidates": 153
+    },
+    "Macroeconomics": {
+      "subject": "Economics",
+      "mu": 65.83,
+      "sigma": 6.51,
+      "pct_first": 26.1,
+      "pct_21": 55.4,
+      "pct_below_50": 0.8,
+      "method": "mle_bands",
+      "latest_candidates": 123
+    },
+    "Politics in Latin America": {
+      "subject": "Politics",
+      "mu": 65.82,
+      "sigma": 4.63,
+      "pct_first": 18.3,
+      "pct_21": 71.2,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": -0.0099,
+      "p_first_as_8th": 0.2223,
+      "latest_candidates": 10
+    },
+    "Social Policy": {
+      "subject": "Politics",
+      "mu": 65.81,
+      "sigma": 5.26,
+      "pct_first": 21.3,
+      "pct_21": 65.2,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": -0.0087,
+      "p_first_as_8th": 0.2235,
+      "latest_candidates": 26
+    },
+    "Philosophy of Mind": {
+      "subject": "Philosophy",
+      "mu": 65.8,
+      "sigma": 5.45,
+      "pct_first": 22.0,
+      "pct_21": 63.6,
+      "pct_below_50": 0.2,
+      "method": "mle_bands",
+      "delta_first": -0.0084,
+      "p_first_as_8th": 0.2238,
+      "latest_candidates": 7
+    },
+    "Jurisprudence": {
+      "subject": "Philosophy",
+      "mu": 65.8,
+      "sigma": 5.09,
+      "pct_first": 20.5,
+      "pct_21": 66.8,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": -0.0093,
+      "p_first_as_8th": 0.2229,
+      "latest_candidates": 7
+    },
+    "Aristotle: Nicomachean Ethics": {
+      "subject": "Philosophy",
+      "mu": 65.54,
+      "sigma": 6.05,
+      "pct_first": 23.1,
+      "pct_21": 59.0,
+      "pct_below_50": 0.5,
+      "method": "mle_bands",
+      "delta_first": -0.0099,
+      "p_first_as_8th": 0.2223,
+      "latest_candidates": 17
+    },
+    "Econometrics": {
+      "subject": "Economics",
+      "mu": 65.52,
+      "sigma": 14.02,
+      "pct_first": 37.0,
+      "pct_21": 28.0,
+      "pct_below_50": 13.5,
+      "method": "mle_bands",
+      "delta_first": 0.0007,
+      "p_first_as_8th": 0.2329,
+      "latest_candidates": 18
+    },
+    "British Politics and Government since 1900": {
+      "subject": "Politics",
+      "mu": 65.41,
+      "sigma": 7.48,
+      "pct_first": 27.0,
+      "pct_21": 49.6,
+      "pct_below_50": 2.0,
+      "method": "mle_bands",
+      "latest_candidates": 68
+    },
+    "Politics in Europe": {
+      "subject": "Politics",
+      "mu": 65.4,
+      "sigma": 3.1,
+      "pct_first": 6.9,
+      "pct_21": 89.0,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": -0.0154,
+      "p_first_as_8th": 0.2168,
+      "latest_candidates": 6
+    },
+    "Quantitative Economics": {
+      "subject": "Economics",
+      "mu": 65.27,
+      "sigma": 10.58,
+      "pct_first": 32.7,
+      "pct_21": 36.4,
+      "pct_below_50": 7.5,
+      "method": "mle_bands",
+      "trend_slope": 0.4118,
+      "trend_p": 0.067751,
+      "latest_candidates": 108
+    },
+    "Aesthetics and the Philosophy of Criticism": {
+      "subject": "Philosophy",
+      "mu": 65.19,
+      "sigma": 5.33,
+      "pct_first": 18.3,
+      "pct_21": 65.1,
+      "pct_below_50": 0.2,
+      "method": "mle_bands",
+      "delta_first": -0.0147,
+      "p_first_as_8th": 0.2175,
+      "latest_candidates": 14
+    },
+    "Plato: Republic": {
+      "subject": "Philosophy",
+      "mu": 65.13,
+      "sigma": 4.27,
+      "pct_first": 12.7,
+      "pct_21": 75.8,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": -0.017,
+      "p_first_as_8th": 0.2152,
+      "latest_candidates": 30
+    },
+    "Early Modern Philosophy": {
+      "subject": "Philosophy",
+      "mu": 65.1,
+      "sigma": 4.62,
+      "pct_first": 14.4,
+      "pct_21": 72.1,
+      "pct_below_50": 0.1,
+      "method": "mle_bands",
+      "delta_first": -0.0166,
+      "p_first_as_8th": 0.2156,
+      "latest_candidates": 28
+    },
+    "Ethics": {
+      "subject": "Philosophy",
+      "mu": 65.1,
+      "sigma": 5.66,
+      "pct_first": 19.3,
+      "pct_21": 62.3,
+      "pct_below_50": 0.4,
+      "method": "mle_bands",
+      "latest_candidates": 124
+    },
+    "The Philosophy of Kant": {
+      "subject": "Philosophy",
+      "mu": 65.0,
+      "sigma": 3.61,
+      "pct_first": 8.3,
+      "pct_21": 83.4,
+      "pct_below_50": 0.0,
+      "method": "mle_bands",
+      "delta_first": -0.0189,
+      "p_first_as_8th": 0.2133,
+      "latest_candidates": 3
+    },
+    "Quantitative Methods in Politics and Sociology": {
+      "subject": "Politics",
+      "mu": 65.0,
+      "sigma": 4.9,
+      "pct_first": 15.4,
+      "pct_21": 69.2,
+      "pct_below_50": 0.1,
+      "method": "moment_mean_sd",
+      "delta_first": -0.0172,
+      "p_first_as_8th": 0.215
+    },
+    "Philosophical Logic": {
+      "subject": "Philosophy",
+      "mu": 64.72,
+      "sigma": 8.42,
+      "pct_first": 26.5,
+      "pct_21": 44.7,
+      "pct_below_50": 4.0,
+      "method": "mle_bands",
+      "delta_first": -0.0146,
+      "p_first_as_8th": 0.2176,
+      "trend_slope": -1.0144,
+      "trend_p": 0.003543,
+      "latest_candidates": 9
+    },
+    "Knowledge and Reality": {
+      "subject": "Philosophy",
+      "mu": 64.47,
+      "sigma": 6.49,
+      "pct_first": 19.7,
+      "pct_21": 55.7,
+      "pct_below_50": 1.3,
+      "method": "mle_bands",
+      "delta_first": -0.02,
+      "p_first_as_8th": 0.2122,
+      "latest_candidates": 59
+    },
+    "Philosophy of Science and Social Science": {
+      "subject": "Philosophy",
+      "mu": 64.3,
+      "sigma": 1.6,
+      "pct_first": 0.0,
+      "pct_21": 99.6,
+      "pct_below_50": 0.0,
+      "method": "moment_mean_sd",
+      "delta_first": -0.0259,
+      "p_first_as_8th": 0.2063
+    },
+    "Labour Economics and Industrial Relations": {
+      "subject": "Economics",
+      "mu": 63.51,
+      "sigma": 6.02,
+      "pct_first": 14.1,
+      "pct_21": 58.0,
+      "pct_below_50": 1.2,
+      "method": "mle_bands",
+      "delta_first": -0.0302,
+      "p_first_as_8th": 0.202
+    },
+    "Finance": {
+      "subject": "Economics",
+      "mu": 62.91,
+      "sigma": 7.97,
+      "pct_first": 18.7,
+      "pct_21": 45.6,
+      "pct_below_50": 5.3,
+      "method": "mle_bands",
+      "delta_first": -0.0329,
+      "p_first_as_8th": 0.1993,
+      "latest_candidates": 21
+    }
+  },
+  "subject_summary": {
+    "Philosophy": {
+      "weighted_mean": 65.63,
+      "weighted_sd": 5.42,
+      "unweighted_mean": 66.61,
+      "unweighted_sd": 4.79,
+      "n_papers": 27,
+      "n_total": 3289
+    },
+    "Politics": {
+      "weighted_mean": 66.82,
+      "weighted_sd": 5.58,
+      "unweighted_mean": 67.42,
+      "unweighted_sd": 4.73,
+      "n_papers": 31,
+      "n_total": 4060
+    },
+    "Economics": {
+      "weighted_mean": 66.09,
+      "weighted_sd": 8.09,
+      "unweighted_mean": 66.79,
+      "unweighted_sd": 6.25,
+      "n_papers": 23,
+      "n_total": 3944
+    }
+  },
+  "route_summary": {
+    "Phil-Econ": {
+      "1st": 29.8,
+      "2.1": 60.5,
+      "2.2": 8.5,
+      "3rd": 3.4,
+      "Fail": 2.6,
+      "Incomplete": 2.6
+    },
+    "Pol-Econ": {
+      "1st": 29.1,
+      "2.1": 65.0,
+      "2.2": 4.5,
+      "3rd": 0.9,
+      "Fail": 0.9,
+      "Incomplete": 1.5
+    },
+    "Phil-Pol": {
+      "1st": 23.7,
+      "2.1": 70.6,
+      "2.2": 4.1,
+      "DDH": 2.0,
+      "Pass": 1.1,
+      "Incomplete": 3.5,
+      "Declared to have deserved Honours": 1.6
+    },
+    "PPE": {
+      "1st": 19.1,
+      "2.1": 72.8,
+      "2.2": 8.8,
+      "3rd": 4.8,
+      "Incomplete": 4.8
+    }
+  },
+  "first_rates_by_year": {
+    "2011": 24.8,
+    "2010": 22.7,
+    "2009": 29.0,
+    "2008": 18.3,
+    "2007": 18.8,
+    "2006": 19.6,
+    "2005": 18.3,
+    "2012": 19.3,
+    "2013": 29.0,
+    "2014": 21.0,
+    "2015": 22.0,
+    "2016": 16.0,
+    "2017": 23.0,
+    "2018": 17.0,
+    "2019": 23.0,
+    "2020": 39.6,
+    "2021": 24.8,
+    "2022": 27.3,
+    "2023": 26.7,
+    "2024": 28.8,
+    "2025": 27.9
+  },
+  "bootstrap_ci_first": {
+    "median": 0.2322,
+    "ci_lo": 0.2119,
+    "ci_hi": 0.2602
+  },
+  "marginal_baseline": {
+    "base_7": [
+      "Microeconomics",
+      "Macroeconomics",
+      "Ethics",
+      "International Relations",
+      "Quantitative Economics",
+      "Theory of Politics",
+      "British Politics and Government since 1900"
+    ],
+    "median_8th": "Comparative Government",
+    "baseline_p_first": 0.2322
+  },
+  "paper_aliases": {
+    "Early Modern Philosophy": [
+      "101. Early Modern Philosophy",
+      "Early Modern Philosophy",
+      "Early Modern Philosophy (129)",
+      "Early Modern Philosophy (before October 2013, History and Philosophy from Descartes to Kant)"
+    ],
+    "Knowledge and Reality": [
+      "102. Knowledge and Reality",
+      "Knowledge & Reality",
+      "Knowledge and Reality",
+      "Knowledge and Reality (take-home paper)"
+    ],
+    "Ethics": [
+      "103. Ethics",
+      "Ethics",
+      "Ethics (take-home paper)"
+    ],
+    "Philosophy of Mind": [
+      "104. Philosophy of Mind",
+      "Philosophy of Mind"
+    ],
+    "Philosophy of Science and Social Science": [
+      "106. Philosophy of Sci. and Soc. Sci.",
+      "106. Philosophy of Science and Social Science",
+      "Philosophy of Sci. & Social Sci.",
+      "Philosophy of Sci. and Soc. Sci.",
+      "Philosophy of Science and Social Science"
+    ],
+    "Philosophy of Religion": [
+      "107. Philosophy of Religion",
+      "Philosophy of Religion"
+    ],
+    "Philosophy of Logic and Language": [
+      "108. Philosophy of Logic and Lang.",
+      "108. Philosophy of Logic and Language",
+      "108. The Philosophy of Logic and Language",
+      "Philosophy of Logic and Lang.",
+      "Philosophy of Logic and Language",
+      "The Philosophy of Logic and Language",
+      "The Philosophy of Logic and Language (take-home paper)"
+    ],
+    "Philosophy of Logic": [
+      "Philosophy of Logic"
+    ],
+    "Aesthetics and the Philosophy of Criticism": [
+      "109. Aesthetics",
+      "109. Aesthetics and the Philosophy of Criticism",
+      "Aesthetics",
+      "Aesthetics and the Philosophy of Criticism"
+    ],
+    "Medieval Philosophy: Aquinas": [
+      "110. Medieval Philosophy: Aquinas",
+      "Medieval Philosophy: Aquinas"
+    ],
+    "The Philosophy of Kant": [
+      "112. The Philosophy of Kant",
+      "Philosophy of Kant",
+      "The Philosophy of Kant"
+    ],
+    "Post-Kantian Philosophy": [
+      "113. Post-Kantian Philosophy",
+      "Post-Kantian Philosophy"
+    ],
+    "Theory of Politics": [
+      "114. Theory of Politics",
+      "114. Theory of Politics (203)",
+      "203. Theory of Politics",
+      "203. Theory of Politics (114)",
+      "203. Theory of Politics (114) (HP)",
+      "203. Theory of Politics (114) (PPE)",
+      "203. Theory of Politics (old regs)",
+      "Theory of Politics",
+      "Theory of Politics (114)",
+      "Theory of Politics (203)",
+      "Theory of Politics (take-home paper)"
+    ],
+    "Plato: Republic": [
+      "115. Plato Republic",
+      "115. Plato: Republic",
+      "Plato",
+      "Plato: Republic",
+      "Plato: Republic (in translation)"
+    ],
+    "Aristotle: Nicomachean Ethics": [
+      "116. Aristotle Nicomachean Ethics",
+      "116. Aristotle: Nicomachean Ethics",
+      "Aristotle",
+      "Aristotle: Nicomachean Ethics",
+      "Aristotle: Nicomachean Ethics (in trans)",
+      "Aristotle: Nicomachean Ethics (in translation)"
+    ],
+    "Frege, Russell, and Wittgenstein": [
+      "117. Frege, Russell, and Wittgenstein",
+      "Frege, Russell & Wittgenstein",
+      "Frege, Russell, and Wittgenstein"
+    ],
+    "The Later Philosophy of Wittgenstein": [
+      "118. The Later Phil. of Witt.",
+      "118. The Later Philosophy of Wittgenstein",
+      "Later Phil. of Wittgenstein",
+      "Later Wittgenstein",
+      "The Later Philosophy of Witt.",
+      "The Later Philosophy of Wittgenstein",
+      "The Later Philosophy of Wittgenstein (take-home paper)",
+      "118. The Later Philosophy of Witt."
+    ],
+    "Set Theory and Logic": [
+      "119. Set Theory, Logic",
+      "Set Theory",
+      "Set Theory and Logic (two Maths papers taken as one Philosophy paper)",
+      "Set Theory, Logic"
+    ],
+    "Intermediate Philosophy of Physics": [
+      "120. Intermed. Phil. of Physics",
+      "120. Intermediate Philosophy of Physics",
+      "Intermediate Philosophy of Physics"
+    ],
+    "Philosophy of Mathematics": [
+      "122. Philosophy of Mathematics",
+      "Philosophy of Mathematics"
+    ],
+    "Philosophy of Science": [
+      "124. Philosophy of Science",
+      "Philosophy of Science"
+    ],
+    "Philosophy of Cognitive Science": [
+      "125. Philosophy of Cognitive Science",
+      "Philosophy of Cognitive Science"
+    ],
+    "Philosophical Logic": [
+      "127. Philosophical Logic",
+      "Philosophical Logic"
+    ],
+    "Practical Ethics": [
+      "128. Practical Ethics",
+      "Practical Ethics"
+    ],
+    "The Philosophy of Wittgenstein": [
+      "129. The Philosophy of Wittgenstein",
+      "The Philosophy of Wittgenstein"
+    ],
+    "Plato on Knowledge, Language and Reality": [
+      "137. Plato on Knowledge, Language and Reality",
+      "Plato on Knowledge, Language, & Reality in the Theaetetus & Sophist (in translation)"
+    ],
+    "Aristotle on Nature, Life and Mind (in translation)": [
+      "138. Aristotle on Nature, Life and Mind (in trans)",
+      "Aristotle on Nature, Life and Mind (in translation)"
+    ],
+    "Knowledge and Scepticism in Hellenistic Philosophy (in translation)": [
+      "139. Knowledge and Scepticism (in trans)",
+      "Knowledge and Scepticism in Hellenistic Philosophy (in translation)"
+    ],
+    "Jurisprudence": [
+      "150. Jurisprudence",
+      "Jurisprudence",
+      "Jurisprudence (Combined)",
+      "Jurisprudence (Essay)",
+      "Jurisprudence (Exam)"
+    ],
+    "Special Subject in Philosophy: Feminism and Philosophy": [
+      "198. Special Subject (FoEA)",
+      "198. Special Subject: Feminism and Philosophy",
+      "198. Special Subject: Feminist Philosophy",
+      "Special Subj. in Phil.: Feminism and Phil.",
+      "Special Subject (FoEA)",
+      "Special Subject in Philosophy: Feminism and Philosophy"
+    ],
+    "Special Subject in Philosophy: Feminist Theory": [
+      "198. Special Subject: Feminist Theory",
+      "Special Subject in Phil.: Feminist Theory",
+      "Special Subject in Philosophy: Feminist Theory"
+    ],
+    "Special Subject in Philosophy: Indian Philosophy": [
+      "198. Special Subject: Indian Philosophy",
+      "Special Subject (PoA)",
+      "198. Special Subject (PoA)",
+      "Special Subject: Indian Philosophy (Combined)",
+      "Special Subject in Philosophy: Indian Philosophy (Essay 1)",
+      "Special Subject in Philosophy: Indian Philosophy (Essay 2)"
+    ],
+    "Special Subject in Philosophy: The Ethics of AI and Digital Technology": [
+      "198. Special Subject: The Ethics of AI",
+      "Special Subject: The Ethics of Artificial Intelligence and Digital Technology",
+      "The Ethics of AI and Digital Technology",
+      "The Ethics of Artificial Intelligence and Digital Technology"
+    ],
+    "Special Subject in Philosophy: Philosophy of Fiction and Literature": [
+      "Special Subject in Philosophy: Philosophy of Fiction and Literature (Essay 1)",
+      "Special Subject in Philosophy: Philosophy of Fiction and Literature (Essay 2)"
+    ],
+    "Special Subject in Philosophy: Philosophy of Economics": [
+      "Special Subject in Philosophy of Economics"
+    ],
+    "Special Subjects in Philosophy (other)": [
+      "198. Special Subjects"
+    ],
+    "Thesis in Philosophy": [
+      "199. Thesis",
+      "199. Thesis in Philosophy",
+      "Thesis (Philosophy)",
+      "Thesis in Philosophy"
+    ],
+    "Comparative Government": [
+      "201. Comparative Government",
+      "201. Comparative Government (HP)",
+      "201. Comparative Government (PPE)",
+      "Comparative Government"
+    ],
+    "British Politics and Government since 1900": [
+      "202. BPG since 1900",
+      "202. BPG since 1900 (HP)",
+      "202. BPG since 1900 (PPE)",
+      "202. British Politics and Government since 1900",
+      "BPG since 1900",
+      "British Pol & Gov since 1900",
+      "British Pol. & Gov. since 1900",
+      "British Politics and Government since 1900",
+      "British Politics and Government since 1900 (take-home paper)"
+    ],
+    "British Society in the 20th Century": [
+      "Brit. Soc in the 20th C.",
+      "Brit. Soc. in the 20th C."
+    ],
+    "Modern British Government and Politics": [
+      "204. Modern British Gov. and Pol.",
+      "204. Modern British Gov. and Pol. (HP)",
+      "204. Modern British Gov. and Pol. (PPE)",
+      "204. Modern British Government and Politics",
+      "Modern Brit. Gov & Pol.",
+      "Modern Brit. Gov& Pol.",
+      "Modern British Gov. & Pol.",
+      "Modern British Gov. and Pol.",
+      "Modern British Government and Politics",
+      "Modern British Government and Politics (take-home paper)"
+    ],
+    "Government and Politics of the United States": [
+      "205. Gov. and Pol. of the US",
+      "205. Gov. and Pol. of the US (HP)",
+      "205. Gov. and Pol. of the US (PPE)",
+      "205. Government and Politics of the United States",
+      "Gov. & Pol. Of the USA",
+      "Gov. & Pol. of the USA",
+      "Gov. and Pol. of the US",
+      "Government and Politics of the US",
+      "Government and Politics of the United States"
+    ],
+    "Politics in Europe": [
+      "206. Politics in Europe",
+      "206. Politics in Europe (HP)",
+      "206. Politics in Europe (PPE)",
+      "Politics in Europe"
+    ],
+    "Politics in Russia and the Former Soviet Union": [
+      "207. Pol. in Russia and the Fmr USSR",
+      "207. Pol. in Russia and the Fmr USSR (HP)",
+      "207. Pol. in Russia and the Fmr USSR (PPE)",
+      "207. Politics in Russia and the Former Soviet Union",
+      "Pol. in Russia and the Fmr USSR",
+      "Politics in Russia",
+      "Politics in Russia & the Former Soviet Union",
+      "Politics in Russia & the Former USSR",
+      "Politics in Russia and the FSU",
+      "Politics in Russia and the Former Sov. Union",
+      "Politics in Russia and the Former Soviet Union",
+      "Russian Gov. & Pol."
+    ],
+    "Politics in Sub-Saharan Africa": [
+      "208. Politics in Sub-Saharan Africa",
+      "208. Politics in Sub-Saharan Africa (HP)",
+      "208. Politics in Sub-Saharan Africa (PPE)",
+      "Politics in Sub-Saharan Africa",
+      "Politics in Sub-Saharan Africa (take-home paper)"
+    ],
+    "Politics in Latin America": [
+      "209. Politics in Latin America",
+      "209. Politics in Latin America (HP)",
+      "209. Politics in Latin America (PPE)",
+      "Politics in Latin America"
+    ],
+    "Politics in South Asia": [
+      "210. Politics in South Asia",
+      "210. Politics in South Asia (HP)",
+      "210. Politics in South Asia (PPE)",
+      "Politics in South Asia"
+    ],
+    "Politics in the Middle East": [
+      "211. Politics in the Middle East",
+      "211. Politics in the Middle East (HP)",
+      "211. Politics in the Middle East (PPE)",
+      "Politics in the Middle East",
+      "Politics in the Middle East (old syllabus)"
+    ],
+    "International Relations in the Era of Two World Wars": [
+      "212. IR in the Era of Two World Wars",
+      "212. IR in the Era of Two World Wars (PPE)",
+      "212. International Relations in the Era of Two World Wars",
+      "IR in Era of 2 WWs",
+      "IR in the Era of 2 WWs",
+      "IR in the Era of Two World Wars",
+      "International Relations in the Era of Two World Wars"
+    ],
+    "International Relations in the Era of the Cold War": [
+      "213. IR in the Era of the Cold War",
+      "213. IR in the Era of the Cold War (PPE)",
+      "213. International Relations in the Era of the Cold War",
+      "IR in Era of Cold War",
+      "IR in the Era of the Cold War",
+      "International Relations in the Era of the Cold War"
+    ],
+    "International Relations": [
+      "214. International Relations",
+      "214. International Relations (PPE)",
+      "IR",
+      "IR (core)",
+      "International Relations",
+      "International Relations (old syllabus)"
+    ],
+    "Political Thought: Plato to Rousseau": [
+      "215. Pol. Thought: Plato to Rousseau",
+      "215. Pol. Thought: Plato to Rousseau (PPE)",
+      "215. Political Thought: Plato to Rousseau",
+      "Plato to Rousseau",
+      "Pol. Thought: Plato to Rousseau",
+      "Political Thought: Plato to Rousseau"
+    ],
+    "Political Thought: Bentham to Weber": [
+      "216. Pol. Thought: Benth. to Weber",
+      "216. Pol. Thought: Benth. to Weber (PPE)",
+      "216. Political Thought: Bentham to Weber",
+      "Bentham to Weber",
+      "Pol. Thought: Benth. to Weber",
+      "Political Thought: Bentham to Weber"
+    ],
+    "Marx and Marxism": [
+      "217. Marx and Marxism",
+      "217. Marx and Marxism (PPE)",
+      "Marx and Marxism",
+      "Marxism"
+    ],
+    "Sociological Theory": [
+      "218. Sociological Theory",
+      "218. Sociological Theory (PPE)",
+      "Soc. Theory",
+      "Sociological Theory"
+    ],
+    "The Sociology of Post-Industrial Societies": [
+      "219. The Soc. of Post-Indust. Soc.",
+      "219. The Soc. of Post-Indust. Soc. (PPE)",
+      "219. The Sociology of Post-Industrial Societies",
+      "Soc. Of Post- Industrial Societies",
+      "Soc. of Industrial Societies",
+      "Soc. of Post-Industrial Societies",
+      "Sociology of Post-Industrial Societies",
+      "The Soc. of Post-Indust. Soc.",
+      "The Sociology of Post-Industrial Societies"
+    ],
+    "Political Sociology": [
+      "220. Political Sociology",
+      "220. Political Sociology (PPE)",
+      "Political Sociology"
+    ],
+    "The Government and Politics of Japan": [
+      "223. The Gov. and Politics of Japan",
+      "223. The Gov. and Politics of Japan (PPE)",
+      "223. The Government and Politics of Japan",
+      "Gov. & Pol. of Japan",
+      "The Gov. and Politics of Japan",
+      "The Government and Politics of Japan"
+    ],
+    "Social Policy": [
+      "224. Social Policy",
+      "224. Social Policy (PPE)",
+      "Social Policy"
+    ],
+    "Comparative Demographic Systems": [
+      "225. CDS (pre-2016 see 315)",
+      "225. CDS (pre-2016 see 315) (PPE)",
+      "225. Comparative Demographic Systems",
+      "CDS (pre-2016 see 315)",
+      "Comparative Demographic Systems"
+    ],
+    "Quantitative Methods in Politics and Sociology": [
+      "226. Quant. Meth. in Pol. and Soc.",
+      "226. Quant. Meth. in Pol. and Soc. (PPE)",
+      "226. Quantitative Methods in Politics and Sociology",
+      "Quant. Meth. in Pol. and Soc.",
+      "Quantitative Methods in Politics and Sociology"
+    ],
+    "Politics in China": [
+      "227. Politics in China",
+      "227. Politics in China (PPE)",
+      "Politics in China",
+      "Politics of China"
+    ],
+    "The Politics of the European Union": [
+      "228. The Politics of the EU",
+      "228. The Politics of the EU (PPE)",
+      "228. The Politics of the European Union",
+      "Politics of the EU",
+      "The Politics of the EU",
+      "The Politics of the European Union"
+    ],
+    "Advanced Paper in Theories of Justice": [
+      "229. Adv. Paper in Theories of Just.",
+      "229. Adv. Paper in Theories of Just. (PPE)",
+      "229. Advanced Paper in Theories of Justice",
+      "Adv. Paper in Theories of Just.",
+      "Advanced Paper in Theories of Justice"
+    ],
+    "Comparative Political Economy": [
+      "230. Comparative Political Economy",
+      "Comparative Political Economy"
+    ],
+    "Special Subject in Politics: Comparative Political Economy": [
+      "297. SS in Pol.: Comp. Pol. Economy",
+      "297. SS in Pol.: Comp. Pol. Economy (PPE)",
+      "297. Special subject: Comparative Political Economy",
+      "SS in Pol.: Comp. Pol. Economy",
+      "Special Subject in Politics: Comparative Political Economy"
+    ],
+    "Special Subject in Politics: International Security and Conflict": [
+      "297. SS in Pol.: Int. Secu. and Conflict",
+      "297. SS in Pol.: Int. Secu. and Conflict (PPE)",
+      "297. Special subject: International Security and Conflict",
+      "SS in Pol.: Int. Secu. and Conflict",
+      "Special Subj. in Pol.: Int. Security",
+      "Special Subject in Politics: ISC",
+      "Special Subject in Politics: International Security and Conflict"
+    ],
+    "Special Subject in Politics: Feminist Theory": [
+      "297. Special subject in Politics",
+      "297. Special subject in Politics: Feminist Theory",
+      "Special Subject in Politics: Feminist Theory"
+    ],
+    "Supervised Dissertation in Politics": [
+      "298. Supervised dissertation",
+      "298. Supervised dissertation (PPE)",
+      "Supervised Dissertation in Politics",
+      "Supervised dissertation (Politics)"
+    ],
+    "Thesis in Politics": [
+      "299. Thesis",
+      "299. Thesis (PPE)",
+      "299. Thesis in Politics",
+      "Thesis (Politics)",
+      "Thesis in Politics"
+    ],
+    "Quantitative Economics": [
+      "300. Quantitative Economics",
+      "Quantitative Economics",
+      "Quantitative Economics (old syllabus)"
+    ],
+    "Macroeconomics": [
+      "301. Macroeconomics",
+      "301. Macroeconomics (old regs)",
+      "Macroeconomics",
+      "Macroeconomics (old regs)",
+      "Macroeconomics (old syllabus - 2022 version)",
+      "Macroeconomics (old syllabus)",
+      "Macroeconomics*"
+    ],
+    "Microeconomics": [
+      "302. Microeconomics",
+      "302. Microeconomics (old regs)",
+      "Microeconom",
+      "Microeconomics",
+      "Microeconomics (old regs)",
+      "Microeconomics (old syllabus)"
+    ],
+    "Microeconomic Analysis": [
+      "303. Microeconomic Analysis",
+      "Microeconomic Analysis",
+      "Microeconomic Analysis (MT)",
+      "Microeconomic Analysis (old syllabus)"
+    ],
+    "Microeconomic Theory": [
+      "303. Microeconomic Theory",
+      "Microeconomic Theory",
+      "Microeconomic Theory (MA)"
+    ],
+    "Money and Banking": [
+      "304. Money & Banking",
+      "304. Money and Banking",
+      "Money & Banking",
+      "Money and Banking"
+    ],
+    "Public Economics": [
+      "305. Public Economics",
+      "Public Economics"
+    ],
+    "Economics of Industry": [
+      "306. Economics of Industry",
+      "Economics of Industry"
+    ],
+    "Labour Economics and Industrial Relations": [
+      "307. Labour Econ. and Ind. Rel. (222)",
+      "307. Labour Economics and Industrial Relations",
+      "Labour Econ. and Ind. Rel. (222)",
+      "Labour Economics & Ind Rel",
+      "Labour Economics & Industrial Relations",
+      "Labour Economics and Industrial Relations"
+    ],
+    "Labour Economics and Inequality": [
+      "Labour Economics and Inequality",
+      "Labour Economics and Inequality (A16893H1)",
+      "Labour Economics and Inequality (A16894H1)"
+    ],
+    "International Economics": [
+      "308. International Economics",
+      "International Economics"
+    ],
+    "Economics of Developing Countries": [
+      "310. Economics of Devel. Countries",
+      "310. Economics of Developing Countries",
+      "Economics of Devel. Countries",
+      "Economics of Developing Countries"
+    ],
+    "British Economic History since 1870": [
+      "311. British Econ. History since 1",
+      "311. British Econ. History since 1870",
+      "British Econ. History since 1870",
+      "British Economic History",
+      "British Economic History since 1870"
+    ],
+    "Development of the World Economy since 1800": [
+      "311. Development of the World Economy since 1800",
+      "Develop of the World Economy since 1800",
+      "Development of the World Economy since 1800",
+      "History of the World Economy"
+    ],
+    "Econometrics": [
+      "314. Econometrics",
+      "Econometrics"
+    ],
+    "Finance": [
+      "318. Finance",
+      "Finance",
+      "Finance (old syllabus)"
+    ],
+    "Game Theory": [
+      "319. Game Theory",
+      "Game Theory"
+    ],
+    "Behavioural and Experimental Economics": [
+      "320. Behavioural and Experimental Economics",
+      "Behavioural and Exper. Econ.",
+      "Behavioural and Experimental Economics"
+    ],
+    "Special Subject in Economics: Environmental Economics and Climate Change": [
+      "398. Special subject in Economics",
+      "Special Subj. in Econ.: Environmental Econ.",
+      "Special Subject in Economics: Environ. Econ.",
+      "Special Subject in Economics: Environmental Economics and Climate Change",
+      "Environmental Economics and Climate Change (Combined)",
+      "Environmental Economics and Climate Change (Coursework)",
+      "Environmental Economics and Climate Change (Exam)",
+      "Environmental Economics and Climate Change (Exam) (old syllabus)"
+    ],
+    "The Philosophy and Economics of the Environment": [
+      "Phil. & Econ. of the Envir. (126)",
+      "Philosophy of Economics of Environment",
+      "The Philosophy and Economics of the Environment"
+    ],
+    "Thesis in Economics": [
+      "Thesis in Economics"
+    ],
+    "History of Philosophy": [
+      "History of Philosophy"
+    ],
+    "Formal Logic": [
+      "Formal Logic",
+      "Logic"
+    ],
+    "Mathematical Methods": [
+      "Mathematical Methods"
+    ],
+    "Command and Transitional Economies": [
+      "Command & Transitional Economies"
+    ],
+    "Economics of OECD Countries": [
+      "Economics of OECD Countries"
+    ],
+    "Philosophy of Science and Psychology": [
+      "Philosophy of Sci. & Psychology"
+    ]
+  },
+  "kingmaker_papers": [
+    {
+      "paper": "Econometrics",
+      "subject": "Economics",
+      "mu": 65.52,
+      "sigma": 14.02,
+      "n_total": 170
+    },
+    {
+      "paper": "Game Theory",
+      "subject": "Economics",
+      "mu": 66.43,
+      "sigma": 12.27,
+      "n_total": 157
+    },
+    {
+      "paper": "Quantitative Economics",
+      "subject": "Economics",
+      "mu": 65.27,
+      "sigma": 10.58,
+      "n_total": 644
+    },
+    {
+      "paper": "Politics in Russia and the Former Soviet Union",
+      "subject": "Politics",
+      "mu": 67.9,
+      "sigma": 10.26,
+      "n_total": 45
+    }
+  ]
+}
