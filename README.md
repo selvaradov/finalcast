@@ -75,23 +75,27 @@ All eight papers count equally. The "N marks above X" conditions matter for bord
 
 ### Monte Carlo simulation
 
-Given a student's 8 paper choices, we estimate classification probabilities via simulation (100,000 draws).
+Given a student's 8 paper choices, we estimate classification probabilities via simulation (50,000 draws).
 
-**Generative model**:
+**Generative model** (proportional ability loading):
 ```
-mark_i = mu_i + theta + epsilon_i       for papers i = 1..8
+mark_i = mu_i + lambda_i * theta + epsilon_i       for papers i = 1..8
 
-theta     ~ N(0, sigma_ability^2)        shared latent ability
-epsilon_i ~ N(0, sigma_paper_i^2 - sigma_ability^2)   paper-specific noise
+lambda_i  = sigma_i * sqrt(rho)          ability loading (proportional to paper spread)
+epsilon_i ~ N(0, sigma_i^2 * (1 - rho))  residual exam-day noise
+theta     = norminv(percentile)           standardised ability (fixed, not random)
 ```
 
-- `theta` is a latent ability factor inducing positive correlation between marks.
-- `epsilon_i` variance is `max(sigma_paper_i^2 - sigma_ability^2, 0.1)`.
+- `theta` is a standardised latent ability factor set by the student's self-assessed percentile.
+- `lambda_i` scales with paper sigma: high-variance papers are more sensitive to ability.
+- All paper pairs have implied correlation `rho`.
 - Marks clipped to [0, 100].
 
-**Calibration**: sigma_ability = 2.74, calibrated to match the observed 23.4% first-class rate (2015--2025 excluding 2020).
+The proportional loading addresses a key flaw of the additive model (constant shift regardless of paper sigma), which attributed only 4% of high-variance paper spread to ability and gave implausible tail risk for strong students.
 
-**Validation**: Simulated route-level first rates compared against observed data (e.g. Phil-Pol simulated 22.3% vs observed 23.5%).
+**Calibration**: rho = 0.196, calibrated via binary search to match the observed 23.2% first-class rate for the 8 most popular papers (2015--2025 excluding 2020).
+
+**Validation**: Simulated route-level first rates compared against observed data (e.g. Phil-Pol simulated 22.3% vs observed 23.5%). At 95th percentile, P(any paper below 50) is ~2% for a kingmaker-heavy combo (vs ~15% under the old additive model).
 
 ### Temporal trend analysis
 
@@ -131,7 +135,7 @@ OLS regression of mean mark on year for each paper with >= 4 years of data (excl
 | `paper_profiles.json` | Difficulty profiles: mu, sigma, %1st, %2.1, %below-50 |
 | `temporal_trends.json` | OLS trend per paper: slope, 95% CI, p-value, R-squared |
 | `subject_analysis.json` | Subject summaries, variance decomposition, kingmaker papers |
-| `simulation_params.json` | Calibrated sigma_ability |
+| `simulation_params.json` | Calibrated sigma_ability (additive model, used in analysis pipeline) |
 | `sensitivity.json` | Sensitivity of classification to 8th-paper choice |
 
 ### Visualisations (`output/`)
@@ -146,6 +150,17 @@ OLS regression of mean mark on year for each paper with >= 4 years of data (excl
 | `tables/temporal_trends.md` | Significant and near-significant trends |
 | `tables/popularity_difficulty.md` | Correlation statistics |
 
+### Phase 3: Web tool
+
+**`web/`** -- Interactive Grade Prior Calculator. A static site (no build step) with a chalkboard aesthetic.
+
+- `web/data.json` -- Pre-computed bundle (81 papers with mu, sigma, route summaries, etc.)
+- `web/engine.js` -- Monte Carlo simulation engine in JS (classify, simulate with proportional loading, paperMetrics)
+- `web/app.js` -- Application logic (paper picker, ability slider, results rendering, paper breakdown)
+- `web/index.html` + `web/style.css` -- Landing page and calculator UI
+
+Serve locally: `cd web && python -m http.server 8080`
+
 ## Usage
 
 ```bash
@@ -159,13 +174,16 @@ python build_canonical.py
 # Phase 2: Analyse
 python analysis.py
 python visualise.py
+
+# Phase 3: Web tool
+cd web && python -m http.server 8080
 ```
 
 ## Known limitations
 
 - **Truncated normal assumption**: May poorly approximate papers with ceiling effects or bimodal marking. GOF p-values flag the worst cases.
 - **Temporal pooling**: Pooled across years. Justified by trend analysis (3/65 significant), but represents an average, not any single year.
-- **Single-factor correlation**: The latent ability model assumes one shared factor. Same-subject papers may be more correlated in reality.
+- **Single-factor correlation**: The latent ability model assumes one shared factor with constant rho across all paper pairs. Same-subject papers are likely more correlated in reality. A multi-factor model (per-subject + global) would be better but requires individual-level data.
 - **Selection effects**: The simulation assumes a random student. Self-selection into papers means observed distributions reflect who chose the paper.
 - **COVID exclusion**: 2020 excluded (40% first rate from safety-net policies).
 - **2023 boycott**: No per-paper statistics published that year.

@@ -163,14 +163,15 @@
     <div class="container">
       <h2>How it works</h2>
       <p>Each paper's mark distribution is modelled as:</p>
-      <p class="formula">mark_i = μ_i + θ + ε_i</p>
+      <p class="formula">mark_i = μ_i + λ_i·θ + ε_i</p>
       <ul>
         <li><strong>μ_i</strong> — paper-specific mean, fitted via MLE on truncated normals from 15 years of examiners' report band data.</li>
-        <li><strong>θ ~ N(0, σ²_ability)</strong> — shared latent ability factor (σ ≈ 2.7), capturing correlation across papers.</li>
-        <li><strong>ε_i</strong> — paper-specific noise, variance = σ²_paper − σ²_ability.</li>
+        <li><strong>θ</strong> — standardised latent ability. The ability slider sets θ = Φ⁻¹(percentile).</li>
+        <li><strong>λ_i = σ_i·√ρ</strong> — ability loading proportional to paper spread. Higher-variance papers are more sensitive to ability (ρ ≈ 0.20, calibrated to match observed classification rates).</li>
+        <li><strong>ε_i ~ N(0, σ²_i·(1−ρ))</strong> — residual exam-day noise.</li>
       </ul>
-      <p>The ability slider shifts all paper means by Φ⁻¹(percentile) × σ_ability. The simulation draws 50,000 samples, classifies each using official PPE exam conventions (conjunctive rules on averages and paper counts), and reports the empirical distribution.</p>
-      <p class="landing-caveat">Limitations: uses aggregate band data (not individual marks), assumes conditional independence of ε terms. Estimates are priors, not predictions.</p>
+      <p>The simulation draws 50,000 samples, classifies each using official PPE exam conventions (conjunctive rules on averages and paper counts), and reports the empirical distribution.</p>
+      <p class="landing-caveat">Limitations: uses aggregate band data (not individual marks), assumes a single ability factor with constant ρ across all paper pairs. Estimates are priors, not predictions.</p>
     </div>
   </section>
 

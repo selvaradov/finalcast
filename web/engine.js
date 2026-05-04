@@ -85,29 +85,29 @@ const Engine = (() => {
 
   /**
    * Run Monte Carlo simulation for 8 papers.
+   * Uses proportional ability loading: λ_i = σ_i × √ρ, ε_i ~ N(0, σ²_i(1-ρ)).
+   * Ability θ is fixed at norminv(percentile) (standardised).
    *
    * @param {Object[]} papers - Array of {mu, sigma} for each paper
-   * @param {number} sigmaAbility - Latent ability SD
+   * @param {number} rho - Inter-paper correlation (calibrated ~0.196)
    * @param {number} abilityPercentile - Student's self-assessed percentile (0-100)
    * @param {number} nSim - Number of simulations
    * @returns {Object} Classification probabilities
    */
-  function simulate(papers, sigmaAbility, abilityPercentile = 50, nSim = 50000) {
-    const abilityShift = norminv(abilityPercentile / 100) * sigmaAbility;
+  function simulate(papers, rho, abilityPercentile = 50, nSim = 50000) {
+    const theta = norminv(abilityPercentile / 100);
+    const sqrtRho = Math.sqrt(rho);
+    const sqrt1mRho = Math.sqrt(1 - rho);
 
-    const mus = papers.map(p => p.mu + abilityShift);
-    const sigmaEps = papers.map(p => {
-      const v = p.sigma * p.sigma - sigmaAbility * sigmaAbility;
-      return Math.sqrt(Math.max(v, 0.1));
-    });
+    const mus = papers.map(p => p.mu + p.sigma * sqrtRho * theta);
+    const sigmaEps = papers.map(p => p.sigma * sqrt1mRho);
 
     const counts = { "1st": 0, "2.1": 0, "2.2": 0, "3rd": 0, "Pass": 0, "Fail": 0 };
 
     for (let i = 0; i < nSim; i++) {
-      const theta = randn() * sigmaAbility;
       const marks = [];
       for (let j = 0; j < 8; j++) {
-        let mark = mus[j] + theta + randn() * sigmaEps[j];
+        let mark = mus[j] + randn() * sigmaEps[j];
         mark = Math.max(0, Math.min(100, mark));
         marks.push(mark);
       }
@@ -133,18 +133,20 @@ const Engine = (() => {
     return "PPE";
   }
 
-  function paperMetrics(papers, sigmaAbility, abilityPercentile) {
-    const abilityShift = norminv(abilityPercentile / 100) * sigmaAbility;
+  function paperMetrics(papers, rho, abilityPercentile) {
+    const theta = norminv(abilityPercentile / 100);
+    const sqrtRho = Math.sqrt(rho);
+    const sqrt1mRho = Math.sqrt(1 - rho);
     return papers.map(p => {
-      const shiftedMu = p.mu + abilityShift;
-      const totalSigma = p.sigma;
-      const pBelow50 = normcdf((50 - shiftedMu) / totalSigma);
-      const pAbove70 = 1 - normcdf((70 - shiftedMu) / totalSigma);
+      const shiftedMu = p.mu + p.sigma * sqrtRho * theta;
+      const sigmaEps = p.sigma * sqrt1mRho;
+      const pBelow50 = normcdf((50 - shiftedMu) / sigmaEps);
+      const pAbove70 = 1 - normcdf((70 - shiftedMu) / sigmaEps);
       return {
         name: p.name,
         subject: p.subject,
         shiftedMu,
-        totalSigma,
+        sigmaEps,
         pBelow50,
         pAbove70
       };

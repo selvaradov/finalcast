@@ -192,7 +192,9 @@ const App = (() => {
   function updateAbilityReadout() {
     const pct = +document.getElementById('ability-slider').value;
     document.getElementById('ability-pct').textContent = pct + 'th';
-    const shift = Engine.norminv(pct / 100) * DATA.sigma_ability;
+    const theta = Engine.norminv(pct / 100);
+    const typicalSigma = 7;
+    const shift = typicalSigma * Math.sqrt(DATA.rho) * theta;
     document.getElementById('ability-shift').textContent =
       (shift >= 0 ? '+' : '') + shift.toFixed(1);
 
@@ -212,7 +214,7 @@ const App = (() => {
         name, subject: p.subject, mu: p.mu, sigma: p.sigma
       }));
       const pct = +document.getElementById('ability-slider').value;
-      const results = Engine.simulate(papers, DATA.sigma_ability, pct, 50000);
+      const results = Engine.simulate(papers, DATA.rho, pct, 50000);
       renderResults(results, papers, pct);
     }, 16);
   }
@@ -320,7 +322,7 @@ const App = (() => {
 
   function renderPaperBreakdown(papers, pct) {
     const el = document.getElementById('paper-breakdown');
-    const metrics = Engine.paperMetrics(papers, DATA.sigma_ability, pct);
+    const metrics = Engine.paperMetrics(papers, DATA.rho, pct);
 
     const rows = metrics
       .sort((a, b) => b.pAbove70 - a.pAbove70)
@@ -345,7 +347,7 @@ const App = (() => {
           </td>
           <td>${riskLabel ? `<span class="risk-badge ${riskCls}">${riskLabel}</span>` : '—'}</td>
           <td>${(m.pAbove70 * 100).toFixed(0)}%</td>
-          <td class="breakdown-sigma">σ = ${m.totalSigma.toFixed(1)}</td>
+          <td class="breakdown-sigma">σ = ${m.sigmaEps.toFixed(1)}</td>
         </tr>`;
       }).join('');
 
