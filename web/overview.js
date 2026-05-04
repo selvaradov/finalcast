@@ -239,7 +239,10 @@ const Overview = (() => {
   function fillKingmakers(DATA) {
     const el = document.getElementById('kingmaker-list');
     if (!el || !DATA.kingmaker_papers) return;
-    el.textContent = DATA.kingmaker_papers.map(p => `${p.paper} (σ=${p.sigma.toFixed(1)})`).join(', ');
+    el.innerHTML = DATA.kingmaker_papers.map(p => {
+      const color = p.subject === 'Economics' ? GOLD : p.subject === 'Politics' ? RED : BLUE;
+      return `<span class="kingmaker-item"><span style="color:${color}">●</span> ${p.paper} <span class="kingmaker-sigma">σ=${p.sigma.toFixed(1)}</span></span>`;
+    }).join('');
   }
 
   return { init };

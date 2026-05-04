@@ -13,6 +13,7 @@
   --red: #e8614d;
   --gold: #f0c75e;
   --font-chalk: 'Caveat', cursive;
+  --font-chalk-sm: 'Caveat', cursive;
   --font-body: 'Inter', system-ui, sans-serif;
 }
 
@@ -78,7 +79,7 @@ body::after {
 .nav-link {
   color: var(--chalk-dim);
   text-decoration: none;
-  font-family: var(--font-chalk);
+  font-family: var(--font-chalk-sm);
   font-size: 20px;
   font-weight: 600;
   padding: 2px 0;
@@ -303,6 +304,57 @@ body::after {
 
 /* ── Paper picker ──────────────────────────────────────────── */
 
+.picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.picker-header h2 { margin-bottom: 4px; }
+
+.picker-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.btn-sm {
+  font-size: 16px;
+  padding: 7px 14px;
+}
+
+.selected-summary {
+  margin-bottom: 16px;
+}
+
+.selected-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(91,155,245,0.08);
+  border: 1px solid rgba(91,155,245,0.15);
+  font-size: 12px;
+  color: var(--chalk);
+}
+
+.subject-selected-count {
+  font-size: 16px;
+  color: var(--blue);
+  font-weight: 400;
+}
+
 .picker-controls {
   display: flex;
   align-items: center;
@@ -378,7 +430,7 @@ body::after {
 .paper-name { flex: 1; }
 
 .paper-badge {
-  font-family: var(--font-chalk);
+  font-family: var(--font-chalk-sm);
   font-size: 13px;
   padding: 1px 7px;
   border-radius: 8px;
@@ -449,7 +501,7 @@ body::after {
   border: 1px solid rgba(232,229,220,0.12);
   background: transparent;
   color: var(--chalk-dim);
-  font-family: var(--font-chalk);
+  font-family: var(--font-chalk-sm);
   font-size: 18px; font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -495,7 +547,7 @@ body::after {
   display: flex;
   justify-content: space-between;
   margin-top: 6px;
-  font-family: var(--font-chalk);
+  font-family: var(--font-chalk-sm);
   font-size: 16px;
   color: var(--chalk-faint);
 }
@@ -757,12 +809,30 @@ body::after {
 
 /* ── Methodology full page ────────────────────────────────── */
 
-.methodology-full .card {
+.methodology-full {
   max-width: 700px;
+  margin: 0 auto;
+  padding-bottom: 60px;
+}
+
+.methodology-abstract {
+  font-size: 14px;
+  color: var(--chalk-dim);
+  line-height: 1.8;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(232,229,220,0.08);
+  font-style: italic;
 }
 
 .methodology-full h2 {
-  font-size: 1.6rem;
+  font-family: var(--font-chalk);
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-top: 36px;
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(232,229,220,0.1);
 }
 
 .methodology-full p,
@@ -770,28 +840,23 @@ body::after {
   font-size: 14px;
   color: var(--chalk-dim);
   margin-bottom: 10px;
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
-.methodology-full ul {
+.methodology-full ul,
+.methodology-full ol {
   padding-left: 20px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
-.formula {
-  font-family: 'Courier New', monospace;
-  font-size: 16px;
-  color: var(--chalk);
-  background: rgba(232,229,220,0.05);
-  padding: 10px 16px;
-  border-radius: 4px;
-  display: inline-block;
+.methodology-full ol {
+  list-style: decimal;
 }
 
 .methodology-rules-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 12px 0;
+  margin: 16px 0;
 }
 
 .methodology-rules-table th,
@@ -807,6 +872,11 @@ body::after {
   font-family: var(--font-chalk);
   font-weight: 700;
   font-size: 16px;
+}
+
+/* MathJax overrides for dark theme */
+.methodology-full .MathJax {
+  color: var(--chalk) !important;
 }
 
 /* ── Charts ───────────────────────────────────────────────── */
@@ -1040,6 +1110,29 @@ body::after {
 
 @media (max-width: 700px) {
   .overview-callouts { grid-template-columns: 1fr; }
+}
+
+/* ── Kingmaker items ──────────────────────────────────────── */
+
+.kingmaker-defn {
+  margin-bottom: 10px;
+}
+
+.kingmaker-value {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kingmaker-item {
+  font-size: 14px;
+  color: var(--chalk);
+}
+
+.kingmaker-sigma {
+  color: var(--chalk-faint);
+  font-size: 12px;
+  margin-left: 4px;
 }
 
 /* ── Footer ────────────────────────────────────────────────── */

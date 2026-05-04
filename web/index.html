@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>window.MathJax = { tex: { inlineMath: [['$','$']] }, options: { skipHtmlTags: ['script','noscript','style','textarea'] } };</script>
 </head>
 <body>
   <nav class="top-nav">
@@ -87,17 +89,28 @@
 
       <!-- Step 1: Paper Picker -->
       <section id="step-papers" class="card step-section active-section">
-        <h2>Choose your 8 papers</h2>
-        <p class="section-note">Pick one paper per exam slot. Difficulty badges are at a glance.</p>
+        <div class="picker-header">
+          <div>
+            <h2>Choose your 8 papers</h2>
+            <p class="section-note">Pick one paper per exam slot. Difficulty badges show volatility (hover for definition).</p>
+          </div>
+          <div class="picker-header-actions">
+            <button id="btn-defaults" class="btn btn-secondary btn-sm">Use typical papers</button>
+            <button id="btn-to-ability" class="btn btn-primary" disabled>Next →</button>
+          </div>
+        </div>
+
         <div class="picker-controls">
           <input type="text" id="paper-search" class="search-input" placeholder="Search papers…">
           <span class="paper-count"><span id="selected-count">0</span> / 8</span>
         </div>
+
+        <div id="selected-summary" class="selected-summary">
+          <!-- Populated by JS: shows selected papers grouped by subject -->
+        </div>
+
         <div id="paper-lists" class="paper-lists">
           <!-- Populated by JS -->
-        </div>
-        <div class="step-actions">
-          <button id="btn-to-ability" class="btn btn-primary" disabled>Next →</button>
         </div>
       </section>
 
@@ -175,8 +188,8 @@
       </div>
 
       <div class="card">
-        <h2>Difficulty vs Popularity</h2>
-        <p class="section-note">Each dot is a paper. Hover for details. Higher mean = easier; larger σ = more volatile.</p>
+        <h2>Mean mark vs Volatility</h2>
+        <p class="section-note">Each dot is a paper. Hover for details. Bubble size reflects average recent candidate numbers (2019–2025). X-axis: mean mark (higher = easier). Y-axis: standard deviation (higher = more volatile outcomes).</p>
         <div class="chart-wrap">
           <canvas id="scatter-chart"></canvas>
         </div>
@@ -248,12 +261,12 @@
         <div class="context-card">
           <h3>COVID 2020</h3>
           <div class="context-value">40% Firsts</div>
-          <div class="context-note">Per-paper means shifted by only +0.3 marks on average — the anomaly was at classification stage, not marking. 2020 is excluded from all model fitting.</div>
+          <div class="context-note">Marking scale was unchanged, but classification conventions were modified as a safety net: the lowest two passing results were dropped when calculating the classification average. Per-paper means shifted by only +0.3 marks — the doubled First rate came entirely from the classification rule change. 2020 is excluded from all model fitting.</div>
         </div>
         <div class="context-card">
           <h3>Kingmaker papers</h3>
-          <div class="context-value" id="kingmaker-list"></div>
-          <div class="context-note">These high-variance papers can swing your classification either way. They're all Economics.</div>
+          <div class="context-note kingmaker-defn">Papers with σ ≥ 10 — high enough variance that a single sitting can swing you up or down a full class.</div>
+          <div class="context-value kingmaker-value" id="kingmaker-list"></div>
         </div>
       </div>
     </div>
@@ -281,58 +294,62 @@
   <section class="page-section" data-page="methodology" style="display:none;">
     <div class="container methodology-full">
       <h1 class="page-title">Methodology</h1>
+      <p class="methodology-abstract">This page describes the statistical model behind the grade prior calculator. The approach uses a latent ability factor model fitted to 15 years of Oxford PPE examiners' report data, with Monte Carlo simulation to estimate classification probabilities.</p>
 
-      <div class="card">
-        <h2>The model</h2>
-        <p>Each paper's mark distribution is modelled as:</p>
-        <p class="formula">mark_i = μ_i + λ_i·θ + ε_i</p>
-        <ul>
-          <li><strong>μ_i</strong> — paper-specific mean, fitted via MLE on truncated normals from 15 years of examiners' report band data.</li>
-          <li><strong>θ</strong> — standardised latent ability. The ability slider sets θ = Φ⁻¹(percentile).</li>
-          <li><strong>λ_i = σ_i·√ρ</strong> — ability loading proportional to paper spread. Higher-variance papers are more sensitive to ability (ρ ≈ 0.20, calibrated to match observed classification rates).</li>
-          <li><strong>ε_i ~ N(0, σ²_i·(1−ρ))</strong> — residual exam-day noise.</li>
-        </ul>
-      </div>
+      <h2>1. The model</h2>
+      <p>Each paper's mark is modelled as a draw from:</p>
+      <p>$$\text{mark}_i = \mu_i + \lambda_i \cdot \theta + \varepsilon_i$$</p>
+      <p>where:</p>
+      <ul>
+        <li>$\mu_i$ is the paper-specific mean, fitted via maximum likelihood estimation on truncated normal distributions from 15 years of examiners' report band data.</li>
+        <li>$\theta$ is standardised latent ability. The ability slider sets $\theta = \Phi^{-1}(\text{percentile})$, where $\Phi^{-1}$ is the standard normal quantile function.</li>
+        <li>$\lambda_i = \sigma_i \sqrt{\rho}$ is the ability loading, proportional to paper spread. Higher-variance papers are more sensitive to ability.</li>
+        <li>$\varepsilon_i \sim \mathcal{N}(0,\; \sigma_i^2(1-\rho))$ is residual exam-day noise, independent across papers.</li>
+      </ul>
+      <p>The inter-paper correlation parameter $\rho \approx 0.196$ is calibrated so that the model reproduces the observed overall first-class rate of approximately 23% when $\theta = 0$ (the median student).</p>
 
-      <div class="card">
-        <h2>Classification rules</h2>
-        <p>PPE uses conjunctive classification — you need <em>both</em> an average threshold and a minimum number of papers at that level:</p>
-        <table class="methodology-rules-table">
-          <thead><tr><th>Class</th><th>Average ≥</th><th>Additional requirement</th></tr></thead>
-          <tbody>
-            <tr><td class="class-first">1st</td><td>68.5</td><td>≥ 2 marks of 70+, no mark below 50</td></tr>
-            <tr><td class="class-21">2.1</td><td>59.0</td><td>≥ 3 marks of 60+</td></tr>
-            <tr><td class="class-22">2.2</td><td>49.0</td><td>≥ 3 marks of 50+</td></tr>
-            <tr><td class="class-low">3rd</td><td>40.0</td><td>≥ 3 marks of 40+</td></tr>
-            <tr><td class="class-low">Pass</td><td>30.0</td><td>—</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <h2>2. Classification rules</h2>
+      <p>PPE uses <em>conjunctive</em> classification — candidates need both an average threshold and a minimum count of papers at the relevant mark level:</p>
+      <table class="methodology-rules-table">
+        <thead><tr><th>Class</th><th>Average ≥</th><th>Additional requirement</th></tr></thead>
+        <tbody>
+          <tr><td class="class-first">1st</td><td>68.5</td><td>≥ 2 marks of 70+, no mark below 50</td></tr>
+          <tr><td class="class-21">2.1</td><td>59.0</td><td>≥ 3 marks of 60+</td></tr>
+          <tr><td class="class-22">2.2</td><td>49.0</td><td>≥ 3 marks of 50+</td></tr>
+          <tr><td class="class-low">3rd</td><td>40.0</td><td>≥ 3 marks of 40+</td></tr>
+          <tr><td class="class-low">Pass</td><td>30.0</td><td>—</td></tr>
+        </tbody>
+      </table>
+      <p>These conjunctive rules create non-linear interactions with paper variance — for instance, a single mark below 50 vetoes a First regardless of average, making high-$\sigma$ papers risky even when their mean is above 70.</p>
 
-      <div class="card">
-        <h2>Simulation</h2>
-        <p>The simulation draws 50,000 samples, classifies each using the rules above, and reports the empirical distribution. This Monte Carlo approach captures the non-linear interactions between the conjunctive rules and paper-specific variance — something a simple normal approximation would miss.</p>
-      </div>
+      <h2>3. Simulation</h2>
+      <p>For a given set of 8 papers and ability percentile, the tool draws $N = 50{,}000$ independent exam sittings. Each draw:</p>
+      <ol>
+        <li>Computes the shifted mean for each paper: $\tilde{\mu}_i = \mu_i + \sigma_i \sqrt{\rho} \cdot \theta$</li>
+        <li>Draws $\varepsilon_i \sim \mathcal{N}(0, \sigma_i^2(1-\rho))$ independently for each paper</li>
+        <li>Clips $\text{mark}_i = \max(0, \min(100, \tilde{\mu}_i + \varepsilon_i))$</li>
+        <li>Classifies the 8 marks using the conjunctive rules above</li>
+      </ol>
+      <p>The reported probability for each class is the empirical frequency across all $N$ draws. Uncertainty from finite simulation is negligible ($\lt 0.1\text{pp}$ at $N = 50{,}000$); the reported $\pm 3\text{pp}$ uncertainty reflects model limitations rather than Monte Carlo error.</p>
 
-      <div class="card">
-        <h2>Data</h2>
-        <p>Data comes from Oxford PPE Final Honour School internal examiners' reports, 2011–2025. Mark distributions are extracted from band data (percentage of candidates in each class band per paper). 81 papers are fitted; 65 via MLE on band data, 16 via method-of-moments from reported means and standard deviations.</p>
-        <p>The year 2020 (COVID) is excluded from all fitting — the first rate roughly doubled that year despite paper-level marks barely changing, suggesting the anomaly was at classification stage.</p>
-        <p>2023 (marking boycott) has no per-paper data available.</p>
-      </div>
+      <h2>4. Data</h2>
+      <p>Source data is extracted from Oxford PPE Final Honour School internal examiners' reports, 2011–2025. Mark distributions come from band data: the percentage of candidates achieving each class-level mark on each paper. 81 papers are fitted in total — 65 via MLE on band data, 16 via method-of-moments from reported mean and standard deviation.</p>
+      <p>Two years receive special treatment:</p>
+      <ul>
+        <li><strong>2020 (COVID):</strong> excluded from all fitting. The first-class rate doubled (~40%) despite paper-level marks barely shifting (+0.3 on average). The anomaly was caused by modified classification conventions: the lowest two passing results were dropped as a safety net, while the marking scale was unchanged.</li>
+        <li><strong>2023 (marking boycott):</strong> no per-paper data available; excluded by data absence.</li>
+      </ul>
 
-      <div class="card">
-        <h2>Limitations</h2>
-        <ul>
-          <li>Uses aggregate band data, not individual marks — the true joint distribution is unobservable.</li>
-          <li>Assumes a single ability factor with constant ρ across all paper pairs. In reality, Philosophy papers likely correlate more with each other than with Economics papers.</li>
-          <li>No conditioning on prior performance — the ability slider is a self-assessment, not a calibrated prediction.</li>
-          <li>Temporal trends are ignored in the simulation (papers are fitted on pooled data).</li>
-          <li>Estimates are priors — they tell you what has happened historically for similar paper combinations, not what will happen to you.</li>
-        </ul>
-      </div>
+      <h2>5. Limitations</h2>
+      <ul>
+        <li>Uses aggregate band data, not individual marks — the true joint distribution across papers for any one candidate is unobservable.</li>
+        <li>Assumes a single latent ability factor with constant $\rho$ across all paper pairs. In reality, within-subject correlations are likely higher than cross-subject correlations.</li>
+        <li>No conditioning on prior performance — the ability slider is a self-assessment, not a calibrated prediction from collections data.</li>
+        <li>Temporal trends exist for some papers (e.g. Microeconomic Analysis: +1.65 marks/year) but are ignored in simulation, which uses pooled estimates.</li>
+        <li>Estimates are priors — they describe what has happened historically for similar paper combinations, not what will happen to any individual candidate.</li>
+      </ul>
 
-      <p class="landing-caveat" style="text-align:center; margin-top: 24px;">It's a prior, not a prediction.</p>
+      <p class="landing-caveat" style="text-align:center; margin-top: 32px;">It's a prior, not a prediction.</p>
     </div>
   </section>
 

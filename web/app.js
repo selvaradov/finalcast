@@ -184,6 +184,13 @@ const App = (() => {
     return { label: 'Gentle', cls: 'badge-gentle' };
   }
 
+  const BADGE_TOOLTIPS = {
+    'badge-gentle': 'Gentle: σ < 5 — low variance, predictable outcomes',
+    'badge-moderate': 'Moderate: σ 5–7 — typical spread',
+    'badge-hard': 'Hard: σ 7–10 — wide spread, less predictable',
+    'badge-kingmaker': 'Kingmaker: σ ≥ 10 — can swing your class either way'
+  };
+
   function buildPaperPicker() {
     const container = document.getElementById('paper-lists');
     const subjects = ['Philosophy', 'Politics', 'Economics'];
@@ -200,14 +207,14 @@ const App = (() => {
       const papers = sorted[subj];
       return `
         <div class="subject-group" data-subject="${subj}">
-          <h3>${subj} (${papers.length})</h3>
+          <h3>${subj} <span class="subject-count">(${papers.length})</span> <span class="subject-selected-count" data-subject="${subj}"></span></h3>
           ${papers.map(([name, p]) => {
             const badge = difficultyBadge(p);
             return `
               <label class="paper-item" data-name="${name}" data-subject="${subj}">
                 <input type="checkbox">
                 <span class="paper-name">${name}</span>
-                <span class="paper-badge ${badge.cls}">${badge.label}</span>
+                <span class="paper-badge ${badge.cls}" title="${BADGE_TOOLTIPS[badge.cls]}">${badge.label}</span>
                 <span class="paper-stats">μ${p.mu.toFixed(0)} σ${p.sigma.toFixed(1)}</span>
               </label>`;
           }).join('')}
@@ -242,6 +249,30 @@ const App = (() => {
   function updateSelectionCount() {
     document.getElementById('selected-count').textContent = selectedPapers.size;
     document.getElementById('btn-to-ability').disabled = selectedPapers.size !== 8;
+
+    const counts = { Philosophy: 0, Politics: 0, Economics: 0 };
+    for (const [, p] of selectedPapers) {
+      counts[p.subject]++;
+    }
+    document.querySelectorAll('.subject-selected-count').forEach(el => {
+      const subj = el.dataset.subject;
+      el.textContent = counts[subj] > 0 ? `· ${counts[subj]} selected` : '';
+    });
+
+    renderSelectedSummary();
+  }
+
+  function renderSelectedSummary() {
+    const el = document.getElementById('selected-summary');
+    if (selectedPapers.size === 0) {
+      el.innerHTML = '';
+      return;
+    }
+    const items = Array.from(selectedPapers.entries()).map(([name, p]) => {
+      const subjectCls = p.subject === 'Philosophy' ? 'phil' : p.subject === 'Politics' ? 'pol' : 'econ';
+      return `<span class="selected-chip"><span class="subject-dot subject-dot--${subjectCls}"></span>${name}</span>`;
+    });
+    el.innerHTML = `<div class="selected-chips">${items.join('')}</div>`;
   }
 
   function onSearch(e) {
@@ -440,10 +471,29 @@ const App = (() => {
         <div class="context-card">
           <h3>Your route: ${route}</h3>
           <div class="context-value">${routeData['1st']}% Firsts historically</div>
-          <div class="context-note">vs your estimated ${(results['1st'] * 100).toFixed(0)}% — ${
-            results['1st'] * 100 > routeData['1st'] ? 'above' : 'below'
-          } the route average</div>
+          <div class="context-note">Historical average for all ${route} students</div>
         </div>`);
+    }
+
+    // What-if: compare to default papers at same ability
+    const pct = +document.getElementById('ability-slider').value;
+    const defaultPapers = DEFAULT_PAPERS
+      .filter(name => DATA.paper_catalogue[name])
+      .map(name => ({ name, subject: DATA.paper_catalogue[name].subject, mu: DATA.paper_catalogue[name].mu, sigma: DATA.paper_catalogue[name].sigma }));
+
+    if (defaultPapers.length === 8) {
+      const isDefault = DEFAULT_PAPERS.every(n => selectedPapers.has(n));
+      if (!isDefault) {
+        const defaultResults = Engine.simulate(defaultPapers, DATA.rho, pct, 20000);
+        const diff = ((results['1st'] - defaultResults['1st']) * 100);
+        const sign = diff >= 0 ? '+' : '';
+        panels.push(`
+          <div class="context-card">
+            <h3>Compared to typical papers</h3>
+            <div class="context-value">${sign}${diff.toFixed(1)}pp on First rate</div>
+            <div class="context-note">Your papers vs the typical 8 (Micro, Macro, Ethics, IR, QE, BPG, K&R, Theory of Politics) at the same ability level</div>
+          </div>`);
+      }
     }
 
     const swap = findBestSwap(papers);
@@ -508,8 +558,37 @@ const App = (() => {
 
   // ── Events ────────────────────────────────────────────────
 
+  const DEFAULT_PAPERS = [
+    'Microeconomics', 'Macroeconomics', 'Ethics',
+    'International Relations', 'Quantitative Economics',
+    'British Politics and Government since 1900',
+    'Knowledge and Reality', 'Theory of Politics'
+  ];
+
+  function selectDefaults() {
+    selectedPapers.clear();
+    document.querySelectorAll('.paper-item').forEach(el => {
+      el.classList.remove('selected');
+      el.querySelector('input').checked = false;
+    });
+    for (const name of DEFAULT_PAPERS) {
+      const paper = DATA.paper_catalogue[name];
+      if (paper) {
+        selectedPapers.set(name, paper);
+        const el = document.querySelector(`.paper-item[data-name="${name}"]`);
+        if (el) {
+          el.classList.add('selected');
+          el.querySelector('input').checked = true;
+        }
+      }
+    }
+    updateSelectionCount();
+    saveStateToURL();
+  }
+
   function wireEvents() {
     document.getElementById('paper-search').addEventListener('input', onSearch);
+    document.getElementById('btn-defaults').addEventListener('click', selectDefaults);
 
     document.getElementById('btn-to-ability').addEventListener('click', () => goToStep(2));
     document.getElementById('btn-back-papers').addEventListener('click', () => goToStep(1));

@@ -59,6 +59,8 @@ const Explorer = (() => {
             labels: { color: '#e8e5dc', font: { family: "'Caveat', cursive", size: 16, weight: 700 } }
           },
           tooltip: {
+            mode: 'nearest',
+            intersect: true,
             backgroundColor: '#222228',
             titleColor: '#e8e5dc',
             bodyColor: '#9a978e',
@@ -72,8 +74,8 @@ const Explorer = (() => {
               label: (item) => {
                 const d = item.raw;
                 return [
-                  `Mean: ${d.x.toFixed(1)}  Volatility: ${d.y.toFixed(1)}`,
-                  d.avgPop > 0 ? `~${Math.round(d.avgPop)} candidates/year (recent)` : ''
+                  `Mean: ${d.x.toFixed(1)}  σ: ${d.y.toFixed(1)}`,
+                  d.avgPop > 0 ? `~${Math.round(d.avgPop)} candidates/year (recent avg)` : ''
                 ].filter(Boolean);
               }
             }
@@ -156,7 +158,7 @@ const Explorer = (() => {
         </div>
         <div class="profile-stat">
           <div class="profile-stat-value">${p.sigma.toFixed(1)}</div>
-          <div class="profile-stat-label">volatility (σ)</div>
+          <div class="profile-stat-label">volatility (sd)</div>
         </div>
         <div class="profile-stat">
           <div class="profile-stat-value">${p.pct_first.toFixed(0)}%</div>
