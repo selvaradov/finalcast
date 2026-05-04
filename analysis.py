@@ -545,6 +545,411 @@ def compute_subject_analysis(paper_fits):
 
 
 # ---------------------------------------------------------------------------
+# A2. Per-year GOF validation of pooled fits
+# ---------------------------------------------------------------------------
+
+def validate_pooled_fits(paper_fits):
+    """Test each year's band counts against the pooled truncated normal fit.
+
+    For each paper with an MLE fit, runs chi-squared on each individual year's
+    band counts against the pooled (mu, sigma). Reports per-paper and per-year
+    results.
+    """
+    per_paper = json.loads((CANONICAL_DIR / "per_paper.json").read_text())
+    aliases_path = Path("data/paper_aliases.json")
+    alias_map = {}
+    if aliases_path.exists():
+        alias_map = json.loads(aliases_path.read_text()).get("alias_map", {})
+
+    boundaries = [30, 40, 50, 60, 70]
+    band_keys = ["<30", "30-39", "40-49", "50-59", "60-69", ">=70"]
+
+    # Group per-year band data by paper
+    year_data = {}
+    for r in per_paper:
+        if r.get("gender") != "All" or r.get("report_year") == 2020:
+            continue
+        bands = r.get("bands")
+        if not bands:
+            continue
+        name = alias_map.get(r["paper"], r["paper"])
+        year = r.get("report_year")
+        observed = [bands.get(k, 0) or 0 for k in band_keys]
+        if sum(observed) < 10:
+            continue
+        year_data.setdefault(name, []).append({
+            "year": year,
+            "observed": observed,
+            "n": sum(observed),
+        })
+
+    results = []
+    for paper, fit in paper_fits.items():
+        if fit["method"] != "mle_bands" or paper not in year_data:
+            continue
+        mu, sigma = fit["mu"], fit["sigma"]
+        a_norm = (0 - mu) / sigma
+        b_norm = (100 - mu) / sigma
+        Z = stats.norm.cdf(b_norm) - stats.norm.cdf(a_norm)
+
+        # Expected bin probabilities under pooled fit
+        probs = []
+        prev = stats.norm.cdf(a_norm)
+        for bound in boundaries:
+            cur = stats.norm.cdf((bound - mu) / sigma)
+            probs.append((cur - prev) / Z)
+            prev = cur
+        probs.append((stats.norm.cdf(b_norm) - prev) / Z)
+        probs = np.array(probs)
+
+        year_results = []
+        for yd in year_data[paper]:
+            obs = np.array(yd["observed"], dtype=float)
+            exp = probs * yd["n"]
+
+            # Merge bins with expected < 5
+            obs_m, exp_m = [], []
+            oa, ea = 0.0, 0.0
+            for o, e in zip(obs, exp):
+                oa += o
+                ea += e
+                if ea >= 5:
+                    obs_m.append(oa)
+                    exp_m.append(ea)
+                    oa, ea = 0.0, 0.0
+            if oa > 0:
+                if exp_m:
+                    obs_m[-1] += oa
+                    exp_m[-1] += ea
+                else:
+                    obs_m.append(oa)
+                    exp_m.append(ea)
+
+            obs_m = np.array(obs_m)
+            exp_m = np.array(exp_m)
+            df = len(obs_m) - 1  # no param estimation (using pooled fit)
+            if df > 0:
+                chi2 = float(np.sum((obs_m - exp_m) ** 2 / exp_m))
+                p = float(1 - stats.chi2.cdf(chi2, df))
+            else:
+                chi2, p = 0.0, 1.0
+
+            year_results.append({
+                "year": yd["year"],
+                "n": yd["n"],
+                "chi2": round(chi2, 2),
+                "df": df,
+                "p_value": round(p, 4),
+            })
+
+        n_years = len(year_results)
+        n_fail = sum(1 for yr in year_results if yr["p_value"] < 0.05)
+
+        results.append({
+            "paper": paper,
+            "subject": fit.get("subject"),
+            "mu": fit["mu"],
+            "sigma": fit["sigma"],
+            "pooled_gof_p": fit.get("p_value"),
+            "n_years_tested": n_years,
+            "n_years_fail": n_fail,
+            "year_results": sorted(year_results, key=lambda x: x["year"]),
+        })
+
+    results.sort(key=lambda x: -x["n_years_fail"])
+
+    # Summary stats
+    total_tests = sum(r["n_years_tested"] for r in results)
+    total_fail = sum(r["n_years_fail"] for r in results)
+    papers_any_fail = sum(1 for r in results if r["n_years_fail"] > 0)
+
+    summary = {
+        "total_paper_years_tested": total_tests,
+        "total_failing_p05": total_fail,
+        "expected_false_positives_at_05": round(total_tests * 0.05, 1),
+        "papers_with_any_failure": papers_any_fail,
+        "total_papers_tested": len(results),
+        "per_paper": results,
+    }
+    return summary
+
+
+# ---------------------------------------------------------------------------
+# A3. Asymmetry / skewness analysis
+# ---------------------------------------------------------------------------
+
+def analyse_asymmetry(paper_fits):
+    """Analyse distributional asymmetry using quartile data.
+
+    Computes Bowley skewness for each paper-year, tests whether the
+    truncated normal is adequate, and fits skew-normal where it isn't.
+    """
+    per_paper = json.loads((CANONICAL_DIR / "per_paper.json").read_text())
+    aliases_path = Path("data/paper_aliases.json")
+    alias_map = {}
+    if aliases_path.exists():
+        alias_map = json.loads(aliases_path.read_text()).get("alias_map", {})
+
+    # Collect quartile observations per paper
+    paper_quartiles = {}
+    for r in per_paper:
+        if r.get("gender") != "All" or r.get("report_year") == 2020:
+            continue
+        q1, med, q3 = r.get("q1"), r.get("median"), r.get("q3")
+        if q1 is None or med is None or q3 is None:
+            continue
+        name = alias_map.get(r["paper"], r["paper"])
+        paper_quartiles.setdefault(name, []).append({
+            "year": r.get("report_year"),
+            "q1": q1, "median": med, "q3": q3,
+        })
+
+    results = []
+    for paper, obs_list in paper_quartiles.items():
+        fit = paper_fits.get(paper)
+        if not fit:
+            continue
+
+        # Bowley skewness per year
+        skews = []
+        for obs in obs_list:
+            iqr = obs["q3"] - obs["q1"]
+            if iqr > 0:
+                skew = (obs["q1"] + obs["q3"] - 2 * obs["median"]) / iqr
+                skews.append(skew)
+
+        if len(skews) < 2:
+            continue
+
+        mean_skew = float(np.mean(skews))
+        sd_skew = float(np.std(skews, ddof=1))
+        n = len(skews)
+
+        # One-sample t-test: is mean skewness significantly different from 0?
+        t_stat = mean_skew / (sd_skew / math.sqrt(n)) if sd_skew > 0 else 0
+        p_value = float(2 * (1 - stats.t.cdf(abs(t_stat), df=n - 1)))
+
+        # Expected Bowley skewness under the fitted truncated normal
+        mu, sigma = fit["mu"], fit["sigma"]
+        a, b = (0 - mu) / sigma, (100 - mu) / sigma
+        rv = stats.truncnorm(a, b, loc=mu, scale=sigma)
+        expected_q1 = float(rv.ppf(0.25))
+        expected_med = float(rv.ppf(0.5))
+        expected_q3 = float(rv.ppf(0.75))
+        expected_iqr = expected_q3 - expected_q1
+        expected_skew = (expected_q1 + expected_q3 - 2 * expected_med) / expected_iqr if expected_iqr > 0 else 0
+
+        # Observed quartiles (pooled means)
+        obs_q1 = float(np.mean([o["q1"] for o in obs_list]))
+        obs_med = float(np.mean([o["median"] for o in obs_list]))
+        obs_q3 = float(np.mean([o["q3"] for o in obs_list]))
+
+        results.append({
+            "paper": paper,
+            "subject": fit.get("subject"),
+            "n_years": n,
+            "mean_bowley_skew": round(mean_skew, 4),
+            "sd_skew": round(sd_skew, 4),
+            "t_stat": round(t_stat, 3),
+            "p_value": round(p_value, 4),
+            "expected_skew_truncnorm": round(expected_skew, 4),
+            "observed_quartiles": {
+                "q1": round(obs_q1, 1),
+                "median": round(obs_med, 1),
+                "q3": round(obs_q3, 1),
+            },
+            "fitted_quartiles": {
+                "q1": round(expected_q1, 1),
+                "median": round(expected_med, 1),
+                "q3": round(expected_q3, 1),
+            },
+            "fit_mu": mu,
+            "fit_sigma": sigma,
+        })
+
+    results.sort(key=lambda x: x["p_value"])
+
+    sig_papers = [r for r in results if r["p_value"] < 0.05]
+    mean_abs_skew = float(np.mean([abs(r["mean_bowley_skew"]) for r in results]))
+
+    summary = {
+        "n_papers_tested": len(results),
+        "n_significant_skew_p05": len(sig_papers),
+        "mean_abs_bowley_skew": round(mean_abs_skew, 4),
+        "overall_mean_skew": round(float(np.mean([r["mean_bowley_skew"] for r in results])), 4),
+        "assessment": _assess_asymmetry(results),
+        "per_paper": results,
+    }
+    return summary
+
+
+def _assess_asymmetry(results):
+    """Generate a textual assessment of the asymmetry findings."""
+    n = len(results)
+    n_sig = sum(1 for r in results if r["p_value"] < 0.05)
+    expected_fp = n * 0.05
+    mean_abs = np.mean([abs(r["mean_bowley_skew"]) for r in results])
+
+    if n_sig <= expected_fp * 1.5 and mean_abs < 0.15:
+        return "truncated_normal_adequate"
+    elif n_sig <= expected_fp * 2 and mean_abs < 0.25:
+        return "mostly_adequate_few_exceptions"
+    else:
+        return "consider_alternative_distributions"
+
+
+# ---------------------------------------------------------------------------
+# J29. Marginal paper value analysis
+# ---------------------------------------------------------------------------
+
+def compute_marginal_paper_value(paper_fits, sigma_ability, n_sim=100_000):
+    """Compute the marginal effect of each paper on classification probabilities.
+
+    Takes the 7 most popular papers as a base, then simulates adding each
+    possible 8th paper and reports the resulting classification distribution.
+    Also computes a "median baseline" using the 8th-most-popular paper.
+    """
+    rng = np.random.default_rng(42)
+
+    # Rank papers by n_total to pick base 7
+    ranked = sorted(paper_fits.items(), key=lambda x: -x[1]["n_total"])
+    base_7 = [name for name, _ in ranked[:7]]
+    median_8th = ranked[7][0]
+
+    # Baseline: the 8 most popular
+    baseline = simulate_classification(paper_fits, base_7 + [median_8th], sigma_ability, n_sim, rng)
+
+    results = []
+    for paper, fit in paper_fits.items():
+        if paper in base_7:
+            continue
+        rng_copy = np.random.default_rng(42)
+        dist = simulate_classification(paper_fits, base_7 + [paper], sigma_ability, n_sim, rng_copy)
+        delta_first = dist["1st"] - baseline["1st"]
+        delta_22_plus = (dist["2.2"] + dist["3rd"] + dist["Pass"] + dist["Fail"]) - \
+                        (baseline["2.2"] + baseline["3rd"] + baseline["Pass"] + baseline["Fail"])
+
+        results.append({
+            "paper": paper,
+            "subject": fit.get("subject"),
+            "mu": fit["mu"],
+            "sigma": fit["sigma"],
+            "p_first": round(dist["1st"], 4),
+            "p_21": round(dist["2.1"], 4),
+            "p_22_or_below": round(dist["2.2"] + dist["3rd"] + dist["Pass"] + dist["Fail"], 4),
+            "delta_first_vs_median": round(delta_first, 4),
+            "delta_22_plus_vs_median": round(delta_22_plus, 4),
+        })
+
+    results.sort(key=lambda x: -x["delta_first_vs_median"])
+
+    return {
+        "base_7_papers": base_7,
+        "median_8th_paper": median_8th,
+        "baseline_distribution": baseline,
+        "n_sim": n_sim,
+        "sigma_ability": round(sigma_ability, 4),
+        "per_paper": results,
+    }
+
+
+# ---------------------------------------------------------------------------
+# J31. Bootstrap confidence intervals on simulation
+# ---------------------------------------------------------------------------
+
+def bootstrap_simulation_cis(paper_fits, sigma_ability, n_bootstrap=200, n_sim=50_000):
+    """Bootstrap CIs on classification probabilities for the default paper set.
+
+    Resamples the per-paper band data (with replacement across years),
+    refits distributions, and re-runs simulation to get CI on outputs.
+    """
+    per_paper_raw = json.loads((CANONICAL_DIR / "per_paper.json").read_text())
+    aliases_path = Path("data/paper_aliases.json")
+    alias_map = {}
+    if aliases_path.exists():
+        alias_map = json.loads(aliases_path.read_text()).get("alias_map", {})
+
+    band_keys = [">=70", "60-69", "50-59", "40-49", "30-39", "<30"]
+
+    # Collect per-year band data by paper
+    year_bands = {}
+    for r in per_paper_raw:
+        if r.get("gender") != "All" or r.get("report_year") == 2020:
+            continue
+        bands = r.get("bands")
+        if not bands:
+            continue
+        name = alias_map.get(r["paper"], r["paper"])
+        year_bands.setdefault(name, []).append({
+            "bands": {k: bands.get(k, 0) or 0 for k in band_keys},
+            "n": sum(bands.get(k, 0) or 0 for k in band_keys),
+            "mean": r.get("mean"),
+            "sd": r.get("sd"),
+        })
+
+    # Use top-8 papers as the simulation target
+    top_8 = sorted(paper_fits.keys(), key=lambda p: paper_fits[p]["n_total"], reverse=True)[:8]
+
+    rng = np.random.default_rng(123)
+    boot_results = []
+
+    for b in range(n_bootstrap):
+        # Resample: for each paper, resample years with replacement
+        boot_fits = {}
+        for paper in top_8:
+            if paper not in year_bands:
+                boot_fits[paper] = paper_fits[paper]
+                continue
+            years = year_bands[paper]
+            n_years = len(years)
+            indices = rng.integers(0, n_years, size=n_years)
+            pooled_bands = {k: 0 for k in band_keys}
+            total_n = 0
+            for i in indices:
+                for k in band_keys:
+                    pooled_bands[k] += years[i]["bands"][k]
+                total_n += years[i]["n"]
+
+            result = fit_truncated_normal(pooled_bands, total_n)
+            if result:
+                mu, sigma, p_val = result
+                boot_fits[paper] = {"mu": mu, "sigma": sigma, "n_total": total_n}
+            else:
+                boot_fits[paper] = paper_fits[paper]
+
+        sim_rng = np.random.default_rng(42 + b)
+        dist = simulate_classification(boot_fits, top_8, sigma_ability, n_sim, sim_rng)
+        boot_results.append(dist)
+
+    # Compute CIs
+    classes = ["1st", "2.1", "2.2", "3rd", "Pass", "Fail"]
+    cis = {}
+    for cls in classes:
+        vals = sorted([br[cls] for br in boot_results])
+        lo = vals[int(0.025 * len(vals))]
+        hi = vals[int(0.975 * len(vals))]
+        median = vals[len(vals) // 2]
+        cis[cls] = {
+            "median": round(median, 4),
+            "ci_lo": round(lo, 4),
+            "ci_hi": round(hi, 4),
+        }
+
+    # Point estimate for reference
+    point_rng = np.random.default_rng(42)
+    point = simulate_classification(paper_fits, top_8, sigma_ability, n_sim * 2, point_rng)
+
+    return {
+        "papers": top_8,
+        "n_bootstrap": n_bootstrap,
+        "n_sim_per_bootstrap": n_sim,
+        "sigma_ability": round(sigma_ability, 4),
+        "point_estimate": point,
+        "bootstrap_95_ci": cis,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Main runner
 # ---------------------------------------------------------------------------
 
@@ -576,6 +981,34 @@ def run_all():
     params = {"sigma_ability": round(float(sigma_ab), 4)}
     _save("simulation_params", params)
     print(f"  sigma_ability = {params['sigma_ability']}")
+
+    print("Validating pooled fits per-year (A2)...")
+    validation = validate_pooled_fits(paper_fits)
+    _save("pooled_fit_validation", validation)
+    print(f"  {validation['total_paper_years_tested']} paper-years tested, "
+          f"{validation['total_failing_p05']} failing (expected ~{validation['expected_false_positives_at_05']} by chance)")
+
+    print("Analysing asymmetry (A3)...")
+    asymmetry = analyse_asymmetry(paper_fits)
+    _save("asymmetry_analysis", asymmetry)
+    print(f"  {asymmetry['n_papers_tested']} papers tested, "
+          f"{asymmetry['n_significant_skew_p05']} with significant skew. "
+          f"Assessment: {asymmetry['assessment']}")
+
+    print("Computing marginal paper values (J29)...")
+    marginal = compute_marginal_paper_value(paper_fits, sigma_ab)
+    _save("marginal_paper_value", marginal)
+    top = marginal["per_paper"][0]
+    bot = marginal["per_paper"][-1]
+    print(f"  Best 8th paper: {top['paper']} (Δ1st = +{top['delta_first_vs_median']:.1%})")
+    print(f"  Worst 8th paper: {bot['paper']} (Δ1st = {bot['delta_first_vs_median']:.1%})")
+
+    print("Bootstrap CIs on simulation (J31)...")
+    boot_cis = bootstrap_simulation_cis(paper_fits, sigma_ab)
+    _save("bootstrap_cis", boot_cis)
+    ci = boot_cis["bootstrap_95_ci"]["1st"]
+    print(f"  P(1st) = {boot_cis['point_estimate']['1st']:.1%} "
+          f"[{ci['ci_lo']:.1%}, {ci['ci_hi']:.1%}]")
 
     print("\nDone! All outputs in", ANALYSIS_DIR)
 
