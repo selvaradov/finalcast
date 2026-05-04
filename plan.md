@@ -21,11 +21,10 @@ Extract 15 years of Oxford PPE Final Honour School examiners' report data (2011�
 - **paper_numbers**: 1339 records, 2005–2025 — candidate count per paper per year
 - **paper_aliases**: 97 canonical papers mapped from 391 name variants
 
-### Known data quality issue
-The canonical `class_distribution.json` has errors for 2016–2017 caused by the "prefer latest report" deduplication strategy: the regex parser sometimes grabs the wrong table in later reports. Same-year report values are correct. Fix: re-extract class_distribution via LLM (more reliable for this varied format) and update the canonical build.
-
 ### Phase 1 remaining
-- [ ] Re-extract class_distribution via LLM to fix dedup issue
+- [x] Re-extract class_distribution via LLM (fixed 2016/2017/2019 errors from regex parser)
+- [x] Migrate subject_aggregates to LLM extraction
+- [x] Remove regex dependency from build_canonical.py — now fully LLM-based
 - [ ] Manual verification spot-checks
 
 ### Format reference
@@ -103,19 +102,20 @@ All analysis code in `analysis.py`; outputs in `data/analysis/`. Run `python ana
 ### TODO — current sprint
 
 #### Data quality fix
-- [ ] Re-extract class_distribution via LLM and rebuild canonical
+- [x] Re-extract class_distribution via LLM and rebuild canonical — fixed 2016 (5%→16%), 2017 (10%→23%), 2019 (40%→23%)
+- [x] Migrate all extraction to LLM, remove regex dependency from canonical build
 
 #### Analysis
-- [ ] E16. Gender gap time series: 1st-class rate by gender, 2006–2025. Is the gap closing?
-- [ ] F21. Paper popularity vs difficulty (mean AND variance) — do students avoid hard/volatile papers?
+- [x] E16. Gender gap time series: persistent ~8-10pp gap (M > F), no clear closing trend. One reversal (2011).
+- [x] F21. Popularity vs difficulty: popular papers are slightly harder (r=-0.28, p=0.013) AND more volatile (r=0.32, p=0.004).
 
 #### Visualisation & summary tables
-- [ ] K32. Gender gap time series chart (matplotlib)
-- [ ] K33. Paper popularity vs difficulty scatter (mean and SD), coloured by subject
-- [ ] K34. Subject-level summary table
-- [ ] K35. Paper difficulty ranking table (top/bottom by mean, sigma, %1st, %<50)
-- [ ] K36. Temporal trends summary table (significant + near-significant, with CIs)
-- [ ] K37. Kingmaker papers chart (risk/reward: sigma vs mu, or P(1st) vs P(2.2) shift)
+- [x] K32. Gender gap time series chart
+- [x] K33. Paper popularity vs difficulty scatter (mean and SD), coloured by subject
+- [x] K34. Subject-level summary table
+- [x] K35. Paper difficulty ranking table
+- [x] K36. Temporal trends summary table
+- [x] K37. Kingmaker papers chart
 
 ### TODO — later
 

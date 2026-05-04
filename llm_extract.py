@@ -279,8 +279,46 @@ Rules:
 Return ONLY the JSON array, no other text."""
 
 
+SUBJECT_AGGREGATES_PROMPT = """\
+Extract subject-level aggregate statistics from this PPE examiners' report.
+
+This data gives the average mark and standard deviation broken down by subject
+(Philosophy, Politics, Economics) and overall ("All scripts" / "All subjects").
+It appears in different forms across years:
+
+- 2011–2014: In prose text, e.g. "The average marks were: for all scripts, 65.1;
+  for Philosophy, 65.6; for Politics, 65.2; for Economics, 64.7."
+  Standard deviations in a separate sentence.
+- 2015–2018: In a table titled "Statistics by branch" or similar, with rows for
+  Philosophy/Politics/Economics/All and columns for Mean/SD/Total by year.
+- 2019–2023: Similar table, sometimes with gender breakdown.
+- 2024–2025: Table with year/branch/gender nesting.
+
+Extract ALL years shown, not just the report's own year.
+
+Return a JSON array of objects:
+{
+  "report_year": <int, the year this report is for>,
+  "data_year": <int, the year the data is about>,
+  "subject": <string, one of "Philosophy", "Politics", "Economics", "All">,
+  "mean": <float, average mark>,
+  "sd": <float, standard deviation, or null if not given>
+}
+
+Rules:
+- Normalise subject names: "Phil" → "Philosophy", "Pol" → "Politics", "Econ" → "Economics",
+  "All scripts"/"All subjects"/"All" → "All".
+- Include ALL years shown.
+- For 2024–2025, academic years like "2023/24" → data_year 2024.
+- Use the "All" gender row if data is broken down by gender; we want the overall figure.
+- If standard deviation is not given for a subject, use null.
+
+Return ONLY the JSON array, no other text."""
+
+
 SECTIONS = {
     "class_distribution": ("Overall class distribution", CLASS_DISTRIBUTION_PROMPT),
+    "subject_aggregates": ("Subject-level aggregates", SUBJECT_AGGREGATES_PROMPT),
     "gender_class": ("Class distribution by gender", GENDER_CLASS_PROMPT),
     "gender_stats": ("Gender statistics (n, mean, SD)", GENDER_STATS_PROMPT),
     "per_paper": ("Per-paper statistics", PER_PAPER_PROMPT),

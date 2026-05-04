@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Build canonical deduplicated dataset from raw extracted data.
+Build canonical deduplicated dataset from LLM-extracted raw data.
 
-Merges regex-extracted (class_distribution, subject_aggregates) and
-LLM-extracted data. Where overlapping reports disagree, prefers the
-latest report's value (most likely to be corrected).
+Loads per-year JSON files from data/raw/, deduplicates overlapping
+observations (preferring the latest report's value), normalises paper
+names, and writes to data/canonical/.
 
 Usage:
     python build_canonical.py
@@ -13,11 +13,15 @@ Usage:
 import json
 from pathlib import Path
 
-from extract import ClassDistributionParser, SubjectAggregatesParser, get_reports, extract_text
-
 RAW_DIR = Path("data/raw")
 CANONICAL_DIR = Path("data/canonical")
 ALIASES_PATH = Path("data/paper_aliases.json")
+
+LLM_SECTIONS = [
+    "class_distribution", "subject_aggregates",
+    "gender_class", "gender_stats", "per_paper",
+    "route_class", "ethnicity_class", "paper_numbers",
+]
 
 
 def load_alias_map():
@@ -29,26 +33,6 @@ def load_alias_map():
 
 def normalise_paper(name, alias_map):
     return alias_map.get(name, name)
-
-LLM_SECTIONS = [
-    "class_distribution", "gender_class", "gender_stats", "per_paper",
-    "route_class", "ethnicity_class", "paper_numbers",
-]
-
-
-def build_regex_data():
-    """Run the regex parsers and return their results keyed by section."""
-    results = {"class_distribution": [], "subject_aggregates": []}
-    parsers = [
-        ("class_distribution", ClassDistributionParser()),
-        ("subject_aggregates", SubjectAggregatesParser()),
-    ]
-    for report_year, pdf_path in get_reports():
-        text = extract_text(pdf_path)
-        for section_key, parser in parsers:
-            records = parser.extract(report_year, text)
-            results[section_key].extend(records)
-    return results
 
 
 def load_llm_data():
@@ -75,34 +59,30 @@ def deduplicate(records, key_fn):
 def build():
     CANONICAL_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("Running regex parsers...")
-    regex_data = build_regex_data()
-
     print("Loading LLM-extracted data...")
     llm_data = load_llm_data()
 
     print("Loading paper aliases...")
     alias_map = load_alias_map()
 
-    # Normalise paper names in LLM data
+    # Normalise paper names
     for section in ["per_paper", "paper_numbers"]:
         for r in llm_data[section]:
             if "paper" in r:
                 r["paper"] = normalise_paper(r["paper"], alias_map)
 
-    # 1. Class distribution — prefer LLM if available, else fall back to regex
-    class_dist_source = llm_data.get("class_distribution") or regex_data["class_distribution"]
+    # 1. Class distribution — dedup by (data_year, class)
     canon = deduplicate(
-        class_dist_source,
+        llm_data["class_distribution"],
         lambda r: (r["data_year"], r["class"]),
     )
     for r in canon:
         r.pop("report_year", None)
     save("class_distribution", canon)
 
-    # 2. Subject aggregates (regex) — dedup by (data_year, subject)
+    # 2. Subject aggregates — dedup by (data_year, subject)
     canon = deduplicate(
-        regex_data["subject_aggregates"],
+        llm_data["subject_aggregates"],
         lambda r: (r["data_year"], r["subject"]),
     )
     for r in canon:
