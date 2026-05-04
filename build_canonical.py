@@ -17,6 +17,18 @@ from extract import ClassDistributionParser, SubjectAggregatesParser, get_report
 
 RAW_DIR = Path("data/raw")
 CANONICAL_DIR = Path("data/canonical")
+ALIASES_PATH = Path("data/paper_aliases.json")
+
+
+def load_alias_map():
+    if ALIASES_PATH.exists():
+        data = json.loads(ALIASES_PATH.read_text())
+        return data.get("alias_map", {})
+    return {}
+
+
+def normalise_paper(name, alias_map):
+    return alias_map.get(name, name)
 
 LLM_SECTIONS = [
     "gender_class", "gender_stats", "per_paper",
@@ -68,6 +80,15 @@ def build():
 
     print("Loading LLM-extracted data...")
     llm_data = load_llm_data()
+
+    print("Loading paper aliases...")
+    alias_map = load_alias_map()
+
+    # Normalise paper names in LLM data
+    for section in ["per_paper", "paper_numbers"]:
+        for r in llm_data[section]:
+            if "paper" in r:
+                r["paper"] = normalise_paper(r["paper"], alias_map)
 
     # 1. Class distribution (regex) — dedup by (data_year, class)
     canon = deduplicate(
