@@ -133,5 +133,23 @@ const Engine = (() => {
     return "PPE";
   }
 
-  return { classify, simulate, detectRoute, norminv, normcdf };
+  function paperMetrics(papers, sigmaAbility, abilityPercentile) {
+    const abilityShift = norminv(abilityPercentile / 100) * sigmaAbility;
+    return papers.map(p => {
+      const shiftedMu = p.mu + abilityShift;
+      const totalSigma = p.sigma;
+      const pBelow50 = normcdf((50 - shiftedMu) / totalSigma);
+      const pAbove70 = 1 - normcdf((70 - shiftedMu) / totalSigma);
+      return {
+        name: p.name,
+        subject: p.subject,
+        shiftedMu,
+        totalSigma,
+        pBelow50,
+        pAbove70
+      };
+    });
+  }
+
+  return { classify, simulate, detectRoute, norminv, normcdf, paperMetrics };
 })();

@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PPE Finals — Grade Prior Calculator</title>
+  <title>PPE Results Explorer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <nav class="top-nav">
     <div class="nav-inner">
-      <span class="nav-title">PPE Finals</span>
+      <span class="nav-title">PPE Results Explorer</span>
       <div class="nav-links">
         <a href="#calculator" class="nav-link active">Calculator</a>
         <a href="#explorer" class="nav-link">Explorer</a>
@@ -20,50 +20,89 @@
     </div>
   </nav>
 
-  <main class="container">
-    <header class="hero">
-      <h1>What are your chances?</h1>
-      <p class="hero-sub">Pick your 8 papers, tell us how you're doing, and we'll estimate your classification probabilities from 15 years of examiners' report data.</p>
-      <p class="disclaimer">This is a prior based on historical data. Not a prediction.</p>
-    </header>
+  <!-- ── Landing / Hero ── -->
+  <section class="landing">
+    <div class="landing-inner">
+      <div class="landing-text">
+        <h1>What might your<br>final result be?</h1>
+        <p class="landing-sub">A (not too serious) look at 15 years of Oxford PPE results.</p>
+        <div class="landing-actions">
+          <button id="btn-start" class="btn btn-primary">Start calculator</button>
+          <span class="landing-or">or browse the data ↓</span>
+        </div>
+        <p class="landing-caveat">This is a prior, not a prediction.</p>
+      </div>
+      <div class="landing-graphic">
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-number">15</div>
+            <div class="stat-label">years of data</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">97</div>
+            <div class="stat-label">papers fitted</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">81</div>
+            <div class="stat-label">papers available</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">23.4%</div>
+            <div class="stat-label">first rate</div>
+          </div>
+        </div>
+        <div class="hero-chart" id="hero-chart">
+          <!-- placeholder distribution curve drawn by JS -->
+          <canvas id="hero-canvas" width="320" height="140"></canvas>
+          <div class="hero-chart-labels">
+            <span>2.2</span>
+            <span>2.1</span>
+            <span>1st</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
+  <main class="container" id="calculator-section" style="display:none;">
     <!-- Step indicator -->
     <div class="steps">
       <div class="step active" data-step="1">
         <span class="step-num">1</span>
-        <span class="step-label">Papers</span>
+        <span class="step-label">Pick Papers</span>
       </div>
       <div class="step-line"></div>
       <div class="step" data-step="2">
         <span class="step-num">2</span>
-        <span class="step-label">Ability</span>
+        <span class="step-label">Set Ability</span>
       </div>
       <div class="step-line"></div>
       <div class="step" data-step="3">
         <span class="step-num">3</span>
-        <span class="step-label">Results</span>
+        <span class="step-label">See Results</span>
       </div>
     </div>
 
     <!-- Step 1: Paper Picker -->
     <section id="step-papers" class="card step-section active-section">
       <h2>Choose your 8 papers</h2>
+      <p class="section-note">Pick one paper per exam slot. Difficulty badges are at a glance.</p>
       <div class="picker-controls">
         <input type="text" id="paper-search" class="search-input" placeholder="Search papers…">
-        <span class="paper-count"><span id="selected-count">0</span> / 8 selected</span>
+        <span class="paper-count"><span id="selected-count">0</span> / 8</span>
       </div>
       <div id="paper-lists" class="paper-lists">
         <!-- Populated by JS -->
       </div>
       <div class="step-actions">
-        <button id="btn-to-ability" class="btn btn-primary" disabled>Next: Ability →</button>
+        <button id="btn-to-ability" class="btn btn-primary" disabled>Next →</button>
       </div>
     </section>
 
     <!-- Step 2: Ability Slider -->
     <section id="step-ability" class="card step-section">
-      <h2>How would you rate yourself?</h2>
-      <p class="section-note">This shifts the model's baseline — a higher self-assessment increases all your expected paper marks.</p>
+      <h2>How are you doing?</h2>
+      <p class="section-note">This adjusts the model's baseline — a higher self-assessment shifts all your expected paper marks up.</p>
 
       <div class="ability-widget">
         <div class="ability-presets">
@@ -105,6 +144,10 @@
         </div>
       </div>
 
+      <div class="paper-breakdown" id="paper-breakdown">
+        <!-- Populated by JS -->
+      </div>
+
       <div class="context-panels" id="context-panels">
         <!-- Route comparison, swap suggestion -->
       </div>
@@ -116,9 +159,24 @@
     </section>
   </main>
 
+  <section id="methodology" class="card methodology-section" style="display:none;">
+    <div class="container">
+      <h2>How it works</h2>
+      <p>Each paper's mark distribution is modelled as:</p>
+      <p class="formula">mark_i = μ_i + θ + ε_i</p>
+      <ul>
+        <li><strong>μ_i</strong> — paper-specific mean, fitted via MLE on truncated normals from 15 years of examiners' report band data.</li>
+        <li><strong>θ ~ N(0, σ²_ability)</strong> — shared latent ability factor (σ ≈ 2.7), capturing correlation across papers.</li>
+        <li><strong>ε_i</strong> — paper-specific noise, variance = σ²_paper − σ²_ability.</li>
+      </ul>
+      <p>The ability slider shifts all paper means by Φ⁻¹(percentile) × σ_ability. The simulation draws 50,000 samples, classifies each using official PPE exam conventions (conjunctive rules on averages and paper counts), and reports the empirical distribution.</p>
+      <p class="landing-caveat">Limitations: uses aggregate band data (not individual marks), assumes conditional independence of ε terms. Estimates are priors, not predictions.</p>
+    </div>
+  </section>
+
   <footer class="site-footer">
-    <p>Built from 15 years of Oxford PPE examiners' reports (2011–2025). 81 papers fitted, 100k Monte Carlo simulations. <a href="#about">Methodology</a></p>
-    <p class="footer-caveat">Estimates reflect historical priors, not predictions. Uncertainty roughly ±3pp.</p>
+    <p>Data: 2011–2025 examiners' reports · <a href="#methodology" id="methodology-link">Methodology</a> · <a href="https://github.com">Source</a></p>
+    <p class="footer-caveat">It's a prior, not a prediction.</p>
   </footer>
 
   <script src="engine.js"></script>

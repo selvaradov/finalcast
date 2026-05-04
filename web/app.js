@@ -13,9 +13,81 @@ const App = (() => {
   async function init() {
     const resp = await fetch('data.json');
     DATA = await resp.json();
+    drawHeroChart();
     buildPaperPicker();
     wireEvents();
     updateSelectionCount();
+  }
+
+  function showCalculator() {
+    document.querySelector('.landing').style.display = 'none';
+    document.getElementById('calculator-section').style.display = 'block';
+  }
+
+  function drawHeroChart() {
+    const canvas = document.getElementById('hero-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const w = 320, h = 140;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+
+    const mu = 64, sigma = 8;
+    const xMin = 35, xMax = 90;
+    const points = [];
+    for (let x = xMin; x <= xMax; x += 0.5) {
+      const z = (x - mu) / sigma;
+      const y = Math.exp(-0.5 * z * z);
+      points.push([x, y]);
+    }
+    const maxY = 1;
+    const px = x => ((x - xMin) / (xMax - xMin)) * (w - 40) + 20;
+    const py = y => h - 20 - (y / maxY) * (h - 30);
+
+    // fill under curve
+    ctx.beginPath();
+    ctx.moveTo(px(xMin), py(0));
+    for (const [x, y] of points) ctx.lineTo(px(x), py(y));
+    ctx.lineTo(px(xMax), py(0));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(91,155,245,0.08)';
+    ctx.fill();
+
+    // draw curve
+    ctx.beginPath();
+    for (let i = 0; i < points.length; i++) {
+      const [x, y] = points[i];
+      if (i === 0) ctx.moveTo(px(x), py(y));
+      else ctx.lineTo(px(x), py(y));
+    }
+    ctx.strokeStyle = 'rgba(232,229,220,0.6)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // threshold lines
+    const thresholds = [
+      { x: 50, label: '50', color: 'rgba(232,97,77,0.5)' },
+      { x: 60, label: '60', color: 'rgba(240,199,94,0.4)' },
+      { x: 70, label: '70', color: 'rgba(91,155,245,0.5)' }
+    ];
+    for (const t of thresholds) {
+      ctx.beginPath();
+      ctx.moveTo(px(t.x), py(0));
+      ctx.lineTo(px(t.x), py(0.85));
+      ctx.strokeStyle = t.color;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = t.color;
+      ctx.font = '11px Inter, system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(t.label, px(t.x), py(0) + 12);
+    }
   }
 
   // ── Paper picker ───────────────────────────────────────────────
@@ -132,31 +204,37 @@ const App = (() => {
   // ── Simulation ─────────────────────────────────────────────────
 
   function runSimulation() {
-    const papers = Array.from(selectedPapers.entries()).map(([name, p]) => ({
-      name, subject: p.subject, mu: p.mu, sigma: p.sigma
-    }));
-    const pct = +document.getElementById('ability-slider').value;
-    const results = Engine.simulate(papers, DATA.sigma_ability, pct, 100000);
-    renderResults(results, papers);
+    document.getElementById('result-headline').innerHTML =
+      '<div class="range-text">Simulating…</div>';
+
+    setTimeout(() => {
+      const papers = Array.from(selectedPapers.entries()).map(([name, p]) => ({
+        name, subject: p.subject, mu: p.mu, sigma: p.sigma
+      }));
+      const pct = +document.getElementById('ability-slider').value;
+      const results = Engine.simulate(papers, DATA.sigma_ability, pct, 50000);
+      renderResults(results, papers, pct);
+    }, 16);
   }
 
   // ── Results rendering ──────────────────────────────────────────
 
   const CLASS_COLORS = {
-    '1st':  '#9BE564',
-    '2.1':  '#7FA7FF',
-    '2.2':  '#F2C14E',
-    '3rd':  '#CFC8B8',
-    'Pass': '#8F8A7C',
-    'Fail': '#5A564C'
+    '1st':  '#5b9bf5',
+    '2.1':  '#e8e5dc',
+    '2.2':  '#f0c75e',
+    '3rd':  '#9a978e',
+    'Pass': '#5e5c56',
+    'Fail': '#3a3836'
   };
 
   const CLASS_ORDER = ['1st', '2.1', '2.2', '3rd', 'Pass', 'Fail'];
 
-  function renderResults(results, papers) {
+  function renderResults(results, papers, pct) {
     renderHeadline(results);
     renderDonut(results);
     renderTable(results);
+    renderPaperBreakdown(papers, pct);
     renderContext(results, papers);
   }
 
@@ -201,7 +279,7 @@ const App = (() => {
         const lr = (R + r) / 2;
         const tx = cx + Math.cos(mid) * lr;
         const ty = cy + Math.sin(mid) * lr;
-        ctx.fillStyle = '#0F2A1F';
+        ctx.fillStyle = '#1a1a1e';
         ctx.font = 'bold 13px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -210,7 +288,7 @@ const App = (() => {
       angle += sweep;
     }
 
-    ctx.fillStyle = '#133526';
+    ctx.fillStyle = '#222228';
     ctx.beginPath();
     ctx.arc(cx, cy, r - 1, 0, 2 * Math.PI);
     ctx.fill();
@@ -238,6 +316,46 @@ const App = (() => {
       <thead><tr><th>Class</th><th>Estimate</th><th>Range (±3pp)</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+  }
+
+  function renderPaperBreakdown(papers, pct) {
+    const el = document.getElementById('paper-breakdown');
+    const metrics = Engine.paperMetrics(papers, DATA.sigma_ability, pct);
+
+    const rows = metrics
+      .sort((a, b) => b.pAbove70 - a.pAbove70)
+      .map(m => {
+        const catData = DATA.paper_catalogue[m.name];
+        const subjectCls = m.subject === 'Philosophy' ? 'phil' : m.subject === 'Politics' ? 'pol' : 'econ';
+        const barWidth = Math.max(0, Math.min(100, m.shiftedMu));
+        const riskLabel = m.pBelow50 > 0.10 ? 'high risk'
+                        : m.pBelow50 > 0.03 ? 'some risk' : '';
+        const riskCls = m.pBelow50 > 0.10 ? 'risk-high'
+                      : m.pBelow50 > 0.03 ? 'risk-some' : '';
+
+        return `<tr>
+          <td><span class="subject-dot subject-dot--${subjectCls}"></span>${m.name}</td>
+          <td class="breakdown-mark">
+            <div class="mark-bar-wrap">
+              <div class="mark-bar" style="width:${barWidth}%"></div>
+              <div class="mark-threshold" style="left:50%"></div>
+              <div class="mark-threshold mark-threshold--first" style="left:70%"></div>
+            </div>
+            ~${m.shiftedMu.toFixed(0)}
+          </td>
+          <td>${riskLabel ? `<span class="risk-badge ${riskCls}">${riskLabel}</span>` : '—'}</td>
+          <td>${(m.pAbove70 * 100).toFixed(0)}%</td>
+          <td class="breakdown-sigma">σ = ${m.totalSigma.toFixed(1)}</td>
+        </tr>`;
+      }).join('');
+
+    el.innerHTML = `
+      <h3>Paper-by-paper breakdown</h3>
+      <p class="breakdown-note">Expected marks at your ability level · P(70+) is the chance of a First-class mark on each paper</p>
+      <table class="breakdown-table">
+        <thead><tr><th>Paper</th><th>Expected mark</th><th>Below-50 risk</th><th>P(70+)</th><th>Spread</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
   }
 
   function renderContext(results, papers) {
@@ -312,6 +430,7 @@ const App = (() => {
   // ── Events ─────────────────────────────────────────────────────
 
   function wireEvents() {
+    document.getElementById('btn-start')?.addEventListener('click', showCalculator);
     document.getElementById('paper-search').addEventListener('input', onSearch);
 
     document.getElementById('btn-to-ability').addEventListener('click', () => goToStep(2));
@@ -349,6 +468,15 @@ const App = (() => {
     });
 
     updateAbilityReadout();
+
+    document.getElementById('methodology-link')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      const section = document.getElementById('methodology');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+      if (section.style.display === 'block') {
+        section.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
   }
 
   // ── Public ─────────────────────────────────────────────────────

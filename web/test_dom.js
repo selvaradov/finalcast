@@ -22,7 +22,9 @@ const { document } = window;
 // Mock canvas (jsdom doesn't support canvas)
 class MockCtx {
   beginPath() {} arc() {} closePath() {} fill() {} clearRect() {} scale() {}
+  moveTo() {} lineTo() {} stroke() {} setLineDash() {}
   set fillStyle(v) {} set font(v) {} set textAlign(v) {} set textBaseline(v) {}
+  set strokeStyle(v) {} set lineWidth(v) {}
   fillText() {}
 }
 if (window.HTMLCanvasElement) {
@@ -60,6 +62,10 @@ setTimeout(async () => {
 
   // Wait for init
   await new Promise(r => setTimeout(r, 200));
+
+  // Click "Start calculator" to enter calculator
+  const startBtn = document.getElementById('btn-start');
+  if (startBtn) startBtn.click();
 
   // Check papers rendered
   const paperItems = document.querySelectorAll('.paper-item');
@@ -115,9 +121,9 @@ setTimeout(async () => {
   const shift = document.getElementById('ability-shift').textContent;
   console.log(`Ability shift: ${shift}`);
 
-  // Go to results
+  // Go to results (simulation now uses setTimeout(fn, 16))
   document.getElementById('btn-to-results').click();
-  await new Promise(r => setTimeout(r, 500)); // simulation time
+  await new Promise(r => setTimeout(r, 1000));
 
   const headline = document.getElementById('result-headline').textContent.trim();
   console.log(`\nHeadline: ${headline}`);
@@ -128,6 +134,15 @@ setTimeout(async () => {
   rows.forEach(row => {
     const cells = row.querySelectorAll('td');
     console.log(`  ${cells[0].textContent}: ${cells[1].textContent} (${cells[2].textContent})`);
+  });
+
+  // Check paper breakdown
+  const breakdown = document.getElementById('paper-breakdown');
+  const breakdownRows = breakdown.querySelectorAll('tbody tr');
+  console.log(`\nPaper breakdown rows: ${breakdownRows.length}`);
+  breakdownRows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    console.log(`  ${cells[0].textContent.trim()}: mark=${cells[1].textContent.trim()}, risk=${cells[2].textContent.trim()}, delta=${cells[3].textContent.trim()}`);
   });
 
   const contextPanels = document.querySelectorAll('.context-card');
