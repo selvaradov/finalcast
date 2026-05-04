@@ -316,7 +316,7 @@ def simulate_classification(
     return {k: round(v / n_sim, 4) for k, v in counts.items()}
 
 
-def calibrate_sigma_ability(paper_fits, target_first_rate=0.22, tol=0.005):
+def calibrate_sigma_ability(paper_fits, target_first_rate=0.252, tol=0.005):
     """Calibrate sigma_ability to match the observed overall first-class rate.
 
     Uses a representative "average" set of papers (picks the 8 most popular).
@@ -382,3 +382,210 @@ def compute_paper_profiles(paper_fits):
         })
 
     return sorted(profiles, key=lambda p: -p["mu"])
+
+
+# ---------------------------------------------------------------------------
+# Temporal trend analysis
+# ---------------------------------------------------------------------------
+
+def compute_temporal_trends(min_years=4):
+    """Compute temporal trends for all papers with sufficient data.
+
+    For each paper with ≥min_years of mean data (excluding 2020),
+    runs OLS regression of mean mark on year.
+
+    Returns list of dicts with: paper, subject, slope, slope_ci_lo, slope_ci_hi,
+    p_value, r_squared, n_years, years_range, mean_of_means.
+    """
+    per_paper = json.loads((CANONICAL_DIR / "per_paper.json").read_text())
+    aliases_path = Path("data/paper_aliases.json")
+    alias_map = {}
+    if aliases_path.exists():
+        alias_map = json.loads(aliases_path.read_text()).get("alias_map", {})
+
+    # Collect (year, mean) pairs per canonical paper
+    series = {}
+    for r in per_paper:
+        if r.get("gender") != "All":
+            continue
+        year = r.get("report_year") or r.get("data_year")
+        if year == 2020 or r.get("mean") is None:
+            continue
+        name = alias_map.get(r.get("paper", ""), r.get("paper", ""))
+        if name not in series:
+            series[name] = {"points": [], "subject": r.get("subject")}
+        series[name]["points"].append((year, r["mean"]))
+
+    trends = []
+    for name, data in series.items():
+        pts = sorted(set(data["points"]))
+        if len(pts) < min_years:
+            continue
+
+        years = np.array([p[0] for p in pts], dtype=float)
+        means = np.array([p[1] for p in pts], dtype=float)
+
+        result = stats.linregress(years, means)
+        slope, intercept, r_value, p_value, stderr = result
+
+        # 95% CI for slope: slope ± t_{n-2, 0.025} * stderr
+        t_crit = stats.t.ppf(0.975, df=len(years) - 2)
+        ci_lo = slope - t_crit * stderr
+        ci_hi = slope + t_crit * stderr
+
+        trends.append({
+            "paper": name,
+            "subject": data["subject"],
+            "slope": round(float(slope), 4),
+            "slope_ci_lo": round(float(ci_lo), 4),
+            "slope_ci_hi": round(float(ci_hi), 4),
+            "p_value": round(float(p_value), 6),
+            "r_squared": round(float(r_value ** 2), 4),
+            "stderr": round(float(stderr), 4),
+            "n_years": len(years),
+            "years_range": [int(years.min()), int(years.max())],
+            "mean_of_means": round(float(means.mean()), 2),
+        })
+
+    return sorted(trends, key=lambda t: t["p_value"])
+
+
+# ---------------------------------------------------------------------------
+# Subject-level analysis
+# ---------------------------------------------------------------------------
+
+def compute_subject_analysis(paper_fits):
+    """Compute subject-level summary statistics and variance decomposition.
+
+    Returns dict with subject_summary, variance_decomposition, kingmaker_papers,
+    and first_rate_by_subject.
+    """
+    by_subject = {}
+    for name, fit in paper_fits.items():
+        subj = fit.get("subject")
+        if not subj:
+            continue
+        if subj not in by_subject:
+            by_subject[subj] = []
+        by_subject[subj].append((name, fit))
+
+    # Subject summary: weighted mean and SD
+    subject_summary = {}
+    for subj, papers in by_subject.items():
+        mus = [f["mu"] for _, f in papers]
+        sds = [f["sigma"] for _, f in papers]
+        ns = [f["n_total"] for _, f in papers]
+        total_n = sum(ns)
+        if total_n > 0:
+            w_mu = sum(m * n for m, n in zip(mus, ns)) / total_n
+            w_sd = sum(s * n for s, n in zip(sds, ns)) / total_n
+        else:
+            w_mu = np.mean(mus)
+            w_sd = np.mean(sds)
+        subject_summary[subj] = {
+            "weighted_mean": round(float(w_mu), 2),
+            "weighted_sd": round(float(w_sd), 2),
+            "unweighted_mean": round(float(np.mean(mus)), 2),
+            "unweighted_sd": round(float(np.mean(sds)), 2),
+            "n_papers": len(papers),
+            "n_total": total_n,
+        }
+
+    # Variance decomposition: within-paper vs between-paper
+    variance_decomp = {}
+    for subj, papers in by_subject.items():
+        mus = np.array([f["mu"] for _, f in papers])
+        sds = np.array([f["sigma"] for _, f in papers])
+        ns = np.array([f["n_total"] for _, f in papers])
+        total_n = ns.sum()
+        if total_n == 0 or len(papers) < 2:
+            continue
+        grand_mean = np.average(mus, weights=ns)
+        between_var = float(np.average((mus - grand_mean) ** 2, weights=ns))
+        within_var = float(np.average(sds ** 2, weights=ns))
+        variance_decomp[subj] = {
+            "between_paper_var": round(between_var, 2),
+            "within_paper_var": round(within_var, 2),
+            "ratio_within_to_between": round(within_var / between_var, 1) if between_var > 0 else None,
+            "grand_mean": round(float(grand_mean), 2),
+        }
+
+    # Kingmaker papers (top 10 by sigma)
+    all_papers = [(name, fit) for name, fit in paper_fits.items()]
+    all_papers.sort(key=lambda x: -x[1]["sigma"])
+    kingmakers = [{
+        "paper": name,
+        "subject": fit.get("subject"),
+        "mu": fit["mu"],
+        "sigma": fit["sigma"],
+        "n_total": fit["n_total"],
+    } for name, fit in all_papers[:10]]
+
+    # First rate by subject (using fitted truncated normals)
+    first_rate = {}
+    for subj, papers in by_subject.items():
+        total_n = 0
+        weighted_pct = 0.0
+        for name, fit in papers:
+            mu, sigma = fit["mu"], fit["sigma"]
+            a, b = (0 - mu) / sigma, (100 - mu) / sigma
+            Z = stats.norm.cdf(b) - stats.norm.cdf(a)
+            pct_70 = 1 - (stats.norm.cdf((70 - mu) / sigma) - stats.norm.cdf(a)) / Z
+            weighted_pct += pct_70 * fit["n_total"]
+            total_n += fit["n_total"]
+        if total_n > 0:
+            first_rate[subj] = round(100 * weighted_pct / total_n, 1)
+
+    return {
+        "subject_summary": subject_summary,
+        "variance_decomposition": variance_decomp,
+        "kingmaker_papers": kingmakers,
+        "first_rate_by_subject": first_rate,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Main runner
+# ---------------------------------------------------------------------------
+
+def run_all():
+    """Run all analyses and save to data/analysis/."""
+    ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
+
+    print("Fitting paper distributions...")
+    paper_fits = pool_and_fit_papers()
+    _save("paper_fits", paper_fits)
+    print(f"  {len(paper_fits)} papers fitted")
+
+    print("Computing paper profiles...")
+    profiles = compute_paper_profiles(paper_fits)
+    _save("paper_profiles", profiles)
+
+    print("Computing temporal trends...")
+    trends = compute_temporal_trends()
+    _save("temporal_trends", trends)
+    sig = [t for t in trends if t["p_value"] < 0.05]
+    print(f"  {len(trends)} papers analysed, {len(sig)} with significant trend (p<0.05)")
+
+    print("Computing subject analysis...")
+    subject = compute_subject_analysis(paper_fits)
+    _save("subject_analysis", subject)
+
+    print("Calibrating sigma_ability...")
+    sigma_ab = calibrate_sigma_ability(paper_fits)
+    params = {"sigma_ability": round(float(sigma_ab), 4)}
+    _save("simulation_params", params)
+    print(f"  sigma_ability = {params['sigma_ability']}")
+
+    print("\nDone! All outputs in", ANALYSIS_DIR)
+
+
+def _save(name, data):
+    path = ANALYSIS_DIR / f"{name}.json"
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+    print(f"  → {path}")
+
+
+if __name__ == "__main__":
+    run_all()
