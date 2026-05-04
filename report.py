@@ -43,6 +43,11 @@ def make_report():
     trends = load("temporal_trends")
     subject = load("subject_analysis")
     params = load("simulation_params")
+    marginal = load("marginal_paper_value")
+    boot_cis = load("bootstrap_cis")
+    covid = load("covid_anomaly")
+    popularity = load("popularity_time_series")
+    market_share = load("subject_market_share")
     gender_class = load("gender_class", CANONICAL_DIR)
     paper_numbers = load("paper_numbers", CANONICAL_DIR)
     class_dist = load("class_distribution", CANONICAL_DIR)
@@ -298,7 +303,174 @@ def make_report():
         plt.close()
 
         # -------------------------------------------------------------------
-        # 8. Kingmaker table
+        # 8. Marginal paper value
+        # -------------------------------------------------------------------
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax.axis("off")
+        baseline_p = marginal["baseline_distribution"]["1st"]
+        ax.set_title(f"Marginal Paper Value: Effect of 8th Paper on P(1st)\n"
+                     f"Baseline = {baseline_p:.1%} with {marginal['median_8th_paper']}",
+                     fontsize=13, fontweight="bold", pad=20)
+        headers = ["Paper", "Subject", "μ", "σ", "P(1st)", "ΔP(1st)"]
+        rows = []
+        pp = marginal["per_paper"]
+        show = pp[:10] + [None] + pp[-5:]
+        for p in show:
+            if p is None:
+                rows.append(["···", "", "", "", "", ""])
+                continue
+            rows.append([
+                p["paper"][:40], p["subject"] or "",
+                f"{p['mu']:.1f}", f"{p['sigma']:.1f}",
+                f"{p['p_first']:.1%}",
+                f"{p['delta_first_vs_median']:+.1%}",
+            ])
+        table = ax.table(cellText=rows, colLabels=headers, loc="center", cellLoc="center",
+                        colWidths=[0.38, 0.14, 0.06, 0.06, 0.08, 0.10])
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        table.scale(1, 1.4)
+        for (row, col), cell in table.get_celld().items():
+            if row == 0:
+                cell.set_facecolor("#e2e8f0")
+                cell.set_text_props(fontweight="bold")
+            elif row <= 10:
+                cell.set_facecolor("#dcfce7")
+            elif row == 11:
+                cell.set_facecolor("white")
+            else:
+                cell.set_facecolor("#fee2e2")
+        fig.tight_layout()
+        pdf.savefig(fig)
+        plt.close()
+
+        # -------------------------------------------------------------------
+        # 9. COVID 2020 anomaly
+        # -------------------------------------------------------------------
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+        # Left: first rate bar chart highlighting 2020
+        firsts_covid = {r["data_year"]: r for r in class_dist if r.get("class") == "1st"}
+        cy = sorted(y for y in firsts_covid if 2015 <= y <= 2025)
+        cr = [firsts_covid[y].get("pct", 0) for y in cy]
+        colors = ["#ef4444" if y == 2020 else "#3b82f6" for y in cy]
+        ax1.bar(cy, cr, color=colors, alpha=0.8)
+        ax1.axhline(23.4, color="#888", linestyle="--", linewidth=0.8)
+        ax1.set_title("First-Class Rate (2020 in red)")
+        ax1.set_ylabel("First rate (%)")
+        ax1.set_xlabel("Year")
+        ax1.grid(True, alpha=0.2)
+
+        # Right: band comparison
+        bc = covid["band_comparison"]
+        band_order = [">=70", "60-69", "50-59", "40-49", "30-39", "<30"]
+        x = np.arange(len(band_order))
+        w = 0.35
+        pct_2020 = [bc[k]["pct_2020"] for k in band_order]
+        pct_other = [bc[k]["pct_other"] for k in band_order]
+        ax2.bar(x - w/2, pct_other, w, label="Other years", color="#3b82f6", alpha=0.7)
+        ax2.bar(x + w/2, pct_2020, w, label="2020", color="#ef4444", alpha=0.7)
+        ax2.set_xticks(x)
+        ax2.set_xticklabels(band_order)
+        ax2.set_title("Band Distribution: 2020 vs Other Years")
+        ax2.set_ylabel("% of marks")
+        ax2.legend()
+        ax2.grid(True, alpha=0.2)
+
+        fig.suptitle("COVID 2020: First Rate Doubled Despite Identical Paper-Level Marks",
+                     fontsize=12, fontweight="bold")
+        fig.tight_layout()
+        pdf.savefig(fig)
+        plt.close()
+
+        # -------------------------------------------------------------------
+        # 10. Subject market share over time
+        # -------------------------------------------------------------------
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ms = market_share["time_series"]
+        ms_years = [e["year"] for e in ms]
+        subj_colors_ms = {"Economics": "#d97706", "Philosophy": "#8b5cf6", "Politics": "#059669"}
+        for subj in market_share["subjects"]:
+            pcts = [e[f"{subj}_pct"] for e in ms]
+            ax.plot(ms_years, pcts, "o-", label=subj, color=subj_colors_ms.get(subj, "#6b7280"),
+                    ms=4, linewidth=2)
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Share of paper-sittings (%)")
+        ax.set_title("Subject Market Share Over Time")
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        ax.set_ylim(20, 45)
+        fig.tight_layout()
+        pdf.savefig(fig)
+        plt.close()
+
+        # -------------------------------------------------------------------
+        # 11. Popularity trends (top movers)
+        # -------------------------------------------------------------------
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+        sig_trends_pop = [p for p in popularity["per_paper"]
+                          if p["trend"] and p["trend"]["p_value"] < 0.05]
+        growing_p = sorted([p for p in sig_trends_pop if p["trend"]["slope_pct_per_year"] > 0],
+                           key=lambda x: -x["trend"]["slope_pct_per_year"])[:8]
+        declining_p = sorted([p for p in sig_trends_pop if p["trend"]["slope_pct_per_year"] < 0],
+                             key=lambda x: x["trend"]["slope_pct_per_year"])[:8]
+
+        for p in growing_p:
+            ax1.plot(p["years"], p["shares"], "o-", ms=3, label=p["paper"][:30], alpha=0.8)
+        ax1.set_title("Fastest Growing Papers")
+        ax1.set_ylabel("Share of paper-sittings (%)")
+        ax1.set_xlabel("Year")
+        ax1.legend(fontsize=6, loc="upper left")
+        ax1.grid(True, alpha=0.3)
+
+        for p in declining_p:
+            ax2.plot(p["years"], p["shares"], "o-", ms=3, label=p["paper"][:30], alpha=0.8)
+        ax2.set_title("Fastest Declining Papers")
+        ax2.set_ylabel("Share of paper-sittings (%)")
+        ax2.set_xlabel("Year")
+        ax2.legend(fontsize=6, loc="upper right")
+        ax2.grid(True, alpha=0.3)
+
+        fig.suptitle(f"Paper Popularity Trends ({popularity['n_growing']} growing, "
+                     f"{popularity['n_declining']} declining, p<0.05)",
+                     fontsize=12, fontweight="bold")
+        fig.tight_layout()
+        pdf.savefig(fig)
+        plt.close()
+
+        # -------------------------------------------------------------------
+        # 12. Bootstrap CIs
+        # -------------------------------------------------------------------
+        fig, ax = plt.subplots(figsize=(8, 4))
+        classes = ["1st", "2.1", "2.2", "3rd", "Pass", "Fail"]
+        point_vals = [boot_cis["point_estimate"][c] for c in classes]
+        ci_lo = [boot_cis["bootstrap_95_ci"][c]["ci_lo"] for c in classes]
+        ci_hi = [boot_cis["bootstrap_95_ci"][c]["ci_hi"] for c in classes]
+        x = np.arange(len(classes))
+        bars = ax.bar(x, point_vals, color=["#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#6b7280", "#1f2937"],
+                      alpha=0.8)
+        err_lo = [p - l for p, l in zip(point_vals, ci_lo)]
+        err_hi = [h - p for p, h in zip(point_vals, ci_hi)]
+        ax.errorbar(x, point_vals, yerr=[err_lo, err_hi], fmt="none", ecolor="black",
+                    capsize=4, linewidth=1.5)
+        ax.set_xticks(x)
+        ax.set_xticklabels(classes)
+        ax.set_ylabel("Probability")
+        ax.set_title(f"Classification Probabilities with 95% Bootstrap CIs\n"
+                     f"({', '.join(boot_cis['papers'][:4])} + 4 more)")
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+        ax.grid(True, alpha=0.2, axis="y")
+        for bar, val in zip(bars, point_vals):
+            if val > 0.005:
+                ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.005,
+                        f"{val:.1%}", ha="center", fontsize=9)
+        fig.tight_layout()
+        pdf.savefig(fig)
+        plt.close()
+
+        # -------------------------------------------------------------------
+        # 13. Kingmaker table
         # -------------------------------------------------------------------
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.axis("off")
