@@ -124,39 +124,137 @@ All analysis code in `analysis.py`; outputs in `data/analysis/`. Run `python ana
 - [x] A3. Asymmetry check — 3/60 papers significantly skewed, mean |Bowley skew|=0.14. Truncated normal adequate.
 - [x] J29. Marginal paper value — supervised dissertation best (+5.4pp), Finance worst (−3.3pp). Range ~20–29% first rate.
 - [x] J31. Bootstrap CIs — P(1st) = 23.2% [21.2%, 26.0%] for default papers. 200 bootstrap resamples.
+- [x] F20. Paper popularity time series (share-based, current papers only) — 9 growing, 22 declining. Niche papers losing share to a few growing ones.
+- [x] F22. Subject market share — stable: Econ ~33%, Phil ~30%, Pol ~36%.
+- [x] H25. COVID 2020 — per-paper means barely shifted (+0.3 marks) despite first rate doubling (23%→40%). Anomaly was at classification stage, not marking.
+- [x] H26. 2023 boycott — no significant residual in 2024 (p=0.10).
+- [x] I27+I28. Web bundle — 81-paper catalogue with fits, profiles, marginal values, route summaries, aliases.
 - [ ] E17. Gender gap by route
 - [ ] E18. Per-paper gender analysis (2024–2025)
 - [ ] E19. Gender-disaggregated simulation
-- [ ] F20. Paper popularity time series
-- [ ] F22. Subject market share over time
 - [ ] G23. Ethnicity attainment gap over time
 - [ ] G24. Compare PPE ethnicity gaps to university-wide — needs external data, probably infeasible
-- [ ] H25. COVID 2020 anomaly quantification
-- [ ] H26. 2023 boycott residual effects
 - [ ] J30. Correlation structure validation — infeasible without individual-level data; see notes/selection_and_ability.md
-
-#### Output artefacts for Phase 3
-- [ ] I27. Complete analysis outputs for web tool
-- [ ] I28. Summary statistics and tables for explorer mode
 
 ---
 
 ## Phase 3: Web Tool
 
-Static site (HTML + CSS + JS). All data pre-computed and bundled as JSON. No backend needed.
+### Overview
 
-**Core: Grade prior calculator**
-1. Student selects 8 papers → tool determines route
-2. Displays estimated classification distribution (from Monte Carlo simulation)
-3. Historical route-level rates for comparison
-4. Per-paper difficulty indicators
-5. Optional: input estimated marks for some papers, simulate the rest
+Static site (HTML + CSS + JS). All data pre-computed and bundled as JSON (`data/analysis/web_bundle.json`). No backend — runs entirely in the browser. Hosted on GitHub Pages or similar.
 
-**Secondary: Explorer**
-- Per-paper stats over time
-- Paper head-to-head comparison
-- Mark distribution visualisations
-- Subject-level trends
-- Gender gap visualisations
+### Page 1: Grade Prior Calculator (core feature)
 
-**Tech:** Vanilla HTML/CSS/JS + Chart.js. All data bundled as JSON.
+The main draw. A student picks their papers, optionally says how good they think they are, and gets an estimated classification distribution.
+
+#### Flow
+
+1. **Paper picker.** Student selects 8 papers from the 81 in the catalogue. Grouped by subject (Philosophy / Politics / Economics), searchable. Each paper shows a one-line difficulty indicator (e.g. "μ=66, moderate volatility"). Route is auto-detected from the combination.
+
+2. **Ability self-assessment (optional).** A slider or set of radio buttons: "How would you rate yourself among PPE students?" Mapped to a percentile of the latent ability distribution θ. Options could be:
+   - **Qualitative tiers:** "Top third / Middle third / Bottom third" or a 5-point scale ("I'm struggling" → "I'm comfortably among the best")
+   - **Slider:** Continuous percentile from 10th to 90th, defaulting to 50th (median student). The slider adjusts the latent ability θ in the simulation model, shifting all paper means up or down.
+   - The default (no input) gives the population-average prior.
+
+3. **Results display.** A stacked bar or donut chart showing P(1st), P(2.1), P(2.2), P(3rd/below). Key numbers highlighted: "You have roughly a **22–26%** chance of a First with these papers." Range reflects bootstrap uncertainty + ability uncertainty.
+ --> NOTE: it needs to be a lot clearer that this is just on priors. 
+
+4. **Contextual comparisons:**
+   - Historical route-level first rate for the detected route
+   - "If you swapped [worst paper] for [best available], your P(1st) would change by +Xpp"
+   - Per-paper difficulty badges: easy / moderate / hard / kingmaker
+
+5. **What-if mode (stretch goal).** Student enters estimated marks for some papers (e.g. "I think I'll get ~65 on Macro"). The simulation conditions on those marks and simulates only the remaining papers.
+
+--> I think this is interesting, and maybe in particular it can help people reason through lower and upper-bounding what they need to achieve for the desired classification
+
+#### Design notes
+
+- The ability slider is the most novel UX element. It transforms the tool from "here's the population average" to "here's a personalised estimate." The mapping is: θ = Φ⁻¹(percentile) × σ_ability, which shifts all paper means by that amount before simulating.
+- Present results as ranges, not point estimates — be honest about ~±3pp uncertainty (see notes/selection_and_ability.md).
+- The "swap paper" suggestion is the most actionable output. Marginal paper values are pre-computed (J29).
+
+### Page 2: Paper Explorer
+
+Browse and compare papers. Less structured, more exploratory.
+
+#### Features
+
+- **Paper profile cards.** Click any paper to see: μ, σ, %1st, %2.1, %below-50, popularity trend, historical candidate counts, temporal trend (if significant).
+- **Head-to-head comparison.** Select 2–3 papers, see side-by-side stats. Useful for "should I take Ethics or Knowledge & Reality?"
+- **Difficulty scatter plot.** Interactive version of the popularity-vs-difficulty chart. Hover to see paper names, click to navigate to profile card. Colour by subject.
+- **Kingmaker corner.** Highlight the high-σ papers with an explanation of what volatility means for classification.
+- **Popularity trends.** Animated or filterable chart showing how paper popularity has shifted over 15 years.
+
+### Page 3: The Big Picture
+
+Aggregate-level insights. Less interactive, more editorial.
+
+#### Sections
+
+- Overall first-class rate over time (with 2020 anomaly annotated)
+- Gender gap time series
+- Subject-level comparison (mean, volatility, first rate)
+- COVID finding: "the 2020 first rate doubled despite paper-level marks barely changing"
+- "31 papers are declining in popularity — is your subject shrinking?"
+
+### Technical plan
+
+#### Stack
+- **HTML/CSS/JS** — no framework. Single-page app with hash routing (#calculator, #explorer, #overview).
+- **Chart.js** for all charts (already a project dependency via visualise.py's matplotlib output style).
+- **Data:** Load `web_bundle.json` on page load (~100KB). Run simulation client-side in JS (port the Python Monte Carlo engine).
+
+#### Implementation TODO
+
+1. **Data layer**
+   - [ ] Port `classify()` to JS
+   - [ ] Port `simulate_classification()` to JS (simplified: no bootstrap, just point estimate + pre-computed CIs)
+   - [ ] Load and parse web_bundle.json
+   - [ ] Paper search/filter logic
+
+2. **Calculator page**
+   - [ ] Paper picker component (grouped by subject, searchable)
+   - [ ] Route auto-detection from paper selection
+   - [ ] Ability slider with percentile-to-θ mapping
+   - [ ] Results chart (stacked bar or donut)
+   - [ ] Contextual comparison panel (route rates, swap suggestions)
+   - [ ] What-if mode (enter marks for some papers)
+
+3. **Explorer page**
+   - [ ] Paper profile cards
+   - [ ] Head-to-head comparison view
+   - [ ] Interactive difficulty scatter (Chart.js)
+   - [ ] Popularity trends chart
+   - [ ] Kingmaker section
+
+4. **Big Picture page**
+   - [ ] First-rate time series chart
+   - [ ] Gender gap chart
+   - [ ] Subject comparison table
+   - [ ] COVID anomaly callout
+   - [ ] Popularity trends summary
+
+5. **Design and polish**
+   - [ ] Responsive layout (mobile-friendly)
+   - [ ] Page transitions and routing
+   - [ ] Loading states
+   - [ ] Methodology footnotes and caveats
+   - [ ] Deploy to GitHub Pages
+
+### Visual identity brainstorm
+
+**Option A: "Oxford Minimalist"**
+Dark navy (#002147, the Oxford blue) and white. Clean serif headings (e.g. EB Garamond), sans-serif body (Inter or similar). Gold (#B48B2B) for accents and highlights. Feels authoritative, academic. Risk: stuffy.
+
+**Option B: "Data Dashboard"**
+Light background, muted colour palette. Subtle grid lines, lots of whitespace. Subject colours: Philosophy = teal, Politics = coral, Economics = slate blue. Feels modern, professional. Similar to FiveThirtyEight or The Pudding. Risk: generic.
+
+**Option C: "Exam Hall Chalkboard"**
+Dark background (near-black or dark green), chalk-white text, hand-drawn-feeling chart styling. Slightly playful, evokes the exam experience. Monospace or quirky serif for headings. Risk: gimmicky, accessibility concerns with dark bg.
+
+**Option D: "Exam Results Day"**
+Bright, confident, slightly irreverent. White background with bold colour blocks. Subject-coloured pills/tags. Big numbers, clear hierarchy. Feels like a well-designed student tool — approachable but not childish. Closest to the "whimsical but not overdone" vibe.
+
+**Recommendation:** Option D as the base, borrowing the Oxford navy/gold from Option A for key branding elements. Subject colours from Option B. The ability slider and results display should feel interactive and responsive — think Stripe-level polish on a student-facing tool.

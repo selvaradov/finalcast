@@ -956,8 +956,9 @@ def bootstrap_simulation_cis(paper_fits, sigma_ability, n_bootstrap=200, n_sim=5
 def compute_popularity_time_series():
     """Compute candidate share per paper over time, with trend analysis.
 
-    Uses share of total paper-sittings (not raw counts) to account for
-    changing cohort sizes over time.
+    Only includes papers that appear in the most recent year, and only
+    analyses their backwards trend. Uses share of total paper-sittings
+    (not raw counts) to account for changing cohort sizes.
     """
     pn = json.loads((CANONICAL_DIR / "paper_numbers.json").read_text())
 
@@ -966,10 +967,20 @@ def compute_popularity_time_series():
     for r in pn:
         year_totals[r["data_year"]] = year_totals.get(r["data_year"], 0) + r["n"]
 
-    # Group by paper
+    latest_year = max(r["data_year"] for r in pn)
+
+    # Find papers offered in the latest year
+    current_papers = set()
+    for r in pn:
+        if r["data_year"] == latest_year:
+            current_papers.add(r["paper"])
+
+    # Group by paper (only current papers)
     by_paper = {}
     for r in pn:
         name = r["paper"]
+        if name not in current_papers:
+            continue
         year = r["data_year"]
         total = year_totals.get(year, 1)
         share = 100 * r["n"] / total
@@ -982,7 +993,7 @@ def compute_popularity_time_series():
         counts = [p[1] for p in points]
         shares = [round(p[2], 2) for p in points]
 
-        # Trend on share (not raw count) — this controls for cohort size changes
+        # Trend on share (not raw count)
         trend = None
         if len(points) >= 4:
             ya = np.array(years, dtype=float)
@@ -1015,6 +1026,8 @@ def compute_popularity_time_series():
 
     return {
         "n_papers": len(results),
+        "n_current_papers": len(current_papers),
+        "latest_year": latest_year,
         "n_significant_trends": len(sig_trends),
         "n_growing": len(growing),
         "n_declining": len(declining),
