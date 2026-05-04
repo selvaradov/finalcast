@@ -371,6 +371,78 @@ Given a student's 8 paper choices, estimate P(1st), P(2.1), P(2.2), P(other):
 - Paper popularity trends: which papers are growing/shrinking?
 - Correlation between paper difficulty (mean mark) and paper popularity (candidate count)?
 
+## Phase 2 TODO
+
+### Data inventory (what we have to work with)
+- **class_distribution**: 133 records, 2005–2025 — counts + pct for each class by year
+- **subject_aggregates**: 63 records, 2010–2025 — mean + SD per subject (Phil/Pol/Econ/All) by year
+- **gender_stats**: 30 records, 2011–2025 — n + mean + SD by gender by year
+- **gender_class**: 273 records, 2006–2025 — class distribution by gender (pct and sometimes counts)
+- **route_class**: 230 records, 2010–2025 (gap 2012–2015) — class distribution by route (Phil-Econ/Pol-Econ/Phil-Pol/PPE)
+- **ethnicity_class**: 99 records, cohorts 2012/13–2022/23 — class distribution by ethnicity (BME/White/Unknown)
+- **per_paper**: 717 records, 2015–2022 + 2024–2025 — mean, SD, min, max per paper; bands (2017+), quartiles (2017+), gender breakdown (2024–2025)
+- **paper_numbers**: 1339 records, 2005–2025 — candidate count per paper per year
+- **paper_aliases**: 97 canonical papers mapped from 391 name variants
+
+### A. Distribution fitting & paper characterisation
+- [ ] 1. Choose a single distributional family (likely truncated normal on [0,100], or a beta). Pool all years' band data per paper (2017–2022 + 2024–2025, excluding 2020 COVID year) to fit one distribution per paper. This maximises data per fit and assumes marking standards are roughly stable. Where a paper has ~7 years × ~60 candidates, that's ~400+ observations worth of band information — enough to pin down 2 parameters well.
+- [ ] 2. Validate the pooled fit against each year individually: compute the chi-squared or KL divergence between the fitted CDF and the empirical bands for each year. Check whether any year is a significant outlier (beyond what we'd expect from sampling noise). If 2015–2016 data (mean+SD only, no bands) is consistent with the pooled fit, great; if not, flag it.
+- [ ] 3. For the few papers where we also have quartiles (2017–2022): use Q1/Q2/Q3 to check asymmetry. If marks are systematically skewed (e.g. ceiling effects in generous papers, long left tails in hard papers), consider a skew-normal or beta. But only add this complexity if the simpler model fails validation.
+- [ ] 4. Compute "paper difficulty profile" for each paper: mean mark, SD, % firsts, % failing (band <50). Rank papers from most to least generous. Output as a table.
+- [ ] 5. Temporal stability check: for papers with data across multiple years, plot mean and SD over time. Flag any with significant drift (but don't model the drift — just note it). The 2020 COVID year should be a clear outlier. For the simulation, use pooled estimates excluding 2020.
+- [ ] 6. Identify the high-variance "kingmaker" papers (high SD, where your mark can swing your classification). Typically economics papers.
+
+### B. Subject-level analysis
+- [ ] 7. Plot subject-level mean and SD over time (2010–2025). Show that economics has wider spread. Compute 95% CI on these means from the paper-level data.
+- [ ] 8. Decompose subject-level SD into within-paper variance and between-paper variance. Is economics volatile because individual papers have high SD, or because mean marks differ a lot between economics papers?
+- [ ] 9. Compute the "first rate" by subject: using per-paper data, what fraction of marks in each subject are ≥70? Compare to the overall first rate.
+
+### C. Classification algorithm
+
+The current PPE classification rules (believed unchanged for the period we're modelling):
+
+> - **First Class:** average mark ≥68.5 AND ≥2 marks of 70+ AND no mark below 50.
+> - **Upper Second (2.1):** average mark ≥59.0 AND ≥3 marks of 60+.
+> - **Lower Second (2.2):** average mark ≥49.0 AND ≥3 marks of 50+.
+> - **Third:** average mark ≥40.0 AND ≥3 marks of 40+.
+> - **Pass (non-Honours):** average mark ≥30.0.
+>
+> All eight papers count equally. For papers with multiple assessments, see department weighting.
+
+These are more nuanced than simple average thresholds — the "N marks above X" conditions matter, especially for borderline candidates. A student with avg=69 can fail to get a 1st if they have a sub-50 mark or only one 70+.
+
+- [ ] 10. Implement the classification function exactly as specified above. Input: 8 paper marks → output: classification. Handle the conjunctive conditions correctly.
+- [ ] 11. Unit-test the classification function against edge cases: (a) avg=69 with one sub-50 → 2.1, (b) avg=69 with only one 70+ → 2.1, (c) avg=68.5 with two 70+ and no sub-50 → 1st, (d) avg=60 with only two 60+ → 2.2.
+
+### D. Grade prior simulation
+- [ ] 12. Build the Monte Carlo simulation engine. For a given set of 8 papers: (a) look up pooled fitted distribution for each paper, (b) sample 8 marks (with correlation, see below), (c) apply the exact classification function from §C, (d) repeat N=100,000 times, (e) output P(1st), P(2.1), P(2.2), P(3rd), P(other).
+- [ ] 13. Handle correlation between papers. Independent sampling would give far too narrow a combined distribution (variance of mean shrinks as 1/8). Model student ability as a latent variable: sample θ ~ N(0, σ_ability²), then mark_i = μ_paper_i + θ + ε_i where ε_i ~ N(0, σ_paper_i² − σ_ability²). Calibrate σ_ability by matching the simulated overall classification distribution to the observed class_distribution data. This is the key modelling decision — too much σ_ability and the grade distribution is too spread, too little and it's too concentrated.
+- [ ] 14. Validate the simulation against empirical route-level data. For each route (Phil-Pol, Pol-Econ, Phil-Econ, PPE): take the typical paper combination for that route, run the simulation, compare the simulated classification distribution to the observed route_class distribution. They should roughly agree. This is the primary sanity check.
+- [ ] 15. Sensitivity analysis: how much does the classification probability change when you swap one paper for another? E.g. swapping Microeconomics (high SD) for a humanities paper (low SD) — does it increase or decrease your 1st probability? The conjunctive classification rules (need 2 marks of 70+ for a 1st) mean that high-SD papers are a double-edged sword.
+
+### E. Gender analysis
+- [ ] 16. Compute and plot the "gender gap" in 1st-class rates over time (2006–2025). Is the gap closing?
+- [ ] 17. Decompose the gender gap by route: which routes have the largest/smallest gender gaps? Does this relate to subject mix (e.g. economics papers having different gender dynamics)?
+- [ ] 18. Per-paper gender analysis (2024–2025 data): which individual papers have the largest gender gap in mean mark? Control for selection effects (different ability distributions of students choosing each paper).
+- [ ] 19. Using the gender-disaggregated per-paper stats from 2024–2025: does the simulation give different classification distributions for male vs female students taking the same papers?
+
+### F. Popularity & trends
+- [ ] 20. Paper popularity time series (2005–2025): plot candidate numbers over time for each paper. Identify papers that are growing fast vs declining vs discontinued.
+- [ ] 21. Is there a relationship between paper difficulty (mean mark) and paper popularity (candidate count)? Scatter plot of mean vs n, coloured by subject. Do students avoid hard papers?
+- [ ] 22. Market share by subject: what fraction of total paper-sittings are Philosophy vs Politics vs Economics over time? Is the balance shifting?
+
+### G. Ethnicity analysis
+- [ ] 23. Compute the "attainment gap" (first-class rate difference) between BME and White students across cohorts 2012/13–2022/23. Is it narrowing?
+- [ ] 24. Compare ethnicity attainment gaps in PPE to university-wide data if available (referenced in some reports).
+
+### H. Anomaly detection
+- [ ] 25. Flag the 2020 COVID year anomaly quantitatively. Compute the z-score of the 2020 first-class rate relative to the 2015–2019 baseline. Do the same for per-paper data: which papers saw the biggest anomaly in 2020?
+- [ ] 26. Check for the 2023 boycott effects: are there any residual impacts visible in 2024 data? (Markers returning from boycott, different marking standards?)
+
+### I. Output artefacts for Phase 3
+- [ ] 27. Build a `data/analysis/` directory with all computed outputs: fitted distributions per paper (JSON), paper difficulty rankings, simulation parameters, route-level priors — everything the web tool needs.
+- [ ] 28. Produce summary statistics and tables suitable for the web tool's "explorer" mode.
+
 ---
 
 ## Phase 3: Web Tool
@@ -431,5 +503,5 @@ Steps 1a–1c are the bulk of the work. Phase 2 is analytical and relatively str
 - [x] 9. Parser: class distribution by ethnicity (2017–2025) — LLM extracted
 - [x] 10. Cross-validation pass — gender stats: 0 discrepancies; gender class: 74/219 discrepancies (genuine data corrections between report editions, not extraction errors)
 - [x] 11. Produce canonical deduplicated dataset — `build_canonical.py`, outputs to `data/canonical/`
-- [ ] 12. Paper name normalisation/alias mapping
+- [x] 12. Paper name normalisation/alias mapping — 97 canonical papers from 391 variants (`build_paper_aliases.py`, `data/paper_aliases.json`)
 - [ ] 13. Manual verification spot-checks
