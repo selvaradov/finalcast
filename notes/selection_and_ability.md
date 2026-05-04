@@ -47,26 +47,27 @@ We can, however, bound the plausible impact. The marginal paper value analysis (
 
 ### What the model does
 
-Our generative model is:
+Our generative model uses proportional ability loading (see `notes/ability_model.md`):
 
 ```
-mark_i = μ_i + θ + ε_i
+mark_i = μ_i + λ_i × θ + ε_i
 
-θ     ~ N(0, σ_ability²)       latent shared ability
-ε_i   ~ N(0, σ_paper² − σ_ability²)   paper-specific noise
+θ     = Φ⁻¹(percentile)        standardised latent ability (fixed, not random)
+λ_i   = σ_i × √ρ              ability loading proportional to paper spread
+ε_i   ~ N(0, σ²_i × (1 − ρ))  residual exam-day noise
 ```
 
-This posits one latent factor θ that creates positive correlation between all 8 marks. σ_ability = 2.74 was calibrated to match the observed 23.4% first-class rate.
+This gives all paper pairs a constant inter-paper correlation ρ ≈ 0.196, calibrated to match the observed ~23% first-class rate. The proportional loading means high-variance papers get larger ability shifts, matching the intuition that they are more discriminating.
 
-### Is σ_ability = 2.74 plausible?
+### Is ρ = 0.196 plausible?
 
-From first principles: σ_ability represents the SD of the **shared component** across all papers. With σ_paper typically 5–8 marks, σ_ability = 2.74 means the shared factor accounts for (2.74/6.5)² ≈ 18% of variance in a typical paper's marks. This implies:
+ρ = 0.196 means the shared ability factor accounts for ~20% of variance in each paper's marks. This implies:
 
-- **Implied correlation between any two papers**: approximately σ_ability² / σ_paper² ≈ 0.18. This is a weak positive correlation, which seems reasonable for papers across different subjects (a student's mark on Ethics doesn't strongly predict their Macroeconomics mark).
+- **Implied correlation between any two papers**: ρ ≈ 0.20. This is a weak positive correlation, which seems reasonable for papers across different subjects (a student's mark on Ethics doesn't strongly predict their Macroeconomics mark).
 
-- **Implied correlation between same-subject papers**: The model says this is the same 0.18 as for cross-subject pairs. This is almost certainly wrong — we'd expect Philosophy papers to correlate more with each other than with Economics papers.
+- **Implied correlation between same-subject papers**: The model says this is the same 0.20 as for cross-subject pairs. This is almost certainly wrong — we'd expect Philosophy papers to correlate more with each other than with Economics papers.
 
-The 18% shared variance is at the low end of what the psychometrics literature suggests for academic assessments across diverse subjects (typically 20–40%), but within the plausible range given that PPE papers span three fairly distinct disciplines.
+The 20% shared variance is at the low end of what the psychometrics literature suggests for academic assessments across diverse subjects (typically 20–40%), but within the plausible range given that PPE papers span three fairly distinct disciplines. See `notes/model_limitations.md` for a quantitative analysis of the multi-factor alternative.
 
 ### The single-factor limitation
 
@@ -74,9 +75,11 @@ The real correlation structure is probably something like:
 - Within-subject pairs: ρ ≈ 0.3–0.5
 - Cross-subject pairs: ρ ≈ 0.1–0.2
 
-Our model uses ρ ≈ 0.18 for all pairs, which is:
+Our model uses ρ ≈ 0.20 for all pairs, which is:
 - **Too low** for same-subject pairs → underestimates the chance that a student scores consistently high (or low) across their Philosophy papers
 - **Roughly correct** for cross-subject pairs
+
+Quantitative analysis in `notes/model_limitations.md` shows this matters substantially: under a two-factor model with ρ_within=0.30 and ρ_between=0.10, P(First) at the 95th percentile drops from 84% to 61% for the popular 8 combo.
 
 ### Impact on classification probabilities
 
@@ -133,8 +136,8 @@ Several bodies of work could help calibrate our assumptions:
 | Concern | Magnitude | Can we resolve it? | Impact on P(1st) |
 |---------|-----------|---------------------|-------------------|
 | Selection effects on paper means | ±1–3 marks | No, without individual data | ±2–3pp |
-| Single-factor vs multi-factor correlation | ρ off by ~0.1–0.2 for same-subject pairs | Partially, via sensitivity analysis | ±1–3pp, route-dependent |
-| Truncated normal for kingmakers | Q3 overstated by 2–5 marks | Yes, could refit with skew-normal | ~1pp |
+| Single-factor vs multi-factor correlation | ρ off by ~0.1–0.3 for same-subject pairs | No, under-identified without individual data | Large at extreme percentiles (up to ~23pp at 95th) |
+| Truncated normal for kingmakers | Q3 overstated by 2–4 marks | Not worth it (6 bins can't identify skewness) | ~1–2pp |
 | Temporal pooling | Adequate (A2 confirms) | Resolved | <1pp |
 
 **Overall assessment:** The simulation is fit for purpose as a rough guide ("your paper choices put you in the 20–25% range for a First, not the 15–20% range"). It should not be read as precise to the percentage point. The main unresolvable limitation is selection effects; the main improvable limitation is the correlation structure. For the web tool, framing outputs as approximate ranges (±3pp) and being transparent about the assumptions is the honest approach.

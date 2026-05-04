@@ -95,7 +95,7 @@ All analysis code in `analysis.py`; outputs in `data/analysis/`. Run `python ana
 - [x] A6. Kingmaker papers: Econometrics (σ=14.0), Game Theory (σ=12.3), Quantitative Economics (σ=10.6).
 - [x] B7–9. Subject analysis: variance decomposition, weighted means/SDs, first rates by subject.
 - [x] C10–11. Classification function with exact conjunctive rules, unit-tested.
-- [x] D12–13. Monte Carlo engine: latent ability model, σ_ability=2.74 calibrated to 23.4% first rate.
+- [x] D12–13. Monte Carlo engine: proportional ability loading model, ρ=0.196 calibrated to ~23% first rate (see `notes/ability_model.md`).
 - [x] D14. Route validation: simulated vs observed first rates within ~1–3pp.
 - [x] D15. Sensitivity analysis: 8th-paper effect ranges ~19–32% first rate.
 

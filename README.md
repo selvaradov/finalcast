@@ -181,10 +181,12 @@ cd web && python -m http.server 8080
 
 ## Known limitations
 
-- **Truncated normal assumption**: May poorly approximate papers with ceiling effects or bimodal marking. GOF p-values flag the worst cases.
+See `notes/model_limitations.md` for quantitative analysis of the two main modelling limitations.
+
+- **Truncated normal assumption**: UK marks are asymmetric (compressed 58–68, ceiling ~75–80). The fitted model overstates Q3 by 2–4 marks for kingmaker papers (e.g. Econometrics: fitted Q3=74.7 vs observed 70.5). Band-level P(>=70) is well-calibrated (within 1–3pp), but the within-band distribution is wrong — the conditional mean E\[mark | mark>=70\] is ~79 in the model vs ~72–73 in reality. Net impact on First rates: ~1–2pp overestimate for kingmaker-heavy combos.
+- **Single-factor correlation**: The latent ability model assumes constant ρ=0.196 across all paper pairs. Same-subject papers are likely more correlated (ρ≈0.3–0.5). A two-factor model (global + per-subject) gives substantially different conditional results — e.g. P(First) at the 95th percentile drops from 84% to 61% for the popular 8 combo under ρ_within=0.30. Population-level rates are stable (~23%) across all scenarios. The model is under-identified without individual-level data.
+- **Selection effects**: The simulation assumes a random student. Self-selection into papers means observed distributions reflect who chose the paper. Plausible magnitude: ±1–3 marks on paper means, ±2–3pp on classification probabilities. See `notes/selection_and_ability.md`.
 - **Temporal pooling**: Pooled across years. Justified by trend analysis (3/65 significant), but represents an average, not any single year.
-- **Single-factor correlation**: The latent ability model assumes one shared factor with constant rho across all paper pairs. Same-subject papers are likely more correlated in reality. A multi-factor model (per-subject + global) would be better but requires individual-level data.
-- **Selection effects**: The simulation assumes a random student. Self-selection into papers means observed distributions reflect who chose the paper.
 - **COVID exclusion**: 2020 excluded (40% first rate from safety-net policies).
 - **2023 boycott**: No per-paper statistics published that year.
 
