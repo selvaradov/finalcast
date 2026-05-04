@@ -25,6 +25,9 @@ const App = (() => {
       }
     }
 
+    if (page === 'explorer' && DATA) Explorer.init(DATA);
+    if (page === 'overview' && DATA) Overview.init(DATA);
+
     window.scrollTo(0, 0);
   }
 
