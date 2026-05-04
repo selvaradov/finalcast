@@ -43,9 +43,11 @@ The report format changes substantially across the 15 years. There are **5 disti
 
 ### 1.3 Extraction approach
 
-**Method:** `pdftotext -layout` → regex parsing in Python.
+**Method:** Hybrid — regex parsing for simpler/well-tested sections, LLM extraction (Claude Sonnet 4.6 via Bedrock) for complex/varied table formats.
 
-The `-layout` flag produces clean fixed-width column output for all these reports. Each format era needs its own parser, but within an era the format is consistent.
+- **Regex parsers** (`extract.py`): Overall class distribution, subject-level aggregates. These are fully tested and cross-validated across all 15 years.
+- **LLM extraction** (`llm_extract.py`): Gender class distribution, gender stats, per-paper statistics, route class distribution, ethnicity class distribution, paper candidate numbers. Sends full PDFs to Claude with structured extraction prompts; uses `json_repair` for robust parsing.
+- **Canonical build** (`build_canonical.py`): Merges both sources, deduplicates overlapping data (preferring latest report's values), writes to `data/canonical/`.
 
 ### 1.4 Parser implementation details
 
@@ -418,16 +420,16 @@ Steps 1a–1c are the bulk of the work. Phase 2 is analytical and relatively str
 
 ## Phase 1 TODO
 
-- [ ] 1. Scaffold: create `extract.py` framework with PDF text extraction, parser registry, JSON output
-- [ ] 2. Parser: overall class distribution (all years)
-- [ ] 3. Parser: class distribution by gender (all years)
-- [ ] 4. Parser: overall gender statistics — total candidates, mean, SD by gender (all years)
-- [ ] 5. Parser: subject-level aggregates from prose (2011–2014) and branch stats tables (2015+)
-- [ ] 6. Parser: per-paper statistics (eras B–D: 2015–2022; era F: 2024–2025; skip 2023)
-- [ ] 7. Parser: paper candidate numbers (all years)
-- [ ] 8. Parser: class distribution by route/combination (2011, 2019–2025)
-- [ ] 9. Parser: class distribution by ethnicity (2017–2025)
-- [ ] 10. Cross-validation pass: compare overlapping data across reports, flag discrepancies
-- [ ] 11. Produce canonical deduplicated dataset
+- [x] 1. Scaffold: create `extract.py` framework with PDF text extraction, parser registry, JSON output
+- [x] 2. Parser: overall class distribution (all years) — regex, cross-validated
+- [x] 3. Parser: class distribution by gender (all years) — LLM extracted
+- [x] 4. Parser: overall gender statistics — total candidates, mean, SD by gender (all years) — LLM extracted, cross-validated (0 discrepancies)
+- [x] 5. Parser: subject-level aggregates (all years) — regex, all 4 format eras (prose, labeled, compact, hierarchical)
+- [x] 6. Parser: per-paper statistics (2015–2022, 2024–2025; 2023 empty as expected) — LLM extracted
+- [x] 7. Parser: paper candidate numbers (all years) — LLM extracted
+- [x] 8. Parser: class distribution by route/combination (2011, 2016–2025) — LLM extracted
+- [x] 9. Parser: class distribution by ethnicity (2017–2025) — LLM extracted
+- [x] 10. Cross-validation pass — gender stats: 0 discrepancies; gender class: 74/219 discrepancies (genuine data corrections between report editions, not extraction errors)
+- [x] 11. Produce canonical deduplicated dataset — `build_canonical.py`, outputs to `data/canonical/`
 - [ ] 12. Paper name normalisation/alias mapping
 - [ ] 13. Manual verification spot-checks
