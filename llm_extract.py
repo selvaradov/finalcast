@@ -246,7 +246,41 @@ Rules:
 Return ONLY the JSON array, no other text."""
 
 
+CLASS_DISTRIBUTION_PROMPT = """\
+Extract the overall class distribution table from this PPE examiners' report.
+
+This table shows the number and percentage of candidates achieving each degree
+classification (1st, 2.1, 2.2, 3rd, Pass, Fail, etc.) for each year shown.
+It typically appears in Part A and often includes several years of historical data.
+
+Format varies:
+- 2011–2018: Horizontal table with year columns and class rows
+- 2019–2023: Vertical table with year headers and class sub-rows
+- 2024–2025: Vertical list with academic year headers (e.g. "2023/24")
+
+Return a JSON array of objects. Each object represents ONE cell:
+{
+  "report_year": <int, the year this report is for>,
+  "data_year": <int, the year the data is about>,
+  "class": <string, one of: "1st", "2.1", "2.2", "3rd", "Pass", "DDH", "Unclassified", "Fail", "Incomplete">,
+  "count": <int>,
+  "pct": <float, percentage>
+}
+
+Rules:
+- Normalise class labels: I/First/First Class = "1st", II 1/II.1/Upper Second = "2.1",
+  II 2/II.2/Lower Second = "2.2", III/Third = "3rd", Honours Pass = "Pass",
+  Declared to have Deserved Honours = "DDH".
+- Include ALL years shown in the table, not just the report's own year.
+- For 2024–2025 reports, academic years like "2023/24" → data_year 2024.
+- If count and percentage are both given, include both. If only one, include what's available (use null for the other).
+- Do NOT include "Total" rows.
+
+Return ONLY the JSON array, no other text."""
+
+
 SECTIONS = {
+    "class_distribution": ("Overall class distribution", CLASS_DISTRIBUTION_PROMPT),
     "gender_class": ("Class distribution by gender", GENDER_CLASS_PROMPT),
     "gender_stats": ("Gender statistics (n, mean, SD)", GENDER_STATS_PROMPT),
     "per_paper": ("Per-paper statistics", PER_PAPER_PROMPT),

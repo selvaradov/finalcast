@@ -31,7 +31,7 @@ def normalise_paper(name, alias_map):
     return alias_map.get(name, name)
 
 LLM_SECTIONS = [
-    "gender_class", "gender_stats", "per_paper",
+    "class_distribution", "gender_class", "gender_stats", "per_paper",
     "route_class", "ethnicity_class", "paper_numbers",
 ]
 
@@ -90,12 +90,12 @@ def build():
             if "paper" in r:
                 r["paper"] = normalise_paper(r["paper"], alias_map)
 
-    # 1. Class distribution (regex) — dedup by (data_year, class)
+    # 1. Class distribution — prefer LLM if available, else fall back to regex
+    class_dist_source = llm_data.get("class_distribution") or regex_data["class_distribution"]
     canon = deduplicate(
-        regex_data["class_distribution"],
+        class_dist_source,
         lambda r: (r["data_year"], r["class"]),
     )
-    # Drop report_year from canonical records
     for r in canon:
         r.pop("report_year", None)
     save("class_distribution", canon)
