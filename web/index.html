@@ -11,48 +11,29 @@
 <body>
   <nav class="top-nav">
     <div class="nav-inner">
-      <span class="nav-title">PPE Results Explorer</span>
+      <a href="#" class="nav-title">PPE Results Explorer</a>
       <div class="nav-links">
-        <a href="#calculator" class="nav-link active">Calculator</a>
-        <a href="#explorer" class="nav-link">Explorer</a>
-        <a href="#overview" class="nav-link">Overview</a>
+        <a href="#calculator" class="nav-link" data-page="calculator">Calculator</a>
+        <a href="#explorer" class="nav-link" data-page="explorer">Explorer</a>
+        <a href="#overview" class="nav-link" data-page="overview">Overview</a>
       </div>
     </div>
   </nav>
 
   <!-- ── Landing / Hero ── -->
-  <section class="landing">
+  <section class="page-section landing" data-page="landing">
     <div class="landing-inner">
       <div class="landing-text">
         <h1>What might your<br>final result be?</h1>
         <p class="landing-sub">A (not too serious) look at 15 years of Oxford PPE results.</p>
         <div class="landing-actions">
-          <button id="btn-start" class="btn btn-primary">Start calculator</button>
+          <a href="#calculator" class="btn btn-primary">Start calculator</a>
           <span class="landing-or">or browse the data ↓</span>
         </div>
         <p class="landing-caveat">This is a prior, not a prediction.</p>
       </div>
       <div class="landing-graphic">
-        <div class="stat-grid">
-          <div class="stat-box">
-            <div class="stat-number">15</div>
-            <div class="stat-label">years of data</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number">97</div>
-            <div class="stat-label">papers fitted</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number">81</div>
-            <div class="stat-label">papers available</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-number">23.4%</div>
-            <div class="stat-label">first rate</div>
-          </div>
-        </div>
         <div class="hero-chart" id="hero-chart">
-          <!-- placeholder distribution curve drawn by JS -->
           <canvas id="hero-canvas" width="320" height="140"></canvas>
           <div class="hero-chart-labels">
             <span>2.2</span>
@@ -60,123 +41,223 @@
             <span>1st</span>
           </div>
         </div>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-number">15</div>
+            <div class="stat-label">years of data</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">81</div>
+            <div class="stat-label">papers modelled</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number" id="stat-candidates">~3,400</div>
+            <div class="stat-label">candidates</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">23.4%</div>
+            <div class="stat-label">first rate</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <main class="container" id="calculator-section" style="display:none;">
-    <!-- Step indicator -->
-    <div class="steps">
-      <div class="step active" data-step="1">
-        <span class="step-num">1</span>
-        <span class="step-label">Pick Papers</span>
-      </div>
-      <div class="step-line"></div>
-      <div class="step" data-step="2">
-        <span class="step-num">2</span>
-        <span class="step-label">Set Ability</span>
-      </div>
-      <div class="step-line"></div>
-      <div class="step" data-step="3">
-        <span class="step-num">3</span>
-        <span class="step-label">See Results</span>
-      </div>
-    </div>
-
-    <!-- Step 1: Paper Picker -->
-    <section id="step-papers" class="card step-section active-section">
-      <h2>Choose your 8 papers</h2>
-      <p class="section-note">Pick one paper per exam slot. Difficulty badges are at a glance.</p>
-      <div class="picker-controls">
-        <input type="text" id="paper-search" class="search-input" placeholder="Search papers…">
-        <span class="paper-count"><span id="selected-count">0</span> / 8</span>
-      </div>
-      <div id="paper-lists" class="paper-lists">
-        <!-- Populated by JS -->
-      </div>
-      <div class="step-actions">
-        <button id="btn-to-ability" class="btn btn-primary" disabled>Next →</button>
-      </div>
-    </section>
-
-    <!-- Step 2: Ability Slider -->
-    <section id="step-ability" class="card step-section">
-      <h2>How are you doing?</h2>
-      <p class="section-note">This adjusts the model's baseline — a higher self-assessment shifts all your expected paper marks up.</p>
-
-      <div class="ability-widget">
-        <div class="ability-presets">
-          <button class="preset-btn" data-pct="25">Lower third</button>
-          <button class="preset-btn active" data-pct="50">About average</button>
-          <button class="preset-btn" data-pct="75">Upper third</button>
+  <!-- ── Calculator ── -->
+  <section class="page-section" data-page="calculator" style="display:none;">
+    <div class="container">
+      <!-- Step indicator -->
+      <div class="steps">
+        <div class="step active" data-step="1">
+          <span class="step-num">1</span>
+          <span class="step-label">Pick Papers</span>
         </div>
-        <div class="slider-container">
-          <input type="range" id="ability-slider" min="5" max="95" value="50" class="chalk-slider">
-          <div class="slider-labels">
-            <span>Struggling</span>
-            <span>Average</span>
-            <span>Top of cohort</span>
-          </div>
+        <div class="step-line"></div>
+        <div class="step" data-step="2">
+          <span class="step-num">2</span>
+          <span class="step-label">Set Ability</span>
         </div>
-        <p class="ability-readout">Percentile: <strong id="ability-pct">50th</strong> — shifts paper means by <strong id="ability-shift">+0.0</strong> marks</p>
-      </div>
-
-      <div class="step-actions">
-        <button id="btn-back-papers" class="btn btn-secondary">← Papers</button>
-        <button id="btn-to-results" class="btn btn-primary">See results →</button>
-      </div>
-    </section>
-
-    <!-- Step 3: Results -->
-    <section id="step-results" class="card step-section">
-      <h2>Your estimated classification</h2>
-
-      <div class="result-headline" id="result-headline">
-        <!-- Populated by JS -->
-      </div>
-
-      <div class="results-grid">
-        <div class="result-chart-container">
-          <canvas id="result-chart" width="300" height="300"></canvas>
+        <div class="step-line"></div>
+        <div class="step" data-step="3">
+          <span class="step-num">3</span>
+          <span class="step-label">See Results</span>
         </div>
-        <div class="result-table" id="result-table">
+      </div>
+
+      <!-- Step 1: Paper Picker -->
+      <section id="step-papers" class="card step-section active-section">
+        <h2>Choose your 8 papers</h2>
+        <p class="section-note">Pick one paper per exam slot. Difficulty badges are at a glance.</p>
+        <div class="picker-controls">
+          <input type="text" id="paper-search" class="search-input" placeholder="Search papers…">
+          <span class="paper-count"><span id="selected-count">0</span> / 8</span>
+        </div>
+        <div id="paper-lists" class="paper-lists">
           <!-- Populated by JS -->
         </div>
-      </div>
+        <div class="step-actions">
+          <button id="btn-to-ability" class="btn btn-primary" disabled>Next →</button>
+        </div>
+      </section>
 
-      <div class="paper-breakdown" id="paper-breakdown">
+      <!-- Step 2: Ability Slider -->
+      <section id="step-ability" class="card step-section">
+        <h2>How are you doing?</h2>
+        <p class="section-note">This adjusts the model's baseline — a higher self-assessment shifts all your expected paper marks up.</p>
+
+        <div class="ability-widget">
+          <div class="ability-presets">
+            <button class="preset-btn" data-pct="25">Lower third</button>
+            <button class="preset-btn active" data-pct="50">About average</button>
+            <button class="preset-btn" data-pct="75">Upper third</button>
+          </div>
+          <div class="slider-container">
+            <input type="range" id="ability-slider" min="5" max="95" value="50" class="chalk-slider">
+            <div class="slider-labels">
+              <span>Struggling</span>
+              <span>Average</span>
+              <span>Top of cohort</span>
+            </div>
+          </div>
+          <p class="ability-readout">Percentile: <strong id="ability-pct">50th</strong> — shifts paper means by <strong id="ability-shift">+0.0</strong> marks</p>
+        </div>
+
+        <div class="step-actions">
+          <button id="btn-back-papers" class="btn btn-secondary">← Papers</button>
+          <button id="btn-to-results" class="btn btn-primary">See results →</button>
+        </div>
+      </section>
+
+      <!-- Step 3: Results -->
+      <section id="step-results" class="card step-section">
+        <h2>Your estimated classification</h2>
+
+        <div class="result-row" id="result-row">
+          <div class="result-headline" id="result-headline">
+            <!-- Populated by JS -->
+          </div>
+          <div class="result-chart-container">
+            <canvas id="result-chart" width="300" height="300"></canvas>
+          </div>
+        </div>
+
+        <div class="paper-breakdown" id="paper-breakdown">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="context-panels" id="context-panels">
+          <!-- Route comparison, swap suggestion -->
+        </div>
+
+        <div class="step-actions">
+          <button id="btn-back-ability" class="btn btn-secondary">← Adjust</button>
+          <button id="btn-restart" class="btn btn-secondary">Start over</button>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ── Explorer ── -->
+  <section class="page-section" data-page="explorer" style="display:none;">
+    <div class="container">
+      <h1 class="page-title">Paper Explorer</h1>
+      <p class="page-intro">Browse and compare 81 papers across Philosophy, Politics, and Economics.</p>
+      <div id="explorer-content">
         <!-- Populated by JS -->
       </div>
+    </div>
+  </section>
 
-      <div class="context-panels" id="context-panels">
-        <!-- Route comparison, swap suggestion -->
-      </div>
-
-      <div class="step-actions">
-        <button id="btn-back-ability" class="btn btn-secondary">← Adjust</button>
-        <button id="btn-restart" class="btn btn-secondary">Start over</button>
-      </div>
-    </section>
-  </main>
-
-  <section id="methodology" class="card methodology-section" style="display:none;">
+  <!-- ── Overview ── -->
+  <section class="page-section" data-page="overview" style="display:none;">
     <div class="container">
+      <h1 class="page-title">The Big Picture</h1>
+      <p class="page-intro">15 years of Oxford PPE results at a glance.</p>
+      <div id="overview-content">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Methodology modal ── -->
+  <div class="modal-overlay" id="methodology-modal" style="display:none;">
+    <div class="modal-content card">
+      <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
       <h2>How it works</h2>
-      <p>Each paper's mark distribution is modelled as:</p>
-      <p class="formula">mark_i = μ_i + λ_i·θ + ε_i</p>
-      <ul>
-        <li><strong>μ_i</strong> — paper-specific mean, fitted via MLE on truncated normals from 15 years of examiners' report band data.</li>
-        <li><strong>θ</strong> — standardised latent ability. The ability slider sets θ = Φ⁻¹(percentile).</li>
-        <li><strong>λ_i = σ_i·√ρ</strong> — ability loading proportional to paper spread. Higher-variance papers are more sensitive to ability (ρ ≈ 0.20, calibrated to match observed classification rates).</li>
-        <li><strong>ε_i ~ N(0, σ²_i·(1−ρ))</strong> — residual exam-day noise.</li>
+      <p>Each paper's mark distribution is modelled using a <strong>latent ability factor model</strong>. The idea: students have some underlying ability level, and each paper's marks reflect that ability plus paper-specific noise.</p>
+      <ul class="methodology-brief">
+        <li><strong>Paper fits:</strong> 81 papers fitted to truncated normal distributions using 15 years of examiner band data (excluding 2020).</li>
+        <li><strong>Ability slider:</strong> shifts all your expected marks up or down, like moving along the ability distribution of all PPE students.</li>
+        <li><strong>Simulation:</strong> 50,000 exam sittings are drawn, each classified using the official PPE conjunctive rules (average thresholds + paper count requirements).</li>
+        <li><strong>Uncertainty:</strong> estimates are roughly ±3 percentage points — treat them as priors, not predictions.</li>
       </ul>
-      <p>The simulation draws 50,000 samples, classifies each using official PPE exam conventions (conjunctive rules on averages and paper counts), and reports the empirical distribution.</p>
-      <p class="landing-caveat">Limitations: uses aggregate band data (not individual marks), assumes a single ability factor with constant ρ across all paper pairs. Estimates are priors, not predictions.</p>
+      <div class="modal-actions">
+        <a href="#methodology" class="btn btn-secondary" id="modal-to-full">Full mathematical details →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Methodology page ── -->
+  <section class="page-section" data-page="methodology" style="display:none;">
+    <div class="container methodology-full">
+      <h1 class="page-title">Methodology</h1>
+
+      <div class="card">
+        <h2>The model</h2>
+        <p>Each paper's mark distribution is modelled as:</p>
+        <p class="formula">mark_i = μ_i + λ_i·θ + ε_i</p>
+        <ul>
+          <li><strong>μ_i</strong> — paper-specific mean, fitted via MLE on truncated normals from 15 years of examiners' report band data.</li>
+          <li><strong>θ</strong> — standardised latent ability. The ability slider sets θ = Φ⁻¹(percentile).</li>
+          <li><strong>λ_i = σ_i·√ρ</strong> — ability loading proportional to paper spread. Higher-variance papers are more sensitive to ability (ρ ≈ 0.20, calibrated to match observed classification rates).</li>
+          <li><strong>ε_i ~ N(0, σ²_i·(1−ρ))</strong> — residual exam-day noise.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Classification rules</h2>
+        <p>PPE uses conjunctive classification — you need <em>both</em> an average threshold and a minimum number of papers at that level:</p>
+        <table class="methodology-rules-table">
+          <thead><tr><th>Class</th><th>Average ≥</th><th>Additional requirement</th></tr></thead>
+          <tbody>
+            <tr><td class="class-first">1st</td><td>68.5</td><td>≥ 2 marks of 70+, no mark below 50</td></tr>
+            <tr><td class="class-21">2.1</td><td>59.0</td><td>≥ 3 marks of 60+</td></tr>
+            <tr><td class="class-22">2.2</td><td>49.0</td><td>≥ 3 marks of 50+</td></tr>
+            <tr><td class="class-low">3rd</td><td>40.0</td><td>≥ 3 marks of 40+</td></tr>
+            <tr><td class="class-low">Pass</td><td>30.0</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Simulation</h2>
+        <p>The simulation draws 50,000 samples, classifies each using the rules above, and reports the empirical distribution. This Monte Carlo approach captures the non-linear interactions between the conjunctive rules and paper-specific variance — something a simple normal approximation would miss.</p>
+      </div>
+
+      <div class="card">
+        <h2>Data</h2>
+        <p>Data comes from Oxford PPE Final Honour School internal examiners' reports, 2011–2025. Mark distributions are extracted from band data (percentage of candidates in each class band per paper). 81 papers are fitted; 65 via MLE on band data, 16 via method-of-moments from reported means and standard deviations.</p>
+        <p>The year 2020 (COVID) is excluded from all fitting — the first rate roughly doubled that year despite paper-level marks barely changing, suggesting the anomaly was at classification stage.</p>
+        <p>2023 (marking boycott) has no per-paper data available.</p>
+      </div>
+
+      <div class="card">
+        <h2>Limitations</h2>
+        <ul>
+          <li>Uses aggregate band data, not individual marks — the true joint distribution is unobservable.</li>
+          <li>Assumes a single ability factor with constant ρ across all paper pairs. In reality, Philosophy papers likely correlate more with each other than with Economics papers.</li>
+          <li>No conditioning on prior performance — the ability slider is a self-assessment, not a calibrated prediction.</li>
+          <li>Temporal trends are ignored in the simulation (papers are fitted on pooled data).</li>
+          <li>Estimates are priors — they tell you what has happened historically for similar paper combinations, not what will happen to you.</li>
+        </ul>
+      </div>
+
+      <p class="landing-caveat" style="text-align:center; margin-top: 24px;">It's a prior, not a prediction.</p>
     </div>
   </section>
 
   <footer class="site-footer">
-    <p>Data: 2011–2025 examiners' reports · <a href="#methodology" id="methodology-link">Methodology</a> · <a href="https://github.com">Source</a></p>
+    <p>Data: 2011–2025 examiners' reports · <a href="#" id="methodology-link">Methodology</a> · <a href="https://github.com">Source</a></p>
     <p class="footer-caveat">It's a prior, not a prediction.</p>
   </footer>
 

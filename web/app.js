@@ -1,14 +1,100 @@
-/**
- * PPE Finals — Grade Prior Calculator
- * Main application logic.
- */
-
 const App = (() => {
   let DATA = null;
-  let selectedPapers = new Map(); // name -> paper data
+  let selectedPapers = new Map();
   let currentStep = 1;
 
-  // ── Bootstrap ──────────────────────────────────────────────────
+  // ── Router ──────────────────────────────────────────────────
+
+  const PAGES = ['landing', 'calculator', 'explorer', 'overview', 'methodology'];
+
+  function navigate(page, pushState = true) {
+    if (!PAGES.includes(page)) page = 'landing';
+
+    document.querySelectorAll('.page-section').forEach(el => {
+      el.style.display = el.dataset.page === page ? '' : 'none';
+    });
+
+    document.querySelectorAll('.nav-link').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === page);
+    });
+
+    if (pushState) {
+      const hash = page === 'landing' ? '' : '#' + page;
+      if (window.location.hash !== hash) {
+        history.pushState(null, '', hash || window.location.pathname + window.location.search);
+      }
+    }
+
+    window.scrollTo(0, 0);
+  }
+
+  function routeFromHash() {
+    const hash = window.location.hash.replace('#', '');
+    return PAGES.includes(hash) ? hash : 'landing';
+  }
+
+  // ── URL state ─────────────────────────────────────────────
+
+  function saveStateToURL() {
+    const params = new URLSearchParams();
+    if (selectedPapers.size > 0) {
+      params.set('papers', Array.from(selectedPapers.keys()).join('|'));
+    }
+    const ability = document.getElementById('ability-slider')?.value;
+    if (ability && ability !== '50') {
+      params.set('ability', ability);
+    }
+    const qs = params.toString();
+    const newURL = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+    history.replaceState(null, '', newURL);
+  }
+
+  function loadStateFromURL() {
+    const params = new URLSearchParams(window.location.search);
+
+    const papersParam = params.get('papers');
+    if (papersParam && DATA) {
+      const names = papersParam.split('|');
+      selectedPapers.clear();
+      for (const name of names) {
+        if (DATA.paper_catalogue[name] && selectedPapers.size < 8) {
+          selectedPapers.set(name, DATA.paper_catalogue[name]);
+        }
+      }
+      syncPickerToSelection();
+    }
+
+    const ability = params.get('ability');
+    if (ability) {
+      const slider = document.getElementById('ability-slider');
+      slider.value = Math.max(5, Math.min(95, +ability));
+      updateAbilityReadout();
+    }
+
+    if (selectedPapers.size === 8) {
+      const page = routeFromHash();
+      if (page === 'calculator') {
+        goToStep(3);
+      }
+    }
+  }
+
+  function syncPickerToSelection() {
+    document.querySelectorAll('.paper-item').forEach(el => {
+      const name = el.dataset.name;
+      const cb = el.querySelector('input');
+      if (selectedPapers.has(name)) {
+        cb.checked = true;
+        el.classList.add('selected');
+      } else {
+        cb.checked = false;
+        el.classList.remove('selected');
+      }
+    });
+    updateSelectionCount();
+  }
+
+  // ── Bootstrap ─────────────────────────────────────────────
 
   async function init() {
     const resp = await fetch('data.json');
@@ -17,11 +103,9 @@ const App = (() => {
     buildPaperPicker();
     wireEvents();
     updateSelectionCount();
-  }
+    loadStateFromURL();
 
-  function showCalculator() {
-    document.querySelector('.landing').style.display = 'none';
-    document.getElementById('calculator-section').style.display = 'block';
+    navigate(routeFromHash(), false);
   }
 
   function drawHeroChart() {
@@ -48,7 +132,6 @@ const App = (() => {
     const px = x => ((x - xMin) / (xMax - xMin)) * (w - 40) + 20;
     const py = y => h - 20 - (y / maxY) * (h - 30);
 
-    // fill under curve
     ctx.beginPath();
     ctx.moveTo(px(xMin), py(0));
     for (const [x, y] of points) ctx.lineTo(px(x), py(y));
@@ -57,7 +140,6 @@ const App = (() => {
     ctx.fillStyle = 'rgba(91,155,245,0.08)';
     ctx.fill();
 
-    // draw curve
     ctx.beginPath();
     for (let i = 0; i < points.length; i++) {
       const [x, y] = points[i];
@@ -68,7 +150,6 @@ const App = (() => {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // threshold lines
     const thresholds = [
       { x: 50, label: '50', color: 'rgba(232,97,77,0.5)' },
       { x: 60, label: '60', color: 'rgba(240,199,94,0.4)' },
@@ -90,7 +171,7 @@ const App = (() => {
     }
   }
 
-  // ── Paper picker ───────────────────────────────────────────────
+  // ── Paper picker ──────────────────────────────────────────
 
   function difficultyBadge(paper) {
     const sigma = paper.sigma;
@@ -152,14 +233,13 @@ const App = (() => {
       label.classList.remove('selected');
     }
     updateSelectionCount();
+    saveStateToURL();
   }
 
   function updateSelectionCount() {
     document.getElementById('selected-count').textContent = selectedPapers.size;
     document.getElementById('btn-to-ability').disabled = selectedPapers.size !== 8;
   }
-
-  // ── Search ─────────────────────────────────────────────────────
 
   function onSearch(e) {
     const q = e.target.value.toLowerCase().trim();
@@ -169,7 +249,7 @@ const App = (() => {
     });
   }
 
-  // ── Step navigation ────────────────────────────────────────────
+  // ── Step navigation ───────────────────────────────────────
 
   function goToStep(n) {
     currentStep = n;
@@ -187,7 +267,7 @@ const App = (() => {
     if (n === 3) runSimulation();
   }
 
-  // ── Ability slider ─────────────────────────────────────────────
+  // ── Ability slider ────────────────────────────────────────
 
   function updateAbilityReadout() {
     const pct = +document.getElementById('ability-slider').value;
@@ -201,9 +281,10 @@ const App = (() => {
     document.querySelectorAll('.preset-btn').forEach(btn => {
       btn.classList.toggle('active', +btn.dataset.pct === pct);
     });
+    saveStateToURL();
   }
 
-  // ── Simulation ─────────────────────────────────────────────────
+  // ── Simulation ────────────────────────────────────────────
 
   function runSimulation() {
     document.getElementById('result-headline').innerHTML =
@@ -219,7 +300,7 @@ const App = (() => {
     }, 16);
   }
 
-  // ── Results rendering ──────────────────────────────────────────
+  // ── Results rendering ─────────────────────────────────────
 
   const CLASS_COLORS = {
     '1st':  '#5b9bf5',
@@ -235,7 +316,6 @@ const App = (() => {
   function renderResults(results, papers, pct) {
     renderHeadline(results);
     renderDonut(results);
-    renderTable(results);
     renderPaperBreakdown(papers, pct);
     renderContext(results, papers);
   }
@@ -243,11 +323,21 @@ const App = (() => {
   function renderHeadline(results) {
     const el = document.getElementById('result-headline');
     const top = CLASS_ORDER.find(c => results[c] > 0.01) || '2.1';
-    const pct = (results[top] * 100);
-    const lo = Math.max(0, pct - 3).toFixed(0);
-    const hi = Math.min(100, pct + 3).toFixed(0);
+    const pctVal = (results[top] * 100);
+    const lo = Math.max(0, pctVal - 3).toFixed(0);
+    const hi = Math.min(100, pctVal + 3).toFixed(0);
+
+    const breakdown = CLASS_ORDER
+      .filter(c => results[c] >= 0.001)
+      .map(cls => {
+        const p = (results[cls] * 100).toFixed(1);
+        const style = cls === '1st' ? 'class-first' : cls === '2.1' ? 'class-21' : cls === '2.2' ? 'class-22' : 'class-low';
+        return `<span class="headline-class ${style}">${cls}: ${p}%</span>`;
+      }).join('');
+
     el.innerHTML = `
       <div class="big-number">~${lo}–${hi}% chance of a ${top}</div>
+      <div class="headline-breakdown">${breakdown}</div>
       <div class="range-text">Based on historical priors for your paper choices · uncertainty roughly ±3pp</div>`;
   }
 
@@ -255,14 +345,15 @@ const App = (() => {
     const canvas = document.getElementById('result-chart');
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = 300 * dpr;
-    canvas.height = 300 * dpr;
+    const size = 260;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
     ctx.scale(dpr, dpr);
-    canvas.style.width = '300px';
-    canvas.style.height = '300px';
+    canvas.style.width = size + 'px';
+    canvas.style.height = size + 'px';
 
-    const cx = 150, cy = 150, R = 120, r = 65;
-    ctx.clearRect(0, 0, 300, 300);
+    const cx = size / 2, cy = size / 2, R = 110, r = 55;
+    ctx.clearRect(0, 0, size, size);
 
     let angle = -Math.PI / 2;
     for (const cls of CLASS_ORDER) {
@@ -296,30 +387,6 @@ const App = (() => {
     ctx.fill();
   }
 
-  function renderTable(results) {
-    const el = document.getElementById('result-table');
-    const classStyle = cls => {
-      if (cls === '1st') return 'class-first';
-      if (cls === '2.1') return 'class-21';
-      if (cls === '2.2') return 'class-22';
-      return 'class-low';
-    };
-
-    const rows = CLASS_ORDER.filter(c => results[c] >= 0.001).map(cls => {
-      const pct = results[cls] * 100;
-      return `<tr>
-        <td class="${classStyle(cls)}">${cls}</td>
-        <td>${pct.toFixed(1)}%</td>
-        <td>${Math.max(0, pct - 3).toFixed(0)}–${Math.min(100, pct + 3).toFixed(0)}%</td>
-      </tr>`;
-    }).join('');
-
-    el.innerHTML = `<table>
-      <thead><tr><th>Class</th><th>Estimate</th><th>Range (±3pp)</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-  }
-
   function renderPaperBreakdown(papers, pct) {
     const el = document.getElementById('paper-breakdown');
     const metrics = Engine.paperMetrics(papers, DATA.rho, pct);
@@ -327,7 +394,6 @@ const App = (() => {
     const rows = metrics
       .sort((a, b) => b.pAbove70 - a.pAbove70)
       .map(m => {
-        const catData = DATA.paper_catalogue[m.name];
         const subjectCls = m.subject === 'Philosophy' ? 'phil' : m.subject === 'Politics' ? 'pol' : 'econ';
         const barWidth = Math.max(0, Math.min(100, m.shiftedMu));
         const riskLabel = m.pBelow50 > 0.10 ? 'high risk'
@@ -364,7 +430,6 @@ const App = (() => {
     const el = document.getElementById('context-panels');
     const panels = [];
 
-    // Route detection
     const route = Engine.detectRoute(papers);
     const routeData = DATA.route_summary[route];
     if (routeData) {
@@ -378,7 +443,6 @@ const App = (() => {
         </div>`);
     }
 
-    // Best swap suggestion
     const swap = findBestSwap(papers);
     if (swap) {
       panels.push(`
@@ -429,10 +493,19 @@ const App = (() => {
     return { out: worstSelected.name, in: bestCandidate.name, delta };
   }
 
-  // ── Events ─────────────────────────────────────────────────────
+  // ── Methodology modal ─────────────────────────────────────
+
+  function openMethodologyModal() {
+    document.getElementById('methodology-modal').style.display = 'flex';
+  }
+
+  function closeMethodologyModal() {
+    document.getElementById('methodology-modal').style.display = 'none';
+  }
+
+  // ── Events ────────────────────────────────────────────────
 
   function wireEvents() {
-    document.getElementById('btn-start')?.addEventListener('click', showCalculator);
     document.getElementById('paper-search').addEventListener('input', onSearch);
 
     document.getElementById('btn-to-ability').addEventListener('click', () => goToStep(2));
@@ -448,6 +521,7 @@ const App = (() => {
       document.getElementById('ability-slider').value = 50;
       updateAbilityReadout();
       updateSelectionCount();
+      saveStateToURL();
       goToStep(1);
     });
 
@@ -471,17 +545,31 @@ const App = (() => {
 
     updateAbilityReadout();
 
-    document.getElementById('methodology-link')?.addEventListener('click', (e) => {
+    // Methodology modal
+    document.getElementById('methodology-link').addEventListener('click', (e) => {
       e.preventDefault();
-      const section = document.getElementById('methodology');
-      section.style.display = section.style.display === 'none' ? 'block' : 'none';
-      if (section.style.display === 'block') {
-        section.scrollIntoView({ behavior: 'smooth' });
-      }
+      openMethodologyModal();
+    });
+
+    document.getElementById('modal-close').addEventListener('click', closeMethodologyModal);
+
+    document.getElementById('methodology-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeMethodologyModal();
+    });
+
+    document.getElementById('modal-to-full').addEventListener('click', () => {
+      closeMethodologyModal();
+    });
+
+    // Hash routing
+    window.addEventListener('hashchange', () => {
+      navigate(routeFromHash(), false);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMethodologyModal();
     });
   }
-
-  // ── Public ─────────────────────────────────────────────────────
 
   return { init };
 })();
