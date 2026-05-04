@@ -120,20 +120,20 @@ All analysis code in `analysis.py`; outputs in `data/analysis/`. Run `python ana
 ### TODO — later
 
 #### Further analysis
-- [ ] A2. Validate pooled fit against individual years (chi-squared per year)
-- [ ] A3. Asymmetry check using quartile data (skew-normal/beta if needed)
+- [x] A2. Validate pooled fit against individual years — 15/222 paper-years fail (vs 11 expected by chance). Pooled fit adequate.
+- [x] A3. Asymmetry check — 3/60 papers significantly skewed, mean |Bowley skew|=0.14. Truncated normal adequate.
+- [x] J29. Marginal paper value — supervised dissertation best (+5.4pp), Finance worst (−3.3pp). Range ~20–29% first rate.
+- [x] J31. Bootstrap CIs — P(1st) = 23.2% [21.2%, 26.0%] for default papers. 200 bootstrap resamples.
 - [ ] E17. Gender gap by route
 - [ ] E18. Per-paper gender analysis (2024–2025)
 - [ ] E19. Gender-disaggregated simulation
 - [ ] F20. Paper popularity time series
 - [ ] F22. Subject market share over time
 - [ ] G23. Ethnicity attainment gap over time
-- [ ] G24. Compare PPE ethnicity gaps to university-wide
+- [ ] G24. Compare PPE ethnicity gaps to university-wide — needs external data, probably infeasible
 - [ ] H25. COVID 2020 anomaly quantification
 - [ ] H26. 2023 boycott residual effects
-- [ ] J29. Marginal paper value analysis (P(1st)/P(2.2) shift vs median replacement)
-- [ ] J30. Correlation structure validation (single-factor model adequacy)
-- [ ] J31. Confidence intervals on simulation outputs
+- [ ] J30. Correlation structure validation — infeasible without individual-level data; see notes/selection_and_ability.md
 
 #### Output artefacts for Phase 3
 - [ ] I27. Complete analysis outputs for web tool
