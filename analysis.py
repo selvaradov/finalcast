@@ -510,7 +510,13 @@ def compute_subject_analysis(paper_fits):
             "grand_mean": round(float(grand_mean), 2),
         }
 
-    # Kingmaker papers (top 10 by sigma)
+    # Kingmaker papers: σ >= 2× the median σ across all papers.
+    # These are high-variance papers that disproportionately determine
+    # classification outcomes — a strong performance lifts the average,
+    # a weak one can block a First via the sub-50 conjunctive rule.
+    all_sigmas = [f["sigma"] for _, f in paper_fits.items()]
+    median_sigma = float(np.median(all_sigmas))
+    kingmaker_threshold = 2 * median_sigma
     all_papers = [(name, fit) for name, fit in paper_fits.items()]
     all_papers.sort(key=lambda x: -x[1]["sigma"])
     kingmakers = [{
@@ -519,7 +525,7 @@ def compute_subject_analysis(paper_fits):
         "mu": fit["mu"],
         "sigma": fit["sigma"],
         "n_total": fit["n_total"],
-    } for name, fit in all_papers[:10]]
+    } for name, fit in all_papers if fit["sigma"] >= kingmaker_threshold]
 
     # First rate by subject (using fitted truncated normals)
     first_rate = {}
@@ -540,6 +546,8 @@ def compute_subject_analysis(paper_fits):
         "subject_summary": subject_summary,
         "variance_decomposition": variance_decomp,
         "kingmaker_papers": kingmakers,
+        "kingmaker_threshold": round(kingmaker_threshold, 1),
+        "median_sigma": round(median_sigma, 1),
         "first_rate_by_subject": first_rate,
     }
 

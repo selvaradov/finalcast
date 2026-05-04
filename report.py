@@ -177,7 +177,9 @@ def make_report():
         ax.legend(loc="upper left")
         ax.set_xlabel("Mean mark (μ)")
         ax.set_ylabel("Standard deviation (σ)")
-        ax.set_title("Paper Risk/Reward: Mean vs Volatility (Kingmaker Papers Labelled)")
+        ax.axhline(subject.get("kingmaker_threshold", 10.2), color="#ef4444", linestyle="--",
+                   linewidth=0.8, alpha=0.5, label=f"Kingmaker threshold (2× median σ)")
+        ax.set_title("Paper Risk/Reward: Mean vs Volatility")
         ax.grid(True, alpha=0.3)
         fig.tight_layout()
         pdf.savefig(fig)
@@ -405,36 +407,46 @@ def make_report():
         plt.close()
 
         # -------------------------------------------------------------------
-        # 11. Popularity trends (top movers)
+        # 11. Popularity trends (top movers by total change, not just p-value)
         # -------------------------------------------------------------------
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
-        sig_trends_pop = [p for p in popularity["per_paper"]
-                          if p["trend"] and p["trend"]["p_value"] < 0.05]
-        growing_p = sorted([p for p in sig_trends_pop if p["trend"]["slope_pct_per_year"] > 0],
-                           key=lambda x: -x["trend"]["slope_pct_per_year"])[:8]
-        declining_p = sorted([p for p in sig_trends_pop if p["trend"]["slope_pct_per_year"] < 0],
-                             key=lambda x: x["trend"]["slope_pct_per_year"])[:8]
+        # Filter to papers with significant trends AND >= 1pp total change
+        sig_trends_pop = []
+        for p in popularity["per_paper"]:
+            if not p["trend"] or p["trend"]["p_value"] >= 0.05:
+                continue
+            if len(p["shares"]) < 2:
+                continue
+            total_change = p["shares"][-1] - p["shares"][0]
+            if abs(total_change) >= 1.0:
+                sig_trends_pop.append({**p, "total_change": total_change})
+
+        growing_p = sorted([p for p in sig_trends_pop if p["total_change"] > 0],
+                           key=lambda x: -x["total_change"])[:8]
+        declining_p = sorted([p for p in sig_trends_pop if p["total_change"] < 0],
+                             key=lambda x: x["total_change"])[:8]
 
         for p in growing_p:
-            ax1.plot(p["years"], p["shares"], "o-", ms=3, label=p["paper"][:30], alpha=0.8)
-        ax1.set_title("Fastest Growing Papers")
+            ax1.plot(p["years"], p["shares"], "o-", ms=3,
+                     label=f"{p['paper'][:28]} ({p['total_change']:+.1f}pp)", alpha=0.8)
+        ax1.set_title("Growing Papers (>1pp total change)")
         ax1.set_ylabel("Share of paper-sittings (%)")
         ax1.set_xlabel("Year")
         ax1.legend(fontsize=6, loc="upper left")
         ax1.grid(True, alpha=0.3)
 
         for p in declining_p:
-            ax2.plot(p["years"], p["shares"], "o-", ms=3, label=p["paper"][:30], alpha=0.8)
-        ax2.set_title("Fastest Declining Papers")
+            ax2.plot(p["years"], p["shares"], "o-", ms=3,
+                     label=f"{p['paper'][:28]} ({p['total_change']:+.1f}pp)", alpha=0.8)
+        ax2.set_title("Declining Papers (>1pp total change)")
         ax2.set_ylabel("Share of paper-sittings (%)")
         ax2.set_xlabel("Year")
         ax2.legend(fontsize=6, loc="upper right")
         ax2.grid(True, alpha=0.3)
 
-        fig.suptitle(f"Paper Popularity Trends ({popularity['n_growing']} growing, "
-                     f"{popularity['n_declining']} declining, p<0.05)",
-                     fontsize=12, fontweight="bold")
+        fig.suptitle("Paper Popularity Trends (share of all paper-sittings, significant trends with >1pp change)",
+                     fontsize=11, fontweight="bold")
         fig.tight_layout()
         pdf.savefig(fig)
         plt.close()
@@ -457,8 +469,11 @@ def make_report():
         ax.set_xticks(x)
         ax.set_xticklabels(classes)
         ax.set_ylabel("Probability")
-        ax.set_title(f"Classification Probabilities with 95% Bootstrap CIs\n"
-                     f"({', '.join(boot_cis['papers'][:4])} + 4 more)")
+        paper_list = ", ".join(boot_cis["papers"][:3]) + f" + {len(boot_cis['papers'])-3} more"
+        ax.set_title(f"Classification Probabilities for a Typical Student\n"
+                     f"(8 most popular papers: {paper_list})\n"
+                     f"Error bars = 95% bootstrap CI from resampling year-level data",
+                     fontsize=10)
         ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
         ax.grid(True, alpha=0.2, axis="y")
         for bar, val in zip(bars, point_vals):
@@ -474,8 +489,10 @@ def make_report():
         # -------------------------------------------------------------------
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.axis("off")
-        ax.set_title("Kingmaker Papers (Top 10 by Volatility)", fontsize=14,
-                     fontweight="bold", pad=20)
+        km_threshold = subject.get("kingmaker_threshold", 10.2)
+        med_sig = subject.get("median_sigma", 5.1)
+        ax.set_title(f"Kingmaker Papers (σ ≥ 2× median σ = {km_threshold:.1f}; median σ = {med_sig:.1f})",
+                     fontsize=13, fontweight="bold", pad=20)
         headers = ["#", "Paper", "Subject", "μ", "σ", "Total n"]
         rows = []
         for i, k in enumerate(subject["kingmaker_papers"], 1):
