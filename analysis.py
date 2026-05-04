@@ -316,7 +316,7 @@ def simulate_classification(
     return {k: round(v / n_sim, 4) for k, v in counts.items()}
 
 
-def calibrate_sigma_ability(paper_fits, target_first_rate=0.252, tol=0.005):
+def calibrate_sigma_ability(paper_fits, target_first_rate=0.234, tol=0.005):
     """Calibrate sigma_ability to match the observed overall first-class rate.
 
     Uses a representative "average" set of papers (picks the 8 most popular).
