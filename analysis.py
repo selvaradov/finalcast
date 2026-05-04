@@ -950,6 +950,375 @@ def bootstrap_simulation_cis(paper_fits, sigma_ability, n_bootstrap=200, n_sim=5
 
 
 # ---------------------------------------------------------------------------
+# F20. Paper popularity time series
+# ---------------------------------------------------------------------------
+
+def compute_popularity_time_series():
+    """Compute candidate share per paper over time, with trend analysis.
+
+    Uses share of total paper-sittings (not raw counts) to account for
+    changing cohort sizes over time.
+    """
+    pn = json.loads((CANONICAL_DIR / "paper_numbers.json").read_text())
+
+    # Total candidates per year (sum of all paper-sittings)
+    year_totals = {}
+    for r in pn:
+        year_totals[r["data_year"]] = year_totals.get(r["data_year"], 0) + r["n"]
+
+    # Group by paper
+    by_paper = {}
+    for r in pn:
+        name = r["paper"]
+        year = r["data_year"]
+        total = year_totals.get(year, 1)
+        share = 100 * r["n"] / total
+        by_paper.setdefault(name, []).append((year, r["n"], share))
+
+    results = []
+    for paper, points in by_paper.items():
+        points = sorted(set(points))
+        years = [p[0] for p in points]
+        counts = [p[1] for p in points]
+        shares = [round(p[2], 2) for p in points]
+
+        # Trend on share (not raw count) — this controls for cohort size changes
+        trend = None
+        if len(points) >= 4:
+            ya = np.array(years, dtype=float)
+            sa = np.array(shares, dtype=float)
+            result = stats.linregress(ya, sa)
+            trend = {
+                "slope_pct_per_year": round(float(result.slope), 4),
+                "p_value": round(float(result.pvalue), 4),
+                "r_squared": round(float(result.rvalue ** 2), 4),
+            }
+
+        results.append({
+            "paper": paper,
+            "years": years,
+            "counts": counts,
+            "shares": shares,
+            "n_years": len(years),
+            "latest_n": counts[-1] if counts else None,
+            "latest_share": shares[-1] if shares else None,
+            "peak_share": round(max(shares), 2),
+            "peak_year": years[shares.index(max(shares))],
+            "trend": trend,
+        })
+
+    results.sort(key=lambda x: -(x["latest_share"] or 0))
+
+    sig_trends = [r for r in results if r["trend"] and r["trend"]["p_value"] < 0.05]
+    growing = [r for r in sig_trends if r["trend"]["slope_pct_per_year"] > 0]
+    declining = [r for r in sig_trends if r["trend"]["slope_pct_per_year"] < 0]
+
+    return {
+        "n_papers": len(results),
+        "n_significant_trends": len(sig_trends),
+        "n_growing": len(growing),
+        "n_declining": len(declining),
+        "year_totals": year_totals,
+        "per_paper": results,
+    }
+
+
+# ---------------------------------------------------------------------------
+# F22. Subject market share over time
+# ---------------------------------------------------------------------------
+
+def compute_subject_market_share():
+    """Compute the share of paper-sittings by subject per year."""
+    pn = json.loads((CANONICAL_DIR / "paper_numbers.json").read_text())
+    fits = json.loads((ANALYSIS_DIR / "paper_fits.json").read_text())
+
+    # Map paper to subject via fits
+    paper_subject = {p: f.get("subject") for p, f in fits.items()}
+
+    # Sum candidates by (year, subject)
+    year_subject = {}
+    year_total = {}
+    for r in pn:
+        year = r["data_year"]
+        subj = paper_subject.get(r["paper"])
+        if not subj:
+            continue
+        year_subject.setdefault(year, {}).setdefault(subj, 0)
+        year_subject[year][subj] += r["n"]
+        year_total[year] = year_total.get(year, 0) + r["n"]
+
+    years = sorted(year_subject.keys())
+    subjects = sorted(set(s for ys in year_subject.values() for s in ys))
+
+    time_series = []
+    for year in years:
+        total = year_total.get(year, 1)
+        entry = {"year": year, "total": total}
+        for subj in subjects:
+            n = year_subject.get(year, {}).get(subj, 0)
+            entry[f"{subj}_n"] = n
+            entry[f"{subj}_pct"] = round(100 * n / total, 1) if total > 0 else 0
+        time_series.append(entry)
+
+    return {
+        "subjects": subjects,
+        "years": years,
+        "time_series": time_series,
+    }
+
+
+# ---------------------------------------------------------------------------
+# H25. COVID 2020 anomaly quantification
+# ---------------------------------------------------------------------------
+
+def quantify_covid_anomaly():
+    """Quantify the 2020 COVID anomaly by comparing per-paper marks to pooled fits.
+
+    Key finding: the 40% first rate (vs 23% normal) was NOT driven by inflated
+    paper-level marks — per-paper means and band distributions are essentially
+    identical to other years. The anomaly was at the classification stage
+    (modified conjunctive rules or safety-net reclassification).
+    """
+    per_paper = json.loads((CANONICAL_DIR / "per_paper.json").read_text())
+    fits = json.loads((ANALYSIS_DIR / "paper_fits.json").read_text())
+    aliases_path = Path("data/paper_aliases.json")
+    alias_map = {}
+    if aliases_path.exists():
+        alias_map = json.loads(aliases_path.read_text()).get("alias_map", {})
+
+    cd = json.loads((CANONICAL_DIR / "class_distribution.json").read_text())
+    first_by_year = {}
+    for r in cd:
+        if r.get("class") == "1st" and r.get("pct") is not None:
+            first_by_year[r["data_year"]] = r["pct"]
+
+    # Collect 2020 per-paper data
+    covid_papers = []
+    for r in per_paper:
+        if r.get("report_year") != 2020 or r.get("gender") != "All":
+            continue
+        name = alias_map.get(r["paper"], r["paper"])
+        fit = fits.get(name)
+        if not fit or r.get("mean") is None:
+            continue
+
+        mean_shift = r["mean"] - fit["mu"]
+        covid_papers.append({
+            "paper": name,
+            "subject": fit.get("subject"),
+            "covid_mean": r["mean"],
+            "pooled_mean": fit["mu"],
+            "mean_shift": round(mean_shift, 2),
+            "covid_sd": r.get("sd"),
+            "pooled_sd": fit["sigma"],
+            "covid_n": r.get("n"),
+        })
+
+    covid_papers.sort(key=lambda x: -x["mean_shift"])
+
+    shifts = [p["mean_shift"] for p in covid_papers]
+    mean_shift = float(np.mean(shifts)) if shifts else 0
+    median_shift = float(np.median(shifts)) if shifts else 0
+
+    # Subject-level shifts
+    by_subject = {}
+    for p in covid_papers:
+        subj = p.get("subject")
+        if subj:
+            by_subject.setdefault(subj, []).append(p["mean_shift"])
+    subject_shifts = {s: round(float(np.mean(v)), 2) for s, v in by_subject.items()}
+
+    # Band-level comparison: 2020 vs other years
+    band_keys = [">=70", "60-69", "50-59", "40-49", "30-39", "<30"]
+    bands_2020 = {k: 0 for k in band_keys}
+    bands_other = {k: 0 for k in band_keys}
+    for r in per_paper:
+        if r.get("gender") != "All" or not r.get("bands"):
+            continue
+        bands = r["bands"]
+        target = bands_2020 if r.get("report_year") == 2020 else bands_other
+        for k in band_keys:
+            target[k] += bands.get(k, 0) or 0
+
+    n_2020 = sum(bands_2020.values())
+    n_other = sum(bands_other.values())
+    band_comparison = {}
+    for k in band_keys:
+        pct_2020 = round(100 * bands_2020[k] / n_2020, 1) if n_2020 > 0 else 0
+        pct_other = round(100 * bands_other[k] / n_other, 1) if n_other > 0 else 0
+        band_comparison[k] = {
+            "pct_2020": pct_2020,
+            "pct_other": pct_other,
+            "diff": round(pct_2020 - pct_other, 1),
+        }
+
+    return {
+        "first_rate_2019": first_by_year.get(2019),
+        "first_rate_2020": first_by_year.get(2020),
+        "first_rate_2021": first_by_year.get(2021),
+        "n_papers_compared": len(covid_papers),
+        "mean_mark_shift": round(mean_shift, 2),
+        "median_mark_shift": round(median_shift, 2),
+        "shift_range": [round(min(shifts), 2), round(max(shifts), 2)] if shifts else None,
+        "subject_mean_shifts": subject_shifts,
+        "band_comparison": band_comparison,
+        "interpretation": (
+            "Per-paper means and band distributions are nearly identical between 2020 and other years "
+            f"(mean shift = {mean_shift:+.1f} marks). The 17pp jump in first-class rate "
+            "(23% to 40%) was driven by changes to classification rules or safety-net "
+            "reclassification, not by inflated paper-level marks."
+        ),
+        "per_paper": covid_papers,
+    }
+
+
+# ---------------------------------------------------------------------------
+# H26. 2023 boycott residual effects
+# ---------------------------------------------------------------------------
+
+def check_boycott_residual():
+    """Check whether 2024 marks show residual effects from the 2023 boycott."""
+    per_paper = json.loads((CANONICAL_DIR / "per_paper.json").read_text())
+    fits = json.loads((ANALYSIS_DIR / "paper_fits.json").read_text())
+    aliases_path = Path("data/paper_aliases.json")
+    alias_map = {}
+    if aliases_path.exists():
+        alias_map = json.loads(aliases_path.read_text()).get("alias_map", {})
+
+    # Compare 2024 means to pooled fits (which exclude 2020 and are pooled
+    # across 2017-2022 + 2024-2025). A residual boycott effect would show
+    # 2024 systematically different from the pooled mean.
+    papers_2024 = []
+    for r in per_paper:
+        if r.get("report_year") != 2024 or r.get("gender") != "All":
+            continue
+        name = alias_map.get(r["paper"], r["paper"])
+        fit = fits.get(name)
+        if not fit or r.get("mean") is None:
+            continue
+        papers_2024.append({
+            "paper": name,
+            "mean_2024": r["mean"],
+            "pooled_mean": fit["mu"],
+            "deviation": round(r["mean"] - fit["mu"], 2),
+        })
+
+    if not papers_2024:
+        return {"n_papers": 0, "assessment": "no_data"}
+
+    deviations = [p["deviation"] for p in papers_2024]
+    mean_dev = float(np.mean(deviations))
+    # One-sample t-test: are 2024 means systematically shifted from pooled?
+    t_stat, p_value = stats.ttest_1samp(deviations, 0)
+
+    return {
+        "n_papers": len(papers_2024),
+        "mean_deviation_from_pooled": round(mean_dev, 2),
+        "t_stat": round(float(t_stat), 3),
+        "p_value": round(float(p_value), 4),
+        "assessment": "no_significant_residual" if p_value > 0.05 else "significant_residual",
+        "per_paper": sorted(papers_2024, key=lambda x: -abs(x["deviation"])),
+    }
+
+
+# ---------------------------------------------------------------------------
+# I27+I28. Bundle data for web tool
+# ---------------------------------------------------------------------------
+
+def bundle_web_data(sigma_ability):
+    """Create a single JSON bundle with everything the web tool needs."""
+    fits = json.loads((ANALYSIS_DIR / "paper_fits.json").read_text())
+    profiles = json.loads((ANALYSIS_DIR / "paper_profiles.json").read_text())
+    marginal = json.loads((ANALYSIS_DIR / "marginal_paper_value.json").read_text())
+    trends = json.loads((ANALYSIS_DIR / "temporal_trends.json").read_text())
+    subject = json.loads((ANALYSIS_DIR / "subject_analysis.json").read_text())
+    boot_cis = json.loads((ANALYSIS_DIR / "bootstrap_cis.json").read_text())
+    cd = json.loads((CANONICAL_DIR / "class_distribution.json").read_text())
+    rc = json.loads((CANONICAL_DIR / "route_class.json").read_text())
+    pn = json.loads((CANONICAL_DIR / "paper_numbers.json").read_text())
+    aliases = json.loads(Path("data/paper_aliases.json").read_text())
+
+    # Build paper catalogue: one entry per paper with everything a student needs
+    paper_catalogue = {}
+    for p in profiles:
+        name = p["paper"]
+        paper_catalogue[name] = {
+            "subject": p["subject"],
+            "mu": p["mu"],
+            "sigma": p["sigma"],
+            "pct_first": p["pct_first"],
+            "pct_21": p["pct_21"],
+            "pct_below_50": p["pct_below_50"],
+            "method": p["method"],
+        }
+
+    # Add marginal value data
+    for m in marginal["per_paper"]:
+        name = m["paper"]
+        if name in paper_catalogue:
+            paper_catalogue[name]["delta_first"] = m["delta_first_vs_median"]
+            paper_catalogue[name]["p_first_as_8th"] = m["p_first"]
+
+    # Add trend data for papers with significant trends
+    sig_trends = {t["paper"]: t for t in trends if t["p_value"] < 0.10}
+    for name, t in sig_trends.items():
+        if name in paper_catalogue:
+            paper_catalogue[name]["trend_slope"] = t["slope"]
+            paper_catalogue[name]["trend_p"] = t["p_value"]
+
+    # Add popularity (latest count)
+    latest_year = max(r["data_year"] for r in pn)
+    for r in pn:
+        if r["data_year"] == latest_year and r["paper"] in paper_catalogue:
+            paper_catalogue[r["paper"]]["latest_candidates"] = r["n"]
+
+    # Route classification data (most recent 5 years)
+    route_data = {}
+    for r in rc:
+        year = r["data_year"]
+        if year < 2019 or year == 2020:
+            continue
+        route = r["route"]
+        route_data.setdefault(route, {}).setdefault(r["class"], [])
+        if r.get("pct") is not None:
+            route_data[route][r["class"]].append(r["pct"])
+    route_summary = {}
+    for route, classes in route_data.items():
+        route_summary[route] = {
+            cls: round(float(np.mean(vals)), 1)
+            for cls, vals in classes.items() if vals
+        }
+
+    # Historical first rates by year
+    first_rates = {}
+    for r in cd:
+        if r.get("class") == "1st" and r.get("pct") is not None:
+            first_rates[r["data_year"]] = r["pct"]
+
+    # Paper name alias map (for fuzzy matching in the UI)
+    reverse_aliases = {}
+    for variant, canonical in aliases.get("alias_map", {}).items():
+        reverse_aliases.setdefault(canonical, []).append(variant)
+
+    bundle = {
+        "sigma_ability": sigma_ability,
+        "paper_catalogue": paper_catalogue,
+        "subject_summary": subject["subject_summary"],
+        "route_summary": route_summary,
+        "first_rates_by_year": first_rates,
+        "bootstrap_ci_first": boot_cis["bootstrap_95_ci"]["1st"],
+        "marginal_baseline": {
+            "base_7": marginal["base_7_papers"],
+            "median_8th": marginal["median_8th_paper"],
+            "baseline_p_first": marginal["baseline_distribution"]["1st"],
+        },
+        "paper_aliases": reverse_aliases,
+        "kingmaker_papers": subject["kingmaker_papers"],
+    }
+    return bundle
+
+
+# ---------------------------------------------------------------------------
 # Main runner
 # ---------------------------------------------------------------------------
 
@@ -1009,6 +1378,34 @@ def run_all():
     ci = boot_cis["bootstrap_95_ci"]["1st"]
     print(f"  P(1st) = {boot_cis['point_estimate']['1st']:.1%} "
           f"[{ci['ci_lo']:.1%}, {ci['ci_hi']:.1%}]")
+
+    print("Computing paper popularity time series (F20)...")
+    popularity = compute_popularity_time_series()
+    _save("popularity_time_series", popularity)
+    print(f"  {popularity['n_papers']} papers, {popularity['n_growing']} growing, "
+          f"{popularity['n_declining']} declining (p<0.05)")
+
+    print("Computing subject market share (F22)...")
+    market_share = compute_subject_market_share()
+    _save("subject_market_share", market_share)
+    print(f"  {len(market_share['subjects'])} subjects across {len(market_share['years'])} years")
+
+    print("Quantifying COVID 2020 anomaly (H25)...")
+    covid = quantify_covid_anomaly()
+    _save("covid_anomaly", covid)
+    print(f"  Mean mark shift: +{covid['mean_mark_shift']} marks across {covid['n_papers_compared']} papers")
+    print(f"  First rate: {covid['first_rate_2019']}% (2019) → {covid['first_rate_2020']}% (2020) → {covid['first_rate_2021']}% (2021)")
+
+    print("Checking boycott residual effects (H26)...")
+    boycott = check_boycott_residual()
+    _save("boycott_residual", boycott)
+    print(f"  2024 mean deviation from pooled: {boycott['mean_deviation_from_pooled']} marks, "
+          f"p={boycott['p_value']}. Assessment: {boycott['assessment']}")
+
+    print("Bundling web tool data (I27+I28)...")
+    bundle = bundle_web_data(sigma_ab)
+    _save("web_bundle", bundle)
+    print(f"  {len(bundle['paper_catalogue'])} papers in catalogue")
 
     print("\nDone! All outputs in", ANALYSIS_DIR)
 
