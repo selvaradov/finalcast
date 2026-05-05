@@ -161,17 +161,121 @@ Static site (HTML + CSS + JS) with chalkboard aesthetic. All data pre-computed a
 - **Comparison to typical papers:** "At your ability level, if you'd picked the 8 most popular papers instead, your P(1st) would be X% (currently Y%)."
 - **Best swap suggestion:** Pre-computed marginal paper values identify the single swap with highest P(1st) impact.
 
-### What-if: planned ideas (not yet implemented)
+### What-if: Conditional marks mode (next to implement)
 
-1. **Fix marks on some papers:** Student enters estimated marks for 1–3 papers. Simulation conditions on those marks and simulates only the remaining papers.
-2. **Ability shift comparison:** "If you were one tier higher, your P(1st) would go from X% to Y%."
-3. **Best possible 8 papers at your level:** Paper combination that maximises P(1st).
-4. **Risk profile:** P(dropping below 2.1) — downside risk framing.
-5. **Subject-lock comparison:** How route choice interacts with ability.
-6. **Mark threshold analysis:** How many 70+ marks needed for a realistic First shot.
+**Use case**: "I'm taking these 8 papers. Assume Ethics and Nic Eth are quite mid and Micro Analysis goes badly. What do I need in the other papers to get a First?"
 
-### Remaining TODOs
-- [ ] Interactive hero graph on landing page (stretch goal)
+The value is NOT just "what average do you need" (trivial arithmetic) — it's:
+1. Contextualising qualitative language ("mid", "badly") into paper-specific marks and percentiles
+2. Showing what percentile the remaining papers need to be at
+3. Accounting for conjunctive rules (2 marks of 70+, no mark below 50) not just the 68.5 average
+
+**Design:**
+
+- In Calculator, after selecting papers + ability, user can optionally **fix marks** on any subset of papers (1–7; at least 1 must remain free)
+- Each fixable paper gets a mark input (number field or slider) with contextual info:
+  - "55 = 30th percentile for this paper" (derived from fitted distribution)
+  - Qualitative label: "well below average" / "below average" / "average" / "above average" / "strong"
+- Fixed marks are **not** simulated — they're treated as constants
+- Remaining (free) papers are still simulated via the proportional loading model, conditioned on the same latent ability θ
+
+**Output — "what do I need?" framing:**
+
+Rather than just showing P(First) given fixed marks, answer the question inversely:
+- "To have a ≥50% chance of a First, you need to perform at roughly the **Xth percentile** across your remaining papers"
+- Show this as a binary search over θ (or equivalently, over the ability slider)
+- Also show: "That translates to roughly [mark₁, mark₂, ...] in your free papers" (expected marks at that percentile for each paper)
+- And: "Key constraint: you need 2+ marks of 70. At this level, P(getting 2+ of 70) in your free papers = Y%"
+
+**Implementation approach:**
+
+1. UI: Add a "Fix marks" toggle/section below paper picker. When active, each selected paper shows a mark input (disabled by default, click to fix).
+2. Engine: New function `simulateConditional(papers, fixedMarks, ability, nDraws)`:
+   - For each draw: set fixed papers to their fixed marks, simulate free papers as normal
+   - Classify as usual, return distribution
+3. Threshold search: Binary search over ability percentile to find where P(target_class) crosses 50% (or user-chosen threshold)
+4. Display: Show both the "given these marks, here's your distribution" AND the "here's what you need" inverse framing
+
+**Stretch features:**
+- Preset mark suggestions: "quite mid" = paper mean, "badly" = mean − 1σ, "well" = mean + 1σ
+- "What if I ace one paper?" — show impact of moving a free paper to 75+
+- Shareable URL: `?papers=A|B|...&fixed=A:55,B:60&ability=75`
+
+### Other planned features (not yet implemented)
+
+- [ ] Ability shift comparison: "If you were one tier higher, your P(1st) would go from X% to Y%"
+- [ ] Risk profile: P(dropping below 2.1) — downside risk framing
 - [ ] Head-to-head paper comparison in Explorer
+- [ ] Interactive hero graph on landing page (stretch goal)
 - [ ] Deploy to GitHub Pages
 - [ ] Mobile responsiveness pass
+
+---
+
+## Data Quality & Pipeline Fixes
+
+### Problem 1: 2024/2025 per-paper extraction is incomplete (59% miss rate)
+
+**Findings** (see `audit_data_gaps.py` for full audit):
+
+The LLM extraction for 2024 and 2025 only captured ~34 of ~70 papers each year. The missed papers include very large ones (Theory of Politics n=112, Quantitative Economics n=110, Political Sociology n=87).
+
+**Root cause**: The 2024–2025 reports split per-paper stats across multiple tables/sections. The LLM is extracting only one section (the gender-disaggregated table, which covers ~34 papers with All/M/F breakdowns). A second section with aggregated stats for remaining papers (especially Philosophy and Politics) is being missed entirely.
+
+Evidence:
+- Captured papers: 12 Econ, 9 Pol, 5 Phil
+- Missed papers: 5 Econ, 17 Pol, 21 Phil
+- Not an n-threshold issue: papers with n=112, 110, 87 are missed
+- Some missed papers (Phil Logic n=9, Thesis in Politics n=11) likely have only aggregate stats because small n prevents gender disaggregation
+
+**Fix needed in `llm_extract.py`**:
+- [ ] Strengthen the per_paper prompt to explicitly mention that 2024–2025 reports have MULTIPLE sections with per-paper stats (likely Section 2 and Section 3, or by subject area)
+- [ ] Tell the LLM to look for ALL tables with paper-level statistics, not just the first/largest one
+- [ ] For papers with small n that aren't gender-disaggregated, emit a single gender="All" row
+- [ ] Re-run extraction for 2024 and 2025: `python llm_extract.py --year 2024 --section per_paper` and same for 2025
+- [ ] Run `python audit_data_gaps.py` to verify improvement
+
+**Also**: Phil Logic 2025 has a record but mean=None — the LLM saw the paper but didn't extract its stats. The data exists in the report (n=7, mean=64.1, SD=5.1).
+
+### Problem 2: Earlier years have minor gaps
+
+2016–2022 have 7–20% miss rates, mostly papers with n ≤ 5 where stats are suppressed. A few anomalies:
+- 2019: Missing "Special Subject in Politics: International Security and Conflict" (n=44) and "Comparative Political Economy" (n=24)
+- 2020: Missing "Comparative Political Economy" (n=22)
+
+These are worth re-extracting too, but lower priority than the 2024/2025 gap.
+
+### Problem 3: Alias mismatches (paper_numbers vs per_paper)
+
+Some papers appear in per_paper but NOT in paper_numbers for certain years (e.g. Econometrics, Game Theory in 2015–2019). Likely these are Economics papers reported in the per-paper stats table but listed under a different name in the paper_numbers table, or are M.Phil/intercollegiate papers not in the PPE candidate count table.
+
+- [ ] Investigate and fix alias mapping for these papers
+
+### Problem 4: `web/data.json` is not deterministically generated
+
+`bundle_web_data()` in `analysis.py` produces `data/analysis/web_bundle.json` with 9 keys. But `web/data.json` has 15 keys — the following 7 were manually added:
+
+| Key | Description | Source |
+|-----|-------------|--------|
+| `class_distribution_ts` | Class dist % by year | `data/canonical/class_distribution.json` |
+| `gender_class_ts` | First rate by gender by year | `data/canonical/gender_class.json` |
+| `gender_stats_ts` | Mean/SD by gender by year | `data/canonical/gender_stats.json` |
+| `paper_means_ts` | Per-paper mean by year (for 3 sig-trend papers) | `data/canonical/per_paper.json` |
+| `paper_popularity` | Candidate counts per paper per year | `data/canonical/paper_numbers.json` |
+| `rho` | Correlation parameter | Should be derived from sigma_ability |
+| `subject_aggregates_ts` | Subject means/SDs by year | `data/canonical/subject_aggregates.json` |
+
+Also `sigma_ability` (in bundle) was renamed to `rho` (in data.json) — these are different params.
+
+**Fix**: Extend `bundle_web_data()` in `analysis.py` to produce ALL keys needed by the web tool, then add a step to copy `data/analysis/web_bundle.json` → `web/data.json` (or have `build.py` do it). The pipeline should be:
+
+```
+analysis.py (run_all) → data/analysis/web_bundle.json → web/data.json
+```
+
+- [ ] Add `class_distribution_ts`, `gender_class_ts`, `gender_stats_ts`, `subject_aggregates_ts` to `bundle_web_data()`
+- [ ] Add `paper_means_ts` (per-paper mean time series for papers with significant trends)
+- [ ] Add `paper_popularity` (candidate counts from paper_numbers)
+- [ ] Add `rho` parameter (currently hardcoded as 0.196)
+- [ ] Remove `sigma_ability` or keep both (the web engine uses `rho` for the proportional model)
+- [ ] Add a copy/build step so `web/data.json` is regenerated from the bundle
