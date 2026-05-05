@@ -140,7 +140,13 @@ All analysis code in `analysis.py`; outputs in `data/analysis/`. Run `python ana
 
 ## Phase 3: Web Tool — IMPLEMENTED
 
-Static site (HTML + CSS + JS) with chalkboard aesthetic. All data pre-computed and bundled as JSON (`web/data.json`, ~59KB). No backend — runs entirely in the browser. Minimal build step: `python web/build.py` syncs copy from `web/copy/*.md` into `index.html`.
+Static site (HTML + CSS + JS) with chalkboard aesthetic. All data pre-computed and bundled as JSON (`web/data.json`, ~59KB). No backend — runs entirely in the browser.
+
+### Build pipeline
+
+- `python web/build.py` — fills `template.html` copy placeholders from `web/copy/*.md` → produces `index.html`
+- `python web/serve.py` — dev server with live reload (watches .js, .css, .md, template.html)
+- `python analysis.py` — regenerates `web/data.json` from canonical data
 
 ### Architecture
 
@@ -149,12 +155,13 @@ Static site (HTML + CSS + JS) with chalkboard aesthetic. All data pre-computed a
 - KaTeX for math rendering (copyable)
 - URL query params for shareable state (`?papers=A|B|...&ability=75`)
 - SVG feTurbulence/feDisplacementMap for hand-drawn border effects
+- Copy source of truth: `web/copy/*.md` → `template.html` placeholders → `index.html`
 
 ### Pages — all implemented
 
 1. **Calculator** — Paper picker (grouped by subject, searchable), ability slider, Monte Carlo results (50k draws), paper swap suggestions, what-if comparison vs typical papers, per-paper breakdown
-2. **Explorer** — Scatter plot (mean vs volatility), paper profiles, temporal trends (significant + near-sig), popularity shifts, filter/sort/search
-3. **Overview** — First-class rate time series, gender gap, subject comparison, classification breakdown, score trends chart, popularity growth rates, COVID/kingmaker callouts, ToC
+2. **Explorer** — Scatter plot (mean vs volatility, bubble size = popularity), paper profiles with sparkline, kingmaker list, trend badges on cards, filter by subject, sort/search
+3. **Overview** — First-class rate (with COVID expandable), gender gap, subject comparison, classification breakdown, score trends, popularity trends. Sticky full-width ToC with scroll-spy.
 4. **Methodology** — Full model description with KaTeX-rendered math
 
 ### What-if: implemented
@@ -200,6 +207,17 @@ Rather than just showing P(First) given fixed marks, answer the question inverse
 - Preset mark suggestions: "quite mid" = paper mean, "badly" = mean − 1σ, "well" = mean + 1σ
 - "What if I ace one paper?" — show impact of moving a free paper to 75+
 - Shareable URL: `?papers=A|B|...&fixed=A:55,B:60&ability=75`
+
+### Popularity trends chart — rethink
+
+Current: horizontal bar showing total pp change in share of sittings. The chart fits OLS to each paper's share over all available years (2023 excluded — no data due to boycott). "Change" = slope × time span. Significance test uses OLS standard error on slope.
+
+Problem: doesn't show absolute sizes, hard to interpret without context.
+
+Options:
+- Sized-dot scatter (x = avg share, y = change pp, radius = latest n)
+- Arrow chart: start-share → end-share
+- Slope chart: first-year share vs last-year share
 
 ### Other planned features (not yet implemented)
 
@@ -247,35 +265,10 @@ These are worth re-extracting too, but lower priority than the 2024/2025 gap.
 
 ### Problem 3: Alias mismatches (paper_numbers vs per_paper)
 
-Some papers appear in per_paper but NOT in paper_numbers for certain years (e.g. Econometrics, Game Theory in 2015–2019). Likely these are Economics papers reported in the per-paper stats table but listed under a different name in the paper_numbers table, or are M.Phil/intercollegiate papers not in the PPE candidate count table.
+Some papers appear in per_paper but NOT in paper_numbers for certain years (e.g. Econometrics, Game Theory in 2015–2019). Possibly these are Economics papers reported in the per-paper stats table but listed under a different name in the paper_numbers table.
 
 - [ ] Investigate and fix alias mapping for these papers
 
-### Problem 4: `web/data.json` is not deterministically generated
+### Problem 4: `web/data.json` pipeline — FIXED
 
-`bundle_web_data()` in `analysis.py` produces `data/analysis/web_bundle.json` with 9 keys. But `web/data.json` has 15 keys — the following 7 were manually added:
-
-| Key | Description | Source |
-|-----|-------------|--------|
-| `class_distribution_ts` | Class dist % by year | `data/canonical/class_distribution.json` |
-| `gender_class_ts` | First rate by gender by year | `data/canonical/gender_class.json` |
-| `gender_stats_ts` | Mean/SD by gender by year | `data/canonical/gender_stats.json` |
-| `paper_means_ts` | Per-paper mean by year (for 3 sig-trend papers) | `data/canonical/per_paper.json` |
-| `paper_popularity` | Candidate counts per paper per year | `data/canonical/paper_numbers.json` |
-| `rho` | Correlation parameter | Should be derived from sigma_ability |
-| `subject_aggregates_ts` | Subject means/SDs by year | `data/canonical/subject_aggregates.json` |
-
-Also `sigma_ability` (in bundle) was renamed to `rho` (in data.json) — these are different params.
-
-**Fix**: Extend `bundle_web_data()` in `analysis.py` to produce ALL keys needed by the web tool, then add a step to copy `data/analysis/web_bundle.json` → `web/data.json` (or have `build.py` do it). The pipeline should be:
-
-```
-analysis.py (run_all) → data/analysis/web_bundle.json → web/data.json
-```
-
-- [ ] Add `class_distribution_ts`, `gender_class_ts`, `gender_stats_ts`, `subject_aggregates_ts` to `bundle_web_data()`
-- [ ] Add `paper_means_ts` (per-paper mean time series for papers with significant trends)
-- [ ] Add `paper_popularity` (candidate counts from paper_numbers)
-- [ ] Add `rho` parameter (currently hardcoded as 0.196)
-- [ ] Remove `sigma_ability` or keep both (the web engine uses `rho` for the proportional model)
-- [ ] Add a copy/build step so `web/data.json` is regenerated from the bundle
+`bundle_web_data()` in `analysis.py` now produces all 15 keys the web tool needs, and the runner writes directly to `web/data.json`. Pipeline is deterministic: `python analysis.py` → `web/data.json`.
