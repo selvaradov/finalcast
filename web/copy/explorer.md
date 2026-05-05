@@ -6,9 +6,9 @@ Browse and compare 81 papers across Philosophy, Politics, and Economics.
 
 Each dot is a paper. Hover for details. Bubble size reflects average recent candidate numbers (2019–2025). X-axis: mean mark (higher = easier). Y-axis: standard deviation (higher = more volatile outcomes).
 
-## Temporal Trends
+## Kingmaker papers
 
-Papers whose mean mark has drifted significantly over 2015–2025 (excluding 2020). Only 3 of 65 papers show statistically significant trends (p<0.05).
+Kingmaker papers (σ ≥ 10) — high enough variance that a single sitting can swing a full class:
 
 ## Paper Profiles
 

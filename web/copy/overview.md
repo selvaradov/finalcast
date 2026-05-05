@@ -28,8 +28,4 @@ Change in share of all paper-sittings for papers still available, with statistic
 
 ## COVID 2020
 
-40% Firsts. Marking scale was unchanged, but classification conventions were modified as a safety net: the lowest two passing results were dropped when calculating the classification average. Per-paper means shifted by only +0.3 marks — the doubled First rate came entirely from the classification rule change. 2020 is excluded from all model fitting.
-
-## Kingmaker papers
-
-Papers with σ ≥ 10 — high enough variance that a single sitting can swing you up or down a full class.
+Marking scale was unchanged, but classification conventions were modified as a safety net: the lowest two passing results were dropped when calculating the classification average. Per-paper means shifted by only +0.3 marks — the doubled First rate came entirely from the classification rule change. 2020 is excluded from all model fitting.

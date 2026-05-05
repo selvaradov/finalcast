@@ -48,7 +48,6 @@ const Overview = (() => {
     buildClassDistChart(DATA);
     buildTrendsChart(DATA);
     buildPopularityChart(DATA);
-    fillKingmakers(DATA);
     wireToc();
   }
 
@@ -416,7 +415,8 @@ const Overview = (() => {
   }
 
   function wireToc() {
-    document.querySelectorAll('.overview-toc a[data-scroll]').forEach(a => {
+    const links = document.querySelectorAll('.overview-toc a[data-scroll]');
+    links.forEach(a => {
       a.style.cursor = 'pointer';
       a.addEventListener('click', (e) => {
         e.preventDefault();
@@ -424,16 +424,20 @@ const Overview = (() => {
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
+
+    const sections = Array.from(links).map(a => document.getElementById(a.dataset.scroll)).filter(Boolean);
+    const visible = new Set();
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) visible.add(entry.target.id);
+        else visible.delete(entry.target.id);
+      }
+      const active = sections.find(s => visible.has(s.id));
+      links.forEach(a => a.classList.toggle('active', active ? a.dataset.scroll === active.id : false));
+    }, { rootMargin: '-80px 0px -40% 0px' });
+    sections.forEach(s => observer.observe(s));
   }
 
-  function fillKingmakers(DATA) {
-    const el = document.getElementById('kingmaker-list');
-    if (!el || !DATA.kingmaker_papers) return;
-    el.innerHTML = DATA.kingmaker_papers.map(p => {
-      const color = p.subject === 'Economics' ? GOLD : p.subject === 'Politics' ? RED : BLUE;
-      return `<span class="kingmaker-item"><span style="color:${color}">●</span> ${p.paper} <span class="kingmaker-sigma">σ=${p.sigma.toFixed(1)}</span></span>`;
-    }).join('');
-  }
 
   return { init };
 })();

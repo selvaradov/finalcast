@@ -1,16 +1,18 @@
 """
-Sync copy from web/copy/*.md into index.html.
+Build index.html from template.html + copy/*.md.
 
 Usage: python web/build.py
 
-Reads section notes and descriptions from copy/*.md and updates
-the corresponding text in index.html. This lets you edit the prose
-in markdown without touching the HTML structure.
+Reads template.html (HTML structure with empty copy placeholders) and
+fills in prose content from copy/*.md files to produce index.html.
 
-Each replaceable block in index.html is marked with:
-  <!-- copy:filename.section-slug -->text here<!-- /copy -->
+Each replaceable block in template.html is marked with:
+  <!-- copy:filename.section-slug --><!-- /copy -->
 
-Run this script after editing any copy/*.md file.
+The .md files use ## headings to define sections (slugified to match).
+Content before the first ## heading goes into the "intro" slot.
+
+Run this script after editing any copy/*.md file or template.html.
 """
 
 import re
@@ -18,6 +20,7 @@ from pathlib import Path
 
 WEB = Path(__file__).parent
 COPY_DIR = WEB / 'copy'
+TEMPLATE = WEB / 'template.html'
 INDEX = WEB / 'index.html'
 
 
@@ -33,7 +36,7 @@ def parse_md(content):
 
     for line in content.split('\n'):
         if line.startswith('# ') and current == 'intro':
-            continue  # skip top-level heading
+            continue
         elif line.startswith('## '):
             current = slugify(line[3:].strip())
             sections[current] = []
@@ -42,7 +45,6 @@ def parse_md(content):
         else:
             sections[current].append(line)
 
-    # Clean trailing empty lines
     for k in sections:
         while sections[k] and not sections[k][-1].strip():
             sections[k].pop()
@@ -56,11 +58,10 @@ def build():
     for f in COPY_DIR.glob('*.md'):
         copy[f.stem] = parse_md(f.read_text())
 
-    html = INDEX.read_text()
+    html = TEMPLATE.read_text()
 
-    # Replace <!-- copy:file.section -->...<!-- /copy --> blocks
     def replacer(m):
-        key = m.group(1)  # e.g. "overview.firsts"
+        key = m.group(1)
         file_key, section_key = key.split('.', 1)
         sections = copy.get(file_key, {})
         new_text = sections.get(section_key, None)
@@ -76,12 +77,9 @@ def build():
         flags=re.DOTALL
     )
 
-    if new_html != html:
-        INDEX.write_text(new_html)
-        n = len(re.findall(r'<!-- copy:', new_html))
-        print(f"Updated {n} copy blocks in index.html")
-    else:
-        print("No changes needed")
+    INDEX.write_text(new_html)
+    n = len(re.findall(r'<!-- copy:', new_html))
+    print(f"Built index.html ({n} copy blocks filled)")
 
 
 if __name__ == '__main__':

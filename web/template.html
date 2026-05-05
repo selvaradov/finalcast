@@ -39,12 +39,12 @@
     <div class="landing-inner">
       <div class="landing-text">
         <h1>What might your<br>final result be?</h1>
-        <p class="landing-sub"><!-- copy:landing.intro -->A (not too serious) look at 15 years of Oxford PPE results.<!-- /copy --></p>
+        <p class="landing-sub"><!-- copy:landing.intro --><!-- /copy --></p>
         <div class="landing-actions">
           <a href="#calculator" class="btn btn-primary">Start calculator</a>
           <span class="landing-or">or browse the data ↓</span>
         </div>
-        <p class="landing-caveat"><!-- copy:landing.caveat -->This is a prior, not a prediction.<!-- /copy --></p>
+        <p class="landing-caveat"><!-- copy:landing.caveat --><!-- /copy --></p>
       </div>
       <div class="landing-graphic">
         <div class="hero-chart" id="hero-chart">
@@ -186,7 +186,7 @@
   <section class="page-section" data-page="explorer" style="display:none;">
     <div class="container">
       <h1 class="page-title">Paper Explorer</h1>
-      <p class="page-intro"><!-- copy:explorer.intro -->Browse and compare 81 papers across Philosophy, Politics, and Economics.<!-- /copy --></p>
+      <p class="page-intro"><!-- copy:explorer.intro --><!-- /copy --></p>
 
       <div class="explorer-controls">
         <div class="explorer-filters">
@@ -199,19 +199,19 @@
 
       <div class="card">
         <h2>Mean mark vs Volatility</h2>
-        <p class="section-note"><!-- copy:explorer.mean-mark-vs-volatility -->Each dot is a paper. Hover for details. Bubble size reflects average recent candidate numbers (2019–2025). X-axis: mean mark (higher = easier). Y-axis: standard deviation (higher = more volatile outcomes).<!-- /copy --></p>
+        <p class="section-note"><!-- copy:explorer.mean-mark-vs-volatility --><!-- /copy --></p>
         <div class="chart-wrap">
           <canvas id="scatter-chart"></canvas>
         </div>
         <div class="kingmaker-note">
-          <span class="kingmaker-label"><!-- copy:explorer.kingmaker-papers -->Kingmaker papers (σ ≥ 10) — high enough variance that a single sitting can swing a full class:<!-- /copy --></span>
+          <span class="kingmaker-label"><!-- copy:explorer.kingmaker-papers --><!-- /copy --></span>
           <span id="kingmaker-list" class="kingmaker-value"></span>
         </div>
       </div>
 
       <div class="card">
         <h2>Paper Profiles</h2>
-        <p class="section-note"><!-- copy:explorer.paper-profiles -->Click any paper above or browse below.<!-- /copy --></p>
+        <p class="section-note"><!-- copy:explorer.paper-profiles --><!-- /copy --></p>
         <div id="paper-profile" class="paper-profile">
           <p class="profile-placeholder">Select a paper from the scatter plot or the list below.</p>
         </div>
@@ -241,7 +241,7 @@
   <section class="page-section" data-page="overview" style="display:none;">
     <div class="container">
       <h1 class="page-title">The Big Picture</h1>
-      <p class="page-intro"><!-- copy:overview.intro -->15 years of Oxford PPE results at a glance.<!-- /copy --></p>
+      <p class="page-intro"><!-- copy:overview.intro --><!-- /copy --></p>
 
       <nav class="overview-toc">
         <a data-scroll="ov-firsts">First-class rate</a>
@@ -253,19 +253,19 @@
 
       <div class="card" id="ov-firsts">
         <h2>First-class rate over time</h2>
-        <p class="section-note"><!-- copy:overview.first-class-rate-over-time -->Percentage of candidates awarded a First, 2005–2025. The 2020 spike is COVID, not a cohort change.<!-- /copy --></p>
+        <p class="section-note"><!-- copy:overview.first-class-rate-over-time --><!-- /copy --></p>
         <div class="chart-wrap">
           <canvas id="firsts-chart"></canvas>
         </div>
         <details class="chart-detail">
           <summary>What happened in 2020?</summary>
-          <div class="chart-detail-body"><!-- copy:overview.covid-2020 -->Marking scale was unchanged, but classification conventions were modified as a safety net: the lowest two passing results were dropped when calculating the classification average. Per-paper means shifted by only +0.3 marks — the doubled First rate came entirely from the classification rule change. 2020 is excluded from all model fitting.<!-- /copy --></div>
+          <div class="chart-detail-body"><!-- copy:overview.covid-2020 --><!-- /copy --></div>
         </details>
       </div>
 
       <div class="card" id="ov-gender">
         <h2>Gender gap</h2>
-        <p class="section-note"><!-- copy:overview.gender-gap -->First-class rate by gender where data is available. The gap has been persistent at roughly 8–10 percentage points.<!-- /copy --></p>
+        <p class="section-note"><!-- copy:overview.gender-gap --><!-- /copy --></p>
         <div class="chart-wrap">
           <canvas id="gender-chart"></canvas>
         </div>
@@ -273,7 +273,7 @@
 
       <div class="card" id="ov-subjects">
         <h2>Subject comparison</h2>
-        <p class="section-note"><!-- copy:overview.subject-comparison -->Weighted averages across all papers in each subject.<!-- /copy --></p>
+        <p class="section-note"><!-- copy:overview.subject-comparison --><!-- /copy --></p>
         <div class="chart-wrap chart-wrap--short">
           <canvas id="subject-chart"></canvas>
         </div>
@@ -281,7 +281,7 @@
 
       <div class="card" id="ov-classification">
         <h2>Classification breakdown</h2>
-        <p class="section-note"><!-- copy:overview.classification-breakdown -->Full distribution of results each year.<!-- /copy --></p>
+        <p class="section-note"><!-- copy:overview.classification-breakdown --><!-- /copy --></p>
         <div class="chart-wrap">
           <canvas id="class-dist-chart"></canvas>
         </div>
@@ -289,13 +289,13 @@
 
       <div class="card" id="ov-trends">
         <h2>Score trends</h2>
-        <p class="section-note"><!-- copy:overview.score-trends -->Mean marks for papers with statistically significant drift (p<0.05). Most papers are stable — only 3 of 65 show significant trends. 2020 is included (marking was normal that year — only classification was anomalous). 2023 has no per-paper data (marking boycott). Phil Logic and Thesis weren't reported in 2024–25.<!-- /copy --></p>
+        <p class="section-note"><!-- copy:overview.score-trends --><!-- /copy --></p>
         <div class="chart-wrap">
           <canvas id="trends-chart"></canvas>
         </div>
 
         <h2 style="margin-top:32px;">Popularity trends</h2>
-        <p class="section-note"><!-- copy:overview.popularity-trends -->Change in share of all paper-sittings for papers still available, with statistically significant trends (p<0.05, two-sided) and more than 1 percentage point total change. Excludes 2023 (boycott).<!-- /copy --></p>
+        <p class="section-note"><!-- copy:overview.popularity-trends --><!-- /copy --></p>
         <div class="chart-wrap" style="height:480px;">
           <canvas id="popularity-trends-chart"></canvas>
         </div>
