@@ -340,7 +340,7 @@ const Overview = (() => {
 
         // Convert to share of all paper-sittings (percentage points)
         const pts = Object.entries(yearData)
-          .filter(([y]) => yearTotals[y] && y !== '2020' && y !== '2023')
+          .filter(([y]) => yearTotals[y] && y !== '2023')
           .map(([y, n]) => [+y, (n / yearTotals[y]) * 100])
           .sort((a, b) => a[0] - b[0]);
         if (pts.length < 5) return null;

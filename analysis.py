@@ -1247,7 +1247,10 @@ def check_boycott_residual():
 # ---------------------------------------------------------------------------
 
 def bundle_web_data(sigma_ability):
-    """Create a single JSON bundle with everything the web tool needs."""
+    """Create a single JSON bundle with everything the web tool needs.
+
+    This produces the complete web/data.json — no manual additions needed.
+    """
     fits = json.loads((ANALYSIS_DIR / "paper_fits.json").read_text())
     profiles = json.loads((ANALYSIS_DIR / "paper_profiles.json").read_text())
     marginal = json.loads((ANALYSIS_DIR / "marginal_paper_value.json").read_text())
@@ -1257,6 +1260,10 @@ def bundle_web_data(sigma_ability):
     cd = json.loads((CANONICAL_DIR / "class_distribution.json").read_text())
     rc = json.loads((CANONICAL_DIR / "route_class.json").read_text())
     pn = json.loads((CANONICAL_DIR / "paper_numbers.json").read_text())
+    gc = json.loads((CANONICAL_DIR / "gender_class.json").read_text())
+    gs = json.loads((CANONICAL_DIR / "gender_stats.json").read_text())
+    sa = json.loads((CANONICAL_DIR / "subject_aggregates.json").read_text())
+    pp = json.loads((CANONICAL_DIR / "per_paper.json").read_text())
     aliases = json.loads(Path("data/paper_aliases.json").read_text())
 
     # Build paper catalogue: one entry per paper with everything a student needs
@@ -1280,7 +1287,7 @@ def bundle_web_data(sigma_ability):
             paper_catalogue[name]["delta_first"] = m["delta_first_vs_median"]
             paper_catalogue[name]["p_first_as_8th"] = m["p_first"]
 
-    # Add trend data for papers with significant trends
+    # Add trend data for papers with near-significant or significant trends
     sig_trends = {t["paper"]: t for t in trends if t["p_value"] < 0.10}
     for name, t in sig_trends.items():
         if name in paper_catalogue:
@@ -1321,8 +1328,60 @@ def bundle_web_data(sigma_ability):
     for variant, canonical in aliases.get("alias_map", {}).items():
         reverse_aliases.setdefault(canonical, []).append(variant)
 
+    # --- Time series for Overview/Explorer charts ---
+
+    # Class distribution by year: {year: {class: pct}}
+    class_distribution_ts = {}
+    for r in cd:
+        if r.get("pct") is not None:
+            year_str = str(r["data_year"])
+            class_distribution_ts.setdefault(year_str, {})[r["class"]] = r["pct"]
+
+    # Gender class by year: {year: {gender: {class: pct}}}
+    gender_class_ts = {}
+    for r in gc:
+        if r.get("value_type") == "pct" and r.get("value") is not None:
+            year_str = str(r["data_year"])
+            gender_class_ts.setdefault(year_str, {}).setdefault(
+                r["gender"], {})[r["class"]] = r["value"]
+
+    # Gender stats by year: {year: {gender: {mean, sd, n}}}
+    gender_stats_ts = {}
+    for r in gs:
+        year_str = str(r["data_year"])
+        gender_stats_ts.setdefault(year_str, {})[r["gender"]] = {
+            "mean": r.get("mean"),
+            "sd": r.get("sd"),
+            "n": r.get("n"),
+        }
+
+    # Subject aggregates by year: {year: {subject: {mean, sd}}}
+    subject_aggregates_ts = {}
+    for r in sa:
+        year_str = str(r["data_year"])
+        subject_aggregates_ts.setdefault(year_str, {})[r["subject"]] = {
+            "mean": r.get("mean"),
+            "sd": r.get("sd"),
+        }
+
+    # Paper means time series (for papers with trends): {paper: {year: mean}}
+    papers_with_trends = {t["paper"] for t in trends if t["p_value"] < 0.10}
+    paper_means_ts = {}
+    for r in pp:
+        if r.get("paper") in papers_with_trends and r.get("mean") is not None:
+            if r.get("gender", "All") == "All":
+                paper_means_ts.setdefault(r["paper"], {})[
+                    str(r["report_year"])] = r["mean"]
+
+    # Paper popularity (candidate counts): {paper: {year: n}}
+    paper_popularity = {}
+    for r in pn:
+        paper_popularity.setdefault(r["paper"], {})[str(r["data_year"])] = r["n"]
+
+    # Calibrated rho for proportional loading model
+    RHO = 0.196
+
     bundle = {
-        "sigma_ability": sigma_ability,
         "paper_catalogue": paper_catalogue,
         "subject_summary": subject["subject_summary"],
         "route_summary": route_summary,
@@ -1335,6 +1394,13 @@ def bundle_web_data(sigma_ability):
         },
         "paper_aliases": reverse_aliases,
         "kingmaker_papers": subject["kingmaker_papers"],
+        "rho": RHO,
+        "class_distribution_ts": class_distribution_ts,
+        "gender_class_ts": gender_class_ts,
+        "gender_stats_ts": gender_stats_ts,
+        "subject_aggregates_ts": subject_aggregates_ts,
+        "paper_means_ts": paper_means_ts,
+        "paper_popularity": paper_popularity,
     }
     return bundle
 
@@ -1426,7 +1492,11 @@ def run_all():
     print("Bundling web tool data (I27+I28)...")
     bundle = bundle_web_data(sigma_ab)
     _save("web_bundle", bundle)
+    web_data_path = Path("web/data.json")
+    with open(web_data_path, "w") as f:
+        json.dump(bundle, f, separators=(",", ":"))
     print(f"  {len(bundle['paper_catalogue'])} papers in catalogue")
+    print(f"  → {web_data_path} ({web_data_path.stat().st_size // 1024}KB)")
 
     print("\nDone! All outputs in", ANALYSIS_DIR)
 
