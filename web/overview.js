@@ -47,7 +47,7 @@ const Overview = (() => {
     buildSubjectChart(DATA);
     buildClassDistChart(DATA);
     buildTrendsChart(DATA);
-    buildPopularityChart(DATA);
+    buildPopularityArrowChart(DATA);
     wireToc();
   }
 
@@ -313,14 +313,13 @@ const Overview = (() => {
     });
   }
 
-  function buildPopularityChart(DATA) {
-    const canvas = document.getElementById('popularity-trends-chart');
+  function buildPopularityArrowChart(DATA) {
+    const canvas = document.getElementById('popularity-arrow-chart');
     if (!canvas) return;
 
     const popularity = DATA.paper_popularity || {};
     const catalogue = DATA.paper_catalogue || {};
 
-    // Compute total paper-sittings per year for share calculation
     const yearTotals = {};
     for (const yearData of Object.values(popularity)) {
       for (const [y, n] of Object.entries(yearData)) {
@@ -328,7 +327,6 @@ const Overview = (() => {
       }
     }
 
-    // Only include papers still available (have 2024 or 2025 data)
     const currentPapers = Object.entries(popularity)
       .filter(([, yd]) => yd['2024'] !== undefined || yd['2025'] !== undefined);
 
@@ -337,13 +335,19 @@ const Overview = (() => {
         const subject = catalogue[name]?.subject;
         if (!subject) return null;
 
-        // Convert to share of all paper-sittings (percentage points)
         const pts = Object.entries(yearData)
           .filter(([y]) => yearTotals[y] && y !== '2023')
           .map(([y, n]) => [+y, (n / yearTotals[y]) * 100])
           .sort((a, b) => a[0] - b[0]);
         if (pts.length < 5) return null;
 
+        // Early vs recent averages (actual values for display)
+        const earlyPts = pts.slice(0, 3);
+        const recentPts = pts.slice(-3);
+        const startShare = earlyPts.reduce((s, p) => s + p[1], 0) / earlyPts.length;
+        const endShare = recentPts.reduce((s, p) => s + p[1], 0) / recentPts.length;
+
+        // OLS for significance filter only
         const n = pts.length;
         const meanX = pts.reduce((s, p) => s + p[0], 0) / n;
         const meanY = pts.reduce((s, p) => s + p[1], 0) / n;
@@ -355,47 +359,57 @@ const Overview = (() => {
         }
         const slope = ssxy / ssxx;
         const se = Math.sqrt(Math.max(0, (ssyy - slope * ssxy)) / ((n - 2) * ssxx));
-
-        // Two-sided t-test p-value (approximation)
         const t = se > 0 ? Math.abs(slope / se) : 0;
-        const df = n - 2;
         const pApprox = Math.exp(-0.717 * t - 0.416 * t * t);
-
-        // Total change over the period (pp)
         const totalChange = slope * (pts[pts.length - 1][0] - pts[0][0]);
 
-        return { name, subject, slope, totalChange, pApprox, avgShare: meanY, n };
-      })
-      .filter(Boolean)
-      // Significant at 5% AND >1pp total change
-      .filter(d => d.pApprox < 0.05 && Math.abs(d.totalChange) > 1);
+        if (pApprox >= 0.05 || Math.abs(totalChange) <= 1) return null;
 
-    items.sort((a, b) => b.totalChange - a.totalChange);
+        return { name, subject, startShare, endShare, change: endShare - startShare, slope, pApprox };
+      })
+      .filter(Boolean);
+
+    // Sort by end share descending (biggest papers at top)
+    items.sort((a, b) => b.endShare - a.endShare);
+
+    const labels = items.map(d => d.name.length > 30 ? d.name.slice(0, 28) + '…' : d.name);
+    const xMax = Math.ceil(Math.max(...items.map(d => Math.max(d.startShare, d.endShare))) + 0.5);
+
+    // Use scatter with points at midpoint of each arrow for tooltip hit area
+    const midpoints = items.map((d, i) => ({
+      x: (d.startShare + d.endShare) / 2,
+      y: i
+    }));
 
     new Chart(canvas, {
-      type: 'bar',
+      type: 'scatter',
       data: {
-        labels: items.map(d => d.name.length > 28 ? d.name.slice(0, 26) + '…' : d.name),
         datasets: [{
-          label: 'Change in share (pp)',
-          data: items.map(d => +d.totalChange.toFixed(1)),
-          backgroundColor: items.map(d => (d.totalChange >= 0 ? BLUE : RED) + '88'),
-          borderColor: items.map(d => d.totalChange >= 0 ? BLUE : RED),
-          borderWidth: 1
+          data: midpoints,
+          pointRadius: items.map(d => Math.max(12, Math.abs(d.endShare - d.startShare) * 8)),
+          pointHoverRadius: items.map(d => Math.max(14, Math.abs(d.endShare - d.startShare) * 8 + 2)),
+          backgroundColor: 'transparent',
+          borderWidth: 0
         }]
       },
       options: {
         ...CHART_DEFAULTS,
-        indexAxis: 'y',
         plugins: {
           ...CHART_DEFAULTS.plugins,
           legend: { display: false },
           tooltip: {
             ...CHART_DEFAULTS.plugins.tooltip,
+            mode: 'nearest',
+            intersect: false,
             callbacks: {
-              afterLabel: (item) => {
+              title: (ctx) => items[ctx[0]?.dataIndex]?.name || '',
+              label: (item) => {
                 const d = items[item.dataIndex];
-                return `Avg share: ${d.avgShare.toFixed(1)}% · ${d.slope > 0 ? '+' : ''}${d.slope.toFixed(2)} pp/yr · p=${d.pApprox < 0.001 ? '<0.001' : d.pApprox.toFixed(3)}`;
+                return [
+                  `${d.startShare.toFixed(1)}% → ${d.endShare.toFixed(1)}%`,
+                  `${d.slope > 0 ? '+' : ''}${d.slope.toFixed(2)} pp/yr`,
+                  `p = ${d.pApprox < 0.001 ? '<0.001' : d.pApprox.toFixed(3)}`
+                ];
               }
             }
           }
@@ -403,14 +417,71 @@ const Overview = (() => {
         scales: {
           x: {
             ...CHART_DEFAULTS.scales.x,
-            title: { display: true, text: 'Change in share of sittings (pp)', color: CHALK_DIM, font: { size: 12 } }
+            title: { display: true, text: 'Share of all sittings (%)', color: CHALK_DIM, font: { size: 12 } },
+            min: 0,
+            max: xMax
           },
           y: {
             ...CHART_DEFAULTS.scales.y,
-            ticks: { color: CHALK_DIM, font: { size: 11 }, autoSkip: false }
+            reverse: true,
+            min: -0.5,
+            max: items.length - 0.5,
+            afterBuildTicks: (axis) => {
+              axis.ticks = items.map((_, i) => ({ value: i }));
+            },
+            ticks: {
+              color: CHALK_DIM,
+              font: { size: 11 },
+              autoSkip: false,
+              callback: (val) => Number.isInteger(val) ? (labels[val] || '') : ''
+            },
+            grid: { display: false }
           }
         }
-      }
+      },
+      plugins: [{
+        id: 'arrows',
+        afterDatasetsDraw(chart) {
+          const ctx = chart.ctx;
+          const xScale = chart.scales.x;
+          const yScale = chart.scales.y;
+
+          items.forEach((d, i) => {
+            const x1 = xScale.getPixelForValue(d.startShare);
+            const x2 = xScale.getPixelForValue(d.endShare);
+            const cy = yScale.getPixelForValue(i);
+            const color = d.change >= 0 ? BLUE : RED;
+            const headLen = 10;
+            const dir = x2 > x1 ? 1 : -1;
+
+            ctx.save();
+            // Shaft
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x1, cy);
+            ctx.lineTo(x2 - dir * headLen, cy);
+            ctx.stroke();
+
+            // Start dot
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x1, cy, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(x2, cy);
+            ctx.lineTo(x2 - dir * headLen, cy - 7);
+            ctx.lineTo(x2 - dir * headLen, cy + 7);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+          });
+        }
+      }]
     });
   }
 
