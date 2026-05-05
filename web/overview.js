@@ -46,7 +46,10 @@ const Overview = (() => {
     buildGenderChart(DATA);
     buildSubjectChart(DATA);
     buildClassDistChart(DATA);
+    buildTrendsChart(DATA);
+    buildPopularityChart(DATA);
     fillKingmakers(DATA);
+    wireToc();
   }
 
   function buildFirstsChart(DATA) {
@@ -233,6 +236,133 @@ const Overview = (() => {
           }
         }
       }
+    });
+  }
+
+  function buildTrendsChart(DATA) {
+    const canvas = document.getElementById('trends-chart');
+    if (!canvas) return;
+
+    const catalogue = DATA.paper_catalogue;
+    const meansTs = DATA.paper_means_ts || {};
+
+    const sigPapers = Object.entries(catalogue)
+      .filter(([, p]) => p.trend_p !== undefined && p.trend_p < 0.05)
+      .sort((a, b) => a[1].trend_p - b[1].trend_p);
+
+    const colors = [BLUE, RED, GOLD];
+    const allYears = new Set();
+    sigPapers.forEach(([name]) => {
+      Object.keys(meansTs[name] || {}).forEach(y => allYears.add(y));
+    });
+    const years = [...allYears].sort().filter(y => y !== '2020');
+
+    const datasets = sigPapers.map(([name, p], i) => {
+      const ts = meansTs[name] || {};
+      const color = colors[i % colors.length];
+      const dir = p.trend_slope > 0 ? '+' : '';
+      return {
+        label: `${name} (${dir}${p.trend_slope.toFixed(2)}/yr)`,
+        data: years.map(y => ts[y] ?? null),
+        borderColor: color,
+        backgroundColor: color + '22',
+        tension: 0.3,
+        pointRadius: 4,
+        borderWidth: 2,
+        spanGaps: true
+      };
+    });
+
+    new Chart(canvas, {
+      type: 'line',
+      data: { labels: years, datasets },
+      options: {
+        ...CHART_DEFAULTS,
+        scales: {
+          ...CHART_DEFAULTS.scales,
+          y: {
+            ...CHART_DEFAULTS.scales.y,
+            title: { display: true, text: 'Mean mark', color: CHALK_DIM, font: { size: 12 } }
+          }
+        }
+      }
+    });
+  }
+
+  function buildPopularityChart(DATA) {
+    const canvas = document.getElementById('popularity-trends-chart');
+    if (!canvas) return;
+
+    const popularity = DATA.paper_popularity || {};
+    const catalogue = DATA.paper_catalogue || {};
+
+    const changes = Object.entries(popularity)
+      .map(([name, years]) => {
+        const y2015 = years['2015'] || 0;
+        const y2025 = years['2025'] || 0;
+        if (y2015 < 20 || y2025 < 5) return null;
+        return { name, y2015, y2025, change: y2025 - y2015, subject: catalogue[name]?.subject };
+      })
+      .filter(Boolean)
+      .filter(d => d.subject);
+
+    changes.sort((a, b) => b.change - a.change);
+    const top = changes.slice(0, 8);
+    const bottom = changes.slice(-8).reverse();
+    const items = [...top, ...bottom];
+
+    const subjectColor = (s) => s === 'Philosophy' ? BLUE : s === 'Politics' ? RED : GOLD;
+
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: items.map(d => d.name.length > 25 ? d.name.slice(0, 23) + '…' : d.name),
+        datasets: [{
+          label: 'Change in candidates (2015→2025)',
+          data: items.map(d => d.change),
+          backgroundColor: items.map(d => (d.change >= 0 ? BLUE : RED) + '88'),
+          borderColor: items.map(d => d.change >= 0 ? BLUE : RED),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        indexAxis: 'y',
+        plugins: {
+          ...CHART_DEFAULTS.plugins,
+          legend: { display: false },
+          tooltip: {
+            ...CHART_DEFAULTS.plugins.tooltip,
+            callbacks: {
+              afterLabel: (item) => {
+                const d = items[item.dataIndex];
+                return `${d.y2015} → ${d.y2025} candidates`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ...CHART_DEFAULTS.scales.x,
+            title: { display: true, text: 'Change in candidates', color: CHALK_DIM, font: { size: 12 } }
+          },
+          y: {
+            ...CHART_DEFAULTS.scales.y,
+            ticks: { color: CHALK_DIM, font: { size: 11 }, autoSkip: false }
+          }
+        }
+      }
+    });
+  }
+
+  function wireToc() {
+    document.querySelectorAll('.overview-toc a[data-scroll]').forEach(a => {
+      a.style.cursor = 'pointer';
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.getElementById(a.dataset.scroll);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     });
   }
 

@@ -8,19 +8,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Fredericka+the+Great&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <script>window.MathJax = {
-    tex: { inlineMath: [['$','$']] },
-    svg: { fontCache: 'global' },
-    options: { skipHtmlTags: ['script','noscript','style','textarea'], enableAssistiveMml: true }
-  };</script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js"></script>
 </head>
 <body>
   <!-- SVG filters for hand-drawn effects -->
   <svg class="chalk-filters" xmlns="http://www.w3.org/2000/svg">
-    <filter id="chalk-rough">
-      <feTurbulence type="turbulence" baseFrequency="0.04" numOctaves="3" result="noise" seed="2"/>
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G"/>
+    <filter id="chalk-rough" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" result="noise" seed="3"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
   </svg>
 
@@ -245,7 +244,16 @@
       <h1 class="page-title">The Big Picture</h1>
       <p class="page-intro">15 years of Oxford PPE results at a glance.</p>
 
-      <div class="card">
+      <nav class="overview-toc">
+        <a data-scroll="ov-firsts">First-class rate</a>
+        <a data-scroll="ov-gender">Gender gap</a>
+        <a data-scroll="ov-subjects">Subjects</a>
+        <a data-scroll="ov-classification">Classification</a>
+        <a data-scroll="ov-trends">Score trends</a>
+        <a data-scroll="ov-context">Context</a>
+      </nav>
+
+      <div class="card" id="ov-firsts">
         <h2>First-class rate over time</h2>
         <p class="section-note">Percentage of candidates awarded a First, 2005–2025. The 2020 spike is COVID, not a cohort change.</p>
         <div class="chart-wrap">
@@ -253,7 +261,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="ov-gender">
         <h2>Gender gap</h2>
         <p class="section-note">First-class rate by gender where data is available. The gap has been persistent at roughly 8–10 percentage points.</p>
         <div class="chart-wrap">
@@ -261,7 +269,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="ov-subjects">
         <h2>Subject comparison</h2>
         <p class="section-note">Weighted averages across all papers in each subject.</p>
         <div class="chart-wrap chart-wrap--short">
@@ -269,7 +277,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="ov-classification">
         <h2>Classification breakdown</h2>
         <p class="section-note">Full distribution of results each year.</p>
         <div class="chart-wrap">
@@ -277,7 +285,21 @@
         </div>
       </div>
 
-      <div class="overview-callouts">
+      <div class="card" id="ov-trends">
+        <h2>Score trends</h2>
+        <p class="section-note">Papers with statistically significant drift in mean mark over 2015–2025 (excluding 2020). Most papers are stable — only 3 of 65 show significant trends.</p>
+        <div class="chart-wrap">
+          <canvas id="trends-chart"></canvas>
+        </div>
+
+        <h2 style="margin-top:32px;">Popularity trends</h2>
+        <p class="section-note">Biggest shifts in candidate numbers, 2015 vs 2025 (papers with ≥20 candidates in both years).</p>
+        <div class="chart-wrap" style="height:480px;">
+          <canvas id="popularity-trends-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="overview-callouts" id="ov-context">
         <div class="context-card">
           <h3>COVID 2020</h3>
           <div class="context-value">40% Firsts</div>
