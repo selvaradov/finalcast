@@ -24,7 +24,7 @@ Mean marks for papers with statistically significant drift (p<0.05). Most papers
 
 ## Popularity trends
 
-Change in share of all paper-sittings for papers still available, with statistically significant trends (p<0.05, two-sided) and more than 1 percentage point total change. Excludes 2023 (boycott).
+How each paper's share of all sittings has trended over time. We fit a linear trend to each paper's year-on-year share and show papers where the trend is statistically significant (p<0.05) and large enough to matter (>1 percentage point total drift). 2023 has no data (marking boycott).
 
 ## COVID 2020
 
