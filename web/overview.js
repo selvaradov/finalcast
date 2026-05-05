@@ -264,13 +264,14 @@ const Overview = (() => {
       const dir = p.trend_slope > 0 ? '+' : '';
       return {
         label: `${name} (${dir}${p.trend_slope.toFixed(2)}/yr)`,
-        data: years.map(y => y === '2020' || y === '2023' ? null : (ts[y] ?? null)),
+        data: years.map(y => y === '2023' ? null : (ts[y] ?? null)),
         borderColor: color,
         backgroundColor: color + '22',
-        tension: 0.3,
+        tension: 0,
         pointRadius: 4,
+        pointBackgroundColor: years.map(y => y === '2020' ? color + '55' : color),
         borderWidth: 2,
-        spanGaps: false
+        spanGaps: true
       };
     });
 
@@ -285,7 +286,7 @@ const Overview = (() => {
             ...CHART_DEFAULTS.plugins.tooltip,
             callbacks: {
               afterLabel: (item) => {
-                if (item.label === '2020') return 'COVID — excluded';
+                if (item.label === '2020') return 'COVID — marking normal, classification anomalous';
                 if (item.label === '2023') return 'Boycott — no data';
                 return '';
               }
@@ -299,7 +300,7 @@ const Overview = (() => {
             ticks: {
               color: (ctx) => {
                 const v = years[ctx.index];
-                return (v === '2020' || v === '2023') ? CHALK_FAINT : CHALK_DIM;
+                return v === '2023' ? CHALK_FAINT : CHALK_DIM;
               },
               font: { size: 11 }
             }
@@ -320,14 +321,27 @@ const Overview = (() => {
     const popularity = DATA.paper_popularity || {};
     const catalogue = DATA.paper_catalogue || {};
 
-    const items = Object.entries(popularity)
+    // Compute total paper-sittings per year for share calculation
+    const yearTotals = {};
+    for (const yearData of Object.values(popularity)) {
+      for (const [y, n] of Object.entries(yearData)) {
+        yearTotals[y] = (yearTotals[y] || 0) + n;
+      }
+    }
+
+    // Only include papers still available (have 2024 or 2025 data)
+    const currentPapers = Object.entries(popularity)
+      .filter(([, yd]) => yd['2024'] !== undefined || yd['2025'] !== undefined);
+
+    const items = currentPapers
       .map(([name, yearData]) => {
         const subject = catalogue[name]?.subject;
         if (!subject) return null;
+
+        // Convert to share of all paper-sittings (percentage points)
         const pts = Object.entries(yearData)
-          .filter(([y]) => y !== '2020' && y !== '2023')
-          .map(([y, n]) => [+y, n])
-          .filter(([, n]) => n >= 5)
+          .filter(([y]) => yearTotals[y] && y !== '2020' && y !== '2023')
+          .map(([y, n]) => [+y, (n / yearTotals[y]) * 100])
           .sort((a, b) => a[0] - b[0]);
         if (pts.length < 5) return null;
 
@@ -341,30 +355,33 @@ const Overview = (() => {
           ssyy += (y - meanY) ** 2;
         }
         const slope = ssxy / ssxx;
-        const r2 = ssxx > 0 && ssyy > 0 ? (ssxy * ssxy) / (ssxx * ssyy) : 0;
-        const se = Math.sqrt((ssyy - slope * ssxy) / ((n - 2) * ssxx));
+        const se = Math.sqrt(Math.max(0, (ssyy - slope * ssxy)) / ((n - 2) * ssxx));
+
+        // Two-sided t-test p-value (approximation)
         const t = se > 0 ? Math.abs(slope / se) : 0;
+        const df = n - 2;
         const pApprox = Math.exp(-0.717 * t - 0.416 * t * t);
 
-        const avgCandidates = meanY;
-        const pctPerYear = (slope / avgCandidates) * 100;
+        // Total change over the period (pp)
+        const totalChange = slope * (pts[pts.length - 1][0] - pts[0][0]);
 
-        return { name, subject, slope, pctPerYear, pApprox, avgCandidates, n };
+        return { name, subject, slope, totalChange, pApprox, avgShare: meanY, n };
       })
       .filter(Boolean)
-      .filter(d => d.pApprox < 0.1);
+      // Significant at 5% AND >1pp total change
+      .filter(d => d.pApprox < 0.05 && Math.abs(d.totalChange) > 1);
 
-    items.sort((a, b) => b.pctPerYear - a.pctPerYear);
+    items.sort((a, b) => b.totalChange - a.totalChange);
 
     new Chart(canvas, {
       type: 'bar',
       data: {
         labels: items.map(d => d.name.length > 28 ? d.name.slice(0, 26) + '…' : d.name),
         datasets: [{
-          label: 'Avg annual growth (%/yr)',
-          data: items.map(d => +d.pctPerYear.toFixed(1)),
-          backgroundColor: items.map(d => (d.pctPerYear >= 0 ? BLUE : RED) + '88'),
-          borderColor: items.map(d => d.pctPerYear >= 0 ? BLUE : RED),
+          label: 'Change in share (pp)',
+          data: items.map(d => +d.totalChange.toFixed(1)),
+          backgroundColor: items.map(d => (d.totalChange >= 0 ? BLUE : RED) + '88'),
+          borderColor: items.map(d => d.totalChange >= 0 ? BLUE : RED),
           borderWidth: 1
         }]
       },
@@ -379,7 +396,7 @@ const Overview = (() => {
             callbacks: {
               afterLabel: (item) => {
                 const d = items[item.dataIndex];
-                return `~${Math.round(d.avgCandidates)} avg candidates · ${d.slope > 0 ? '+' : ''}${d.slope.toFixed(1)}/yr`;
+                return `Avg share: ${d.avgShare.toFixed(1)}% · ${d.slope > 0 ? '+' : ''}${d.slope.toFixed(2)} pp/yr · p=${d.pApprox < 0.001 ? '<0.001' : d.pApprox.toFixed(3)}`;
               }
             }
           }
@@ -387,7 +404,7 @@ const Overview = (() => {
         scales: {
           x: {
             ...CHART_DEFAULTS.scales.x,
-            title: { display: true, text: 'Avg growth rate (%/yr)', color: CHALK_DIM, font: { size: 12 } }
+            title: { display: true, text: 'Change in share of sittings (pp)', color: CHALK_DIM, font: { size: 12 } }
           },
           y: {
             ...CHART_DEFAULTS.scales.y,
