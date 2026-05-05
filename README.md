@@ -152,12 +152,23 @@ OLS regression of mean mark on year for each paper with >= 4 years of data (excl
 
 ### Phase 3: Web tool
 
-**`web/`** -- Interactive Grade Prior Calculator. A static site (no build step) with a chalkboard aesthetic.
+**`web/`** -- Interactive PPE Results Explorer. A static site (no build step) with a chalkboard aesthetic.
 
-- `web/data.json` -- Pre-computed bundle (81 papers with mu, sigma, route summaries, etc.)
-- `web/engine.js` -- Monte Carlo simulation engine in JS (classify, simulate with proportional loading, paperMetrics)
-- `web/app.js` -- Application logic (paper picker, ability slider, results rendering, paper breakdown)
-- `web/index.html` + `web/style.css` -- Landing page and calculator UI
+Three pages, hash-routed:
+
+- **Calculator** (`#calculator`) -- Pick 8 papers, set ability percentile, get classification probabilities via Monte Carlo simulation. Features: "use typical papers" quick-start, paper swap suggestions, what-if comparison vs default papers, per-paper breakdown with P(70+) and below-50 risk.
+- **Explorer** (`#explorer`) -- Interactive scatter plot (mean vs volatility, bubble size = popularity). Click any paper for a profile card with stats, temporal trends, and candidate sparkline. Filter by subject, sort by various metrics.
+- **Overview** (`#overview`) -- First-class rate time series, gender gap chart, subject comparison, classification breakdown. COVID 2020 and kingmaker callouts.
+- **Methodology** (`#methodology`) -- Full model description with MathJax rendering.
+
+Key files:
+- `web/data.json` -- Pre-computed bundle (~87KB): 81 papers with fits, route/subject summaries, popularity time series, gender/class distributions
+- `web/engine.js` -- Monte Carlo simulation engine (classify, simulate with proportional loading, paperMetrics)
+- `web/app.js` -- Application logic, routing, URL state persistence
+- `web/explorer.js` -- Explorer page (Chart.js scatter, paper profiles, filtering)
+- `web/overview.js` -- Overview page (Chart.js time series, bar charts)
+
+Paper selections + ability are encoded in URL query params for sharing (e.g. `?papers=Micro|Macro|...&ability=75`).
 
 Serve locally: `cd web && python -m http.server 8080`
 

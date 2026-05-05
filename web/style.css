@@ -14,21 +14,26 @@
   --gold: #f0c75e;
   --font-chalk: 'Caveat', cursive;
   --font-chalk-sm: 'Caveat', cursive;
+  --font-display: 'Fredericka the Great', cursive;
   --font-body: 'Inter', system-ui, sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* SVG filter for rough/hand-drawn edges */
+svg.chalk-filters { position: absolute; width: 0; height: 0; }
+
 body {
   background: var(--bg);
-  color: var(--chalk);
+  color: rgba(232,229,220,0.92);
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.6;
   min-height: 100vh;
   background-image:
-    radial-gradient(ellipse at 20% 50%, rgba(45,50,45,0.4) 0%, transparent 70%),
-    radial-gradient(ellipse at 80% 30%, rgba(40,45,50,0.3) 0%, transparent 70%);
+    radial-gradient(ellipse at 20% 50%, rgba(40,40,42,0.5) 0%, transparent 70%),
+    radial-gradient(ellipse at 80% 30%, rgba(38,38,42,0.4) 0%, transparent 70%);
+  box-shadow: inset 0 0 120px rgba(0,0,0,0.6);
 }
 
 /* chalk-dust noise — two layers for grain + smudge */
@@ -38,7 +43,7 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.04;
+  opacity: 0.045;
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E"),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.25' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23s)' opacity='0.5'/%3E%3C/svg%3E");
@@ -97,7 +102,9 @@ body::after {
   font-size: 2.8rem;
   font-weight: 700;
   margin-bottom: 8px;
-  text-shadow: 0 0 8px rgba(232,229,220,0.08);
+  text-shadow:
+    0 0 8px rgba(232,229,220,0.08),
+    1px 1px 0 rgba(232,229,220,0.03);
 }
 
 .page-intro {
@@ -126,12 +133,13 @@ body::after {
 }
 
 .landing-text h1 {
-  font-family: var(--font-chalk);
-  font-size: 3.4rem;
-  font-weight: 700;
-  line-height: 1.15;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 400;
+  line-height: 1.2;
   margin-bottom: 16px;
-  text-shadow: 0 0 8px rgba(232,229,220,0.08);
+  text-shadow: 0 0 10px rgba(232,229,220,0.1);
+  color: var(--chalk);
 }
 
 .landing-sub {
@@ -170,10 +178,21 @@ body::after {
 
 .stat-box {
   background: rgba(232,229,220,0.04);
-  border: 1px solid rgba(232,229,220,0.08);
+  border: none;
   border-radius: 6px;
   padding: 16px;
   text-align: center;
+  position: relative;
+}
+
+.stat-box::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(232,229,220,0.1);
+  border-radius: 6px;
+  filter: url(#chalk-rough);
+  pointer-events: none;
 }
 
 .stat-number {
@@ -194,10 +213,21 @@ body::after {
 /* hero chart */
 .hero-chart {
   background: rgba(232,229,220,0.03);
-  border: 1px solid rgba(232,229,220,0.08);
+  border: none;
   border-radius: 6px;
   padding: 16px;
   margin-bottom: 16px;
+  position: relative;
+}
+
+.hero-chart::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(232,229,220,0.1);
+  border-radius: 6px;
+  filter: url(#chalk-rough);
+  pointer-events: none;
 }
 
 .hero-chart canvas {
@@ -278,10 +308,21 @@ body::after {
 
 .card {
   background: var(--bg-card);
-  border: 1px solid rgba(232,229,220,0.08);
-  border-radius: 6px;
+  border: none;
+  border-radius: 4px;
   padding: 28px;
   margin-bottom: 24px;
+  position: relative;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid rgba(232,229,220,0.12);
+  border-radius: 4px;
+  filter: url(#chalk-rough);
+  pointer-events: none;
 }
 
 .card h2 {
@@ -438,9 +479,9 @@ body::after {
   white-space: nowrap;
 }
 
-.badge-gentle { background: rgba(91,155,245,0.12); color: var(--blue); }
+.badge-predictable { background: rgba(91,155,245,0.12); color: var(--blue); }
 .badge-moderate { background: rgba(240,199,94,0.12); color: var(--gold); }
-.badge-hard { background: rgba(232,97,77,0.12); color: var(--red); }
+.badge-volatile { background: rgba(232,97,77,0.12); color: var(--red); }
 .badge-kingmaker { background: rgba(232,97,77,0.2); color: var(--red); border: 1px solid rgba(232,97,77,0.3); }
 
 .paper-stats {
@@ -461,7 +502,7 @@ body::after {
 .btn {
   display: inline-block;
   padding: 10px 24px;
-  border-radius: 6px;
+  border-radius: 4px 6px 5px 7px;
   font-family: var(--font-chalk);
   font-size: 20px; font-weight: 700;
   cursor: pointer;
@@ -964,16 +1005,31 @@ body::after {
 
 .explorer-paper-card {
   background: rgba(232,229,220,0.03);
-  border: 1px solid rgba(232,229,220,0.06);
+  border: none;
   border-radius: 6px;
   padding: 12px 16px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.explorer-paper-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(232,229,220,0.08);
+  border-radius: 6px;
+  filter: url(#chalk-rough);
+  pointer-events: none;
+  transition: border-color 0.15s;
 }
 
 .explorer-paper-card:hover {
   background: rgba(91,155,245,0.06);
-  border-color: rgba(91,155,245,0.2);
+}
+
+.explorer-paper-card:hover::before {
+  border-color: rgba(91,155,245,0.25);
 }
 
 .explorer-card-header {

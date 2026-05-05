@@ -165,9 +165,25 @@ The main draw. A student picks their papers, optionally says how good they think
    - "If you swapped [worst paper] for [best available], your P(1st) would change by +Xpp"
    - Per-paper difficulty badges: easy / moderate / hard / kingmaker
 
-5. **What-if mode (stretch goal).** Student enters estimated marks for some papers (e.g. "I think I'll get ~65 on Macro"). The simulation conditions on those marks and simulates only the remaining papers.
+5. **What-if mode.** Comparative statics and conditional simulation.
 
---> I think this is interesting, and maybe in particular it can help people reason through lower and upper-bounding what they need to achieve for the desired classification
+#### What-if: implemented
+- **Comparison to typical papers:** "At your ability level, if you'd picked the 8 most popular papers instead, your P(1st) would be X% (currently Y%)."
+- **Best swap suggestion:** Pre-computed marginal paper values identify the single swap with highest P(1st) impact.
+
+#### What-if: planned ideas (in roughly decreasing feasibility)
+
+1. **Fix marks on some papers:** Student enters estimated marks for 1–3 papers they feel confident about (e.g. "I'll get ~65 on Macro"). Simulation conditions on those marks and simulates only the remaining papers. This lets students reason about "what do I need on my remaining papers to get a First?" — upper/lower bounding.
+
+2. **Ability shift comparison:** "If you were one tier higher (e.g. 75th instead of 50th percentile), your P(1st) would go from X% to Y%." Shows how much the ability slider matters vs paper choice.
+
+3. **Best possible 8 papers at your level:** Show the paper combination that maximises P(1st) at the student's current ability. Useful context — "you're leaving N pp on the table relative to the theoretical best."
+
+4. **Risk profile:** "With your papers, there's a Z% chance of dropping below a 2.1." Framed as downside risk rather than just upside probability. Especially relevant for kingmaker-heavy combos.
+
+5. **Subject-lock comparison:** "If you went full Phil-Econ (drop Politics papers) or full PPE (add a Politics paper), here's how things change." Shows how route choice interacts with ability.
+
+6. **Mark threshold analysis:** "You need at least N marks of 70+ to have a realistic shot at a First with your papers. Currently the model estimates you'll get M of those on average." Makes the conjunctive rules intuitive.
 
 #### Design notes
 

@@ -179,16 +179,16 @@ const App = (() => {
   function difficultyBadge(paper) {
     const sigma = paper.sigma;
     if (sigma >= 10.2) return { label: 'Kingmaker', cls: 'badge-kingmaker' };
-    if (sigma >= 7)    return { label: 'Hard', cls: 'badge-hard' };
+    if (sigma >= 7)    return { label: 'Volatile', cls: 'badge-volatile' };
     if (sigma >= 5)    return { label: 'Moderate', cls: 'badge-moderate' };
-    return { label: 'Gentle', cls: 'badge-gentle' };
+    return { label: 'Predictable', cls: 'badge-predictable' };
   }
 
   const BADGE_TOOLTIPS = {
-    'badge-gentle': 'Gentle: σ < 5 — low variance, predictable outcomes',
+    'badge-predictable': 'Predictable: σ < 5 — tight spread, outcomes cluster near the mean',
     'badge-moderate': 'Moderate: σ 5–7 — typical spread',
-    'badge-hard': 'Hard: σ 7–10 — wide spread, less predictable',
-    'badge-kingmaker': 'Kingmaker: σ ≥ 10 — can swing your class either way'
+    'badge-volatile': 'Volatile: σ 7–10 — wide spread, harder to predict your mark',
+    'badge-kingmaker': 'Kingmaker: σ ≥ 10 — can swing your class up or down'
   };
 
   function buildPaperPicker() {

@@ -182,9 +182,9 @@ const Explorer = (() => {
 
   function diffBadge(sigma) {
     if (sigma >= 10.2) return { label: 'Kingmaker', cls: 'badge-kingmaker' };
-    if (sigma >= 7)    return { label: 'Hard', cls: 'badge-hard' };
+    if (sigma >= 7)    return { label: 'Volatile', cls: 'badge-volatile' };
     if (sigma >= 5)    return { label: 'Moderate', cls: 'badge-moderate' };
-    return { label: 'Gentle', cls: 'badge-gentle' };
+    return { label: 'Predictable', cls: 'badge-predictable' };
   }
 
   function buildPaperList(DATA) {

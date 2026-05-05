@@ -5,13 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PPE Results Explorer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Fredericka+the+Great&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <script>window.MathJax = { tex: { inlineMath: [['$','$']] }, options: { skipHtmlTags: ['script','noscript','style','textarea'] } };</script>
+  <script>window.MathJax = {
+    tex: { inlineMath: [['$','$']] },
+    svg: { fontCache: 'global' },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'], enableAssistiveMml: true }
+  };</script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
+  <!-- SVG filters for hand-drawn effects -->
+  <svg class="chalk-filters" xmlns="http://www.w3.org/2000/svg">
+    <filter id="chalk-rough">
+      <feTurbulence type="turbulence" baseFrequency="0.04" numOctaves="3" result="noise" seed="2"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
   <nav class="top-nav">
     <div class="nav-inner">
       <a href="#" class="nav-title">PPE Results Explorer</a>
@@ -299,14 +311,29 @@
       <h2>1. The model</h2>
       <p>Each paper's mark is modelled as a draw from:</p>
       <p>$$\text{mark}_i = \mu_i + \lambda_i \cdot \theta + \varepsilon_i$$</p>
-      <p>where:</p>
+      <p>The key idea is a <strong>variance decomposition</strong>: the total spread in marks on any paper ($\sigma_i^2$) is split into two components:</p>
       <ul>
-        <li>$\mu_i$ is the paper-specific mean, fitted via maximum likelihood estimation on truncated normal distributions from 15 years of examiners' report band data.</li>
-        <li>$\theta$ is standardised latent ability. The ability slider sets $\theta = \Phi^{-1}(\text{percentile})$, where $\Phi^{-1}$ is the standard normal quantile function.</li>
-        <li>$\lambda_i = \sigma_i \sqrt{\rho}$ is the ability loading, proportional to paper spread. Higher-variance papers are more sensitive to ability.</li>
-        <li>$\varepsilon_i \sim \mathcal{N}(0,\; \sigma_i^2(1-\rho))$ is residual exam-day noise, independent across papers.</li>
+        <li><strong>Ability component</strong> ($\lambda_i^2 = \sigma_i^2 \rho$): the part of variance explained by how good you are overall. Papers with higher total spread are assumed to be more discriminating.</li>
+        <li><strong>Noise component</strong> ($\sigma_i^2(1-\rho)$): residual randomness — exam-day luck, marker variation, topic lottery.</li>
       </ul>
-      <p>The inter-paper correlation parameter $\rho \approx 0.196$ is calibrated so that the model reproduces the observed overall first-class rate of approximately 23% when $\theta = 0$ (the median student).</p>
+      <p>The parameters:</p>
+      <ul>
+        <li>$\mu_i$ — paper-specific mean mark.</li>
+        <li>$\sigma_i$ — paper-specific standard deviation (total spread). Both $\mu_i$ and $\sigma_i$ are fitted jointly by MLE.</li>
+        <li>$\theta$ — standardised latent ability. The ability slider sets $\theta = \Phi^{-1}(\text{percentile})$, where $\Phi^{-1}$ is the standard normal quantile function. So the 75th percentile → $\theta \approx 0.67$.</li>
+        <li>$\lambda_i = \sigma_i \sqrt{\rho}$ — ability loading, proportional to paper spread.</li>
+        <li>$\varepsilon_i \sim \mathcal{N}(0,\; \sigma_i^2(1-\rho))$ — residual exam-day noise, independent across papers.</li>
+      </ul>
+
+      <h3>Why truncated normal?</h3>
+      <p>Marks are bounded in $[0, 100]$ and typically clustered in the 55–75 range. An ordinary normal would place implausible probability mass below 0 or above 100. The truncated normal respects these bounds and better fits the observed compression of marks near class boundaries.</p>
+
+      <h3>Fitting $\mu_i$ and $\sigma_i$</h3>
+      <p>The examiners' reports give <em>band counts</em>: for each paper, the number of candidates scoring 70+, 60–69, 50–59, 40–49, 30–39, and &lt;30. We fit a truncated normal $\mathcal{N}(\mu_i, \sigma_i^2)$ truncated to $[0, 100]$ by maximising the multinomial log-likelihood of these bin counts. Data is pooled across all available years (2017–2022, 2024–2025) excluding 2020.</p>
+
+      <h3>Calibration of $\rho$</h3>
+      <p>The inter-paper correlation $\rho \approx 0.196$ is calibrated so that the model reproduces the observed ~23% first-class rate <em>when averaged across the full ability distribution</em> (integrating over $\theta \sim \mathcal{N}(0,1)$). This was done via binary search on 500k simulations with the 8 most popular papers.</p>
+      <p>Note that at $\theta = 0$ specifically (the median student), the First rate is only ~11%. The population average is pulled up by the right tail — analogous to how mean income exceeds median income.</p>
 
       <h2>2. Classification rules</h2>
       <p>PPE uses <em>conjunctive</em> classification — candidates need both an average threshold and a minimum count of papers at the relevant mark level:</p>
