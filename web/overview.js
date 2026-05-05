@@ -92,7 +92,7 @@ const Overview = (() => {
           y: {
             ...CHART_DEFAULTS.scales.y,
             title: { display: true, text: '% First', color: CHALK_DIM, font: { size: 12 } },
-            min: 10,
+            min: 0,
             max: 45
           }
         }
@@ -246,30 +246,31 @@ const Overview = (() => {
     const catalogue = DATA.paper_catalogue;
     const meansTs = DATA.paper_means_ts || {};
 
+    const PAPER_COLORS = {
+      'Philosophical Logic': BLUE,
+      'Thesis in Politics': RED,
+      'Microeconomic Analysis': GOLD
+    };
+
     const sigPapers = Object.entries(catalogue)
       .filter(([, p]) => p.trend_p !== undefined && p.trend_p < 0.05)
-      .sort((a, b) => a[1].trend_p - b[1].trend_p);
+      .sort((a, b) => a[0].localeCompare(b[0]));
 
-    const colors = [BLUE, RED, GOLD];
-    const allYears = new Set();
-    sigPapers.forEach(([name]) => {
-      Object.keys(meansTs[name] || {}).forEach(y => allYears.add(y));
-    });
-    const years = [...allYears].sort().filter(y => y !== '2020');
+    const years = ['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'];
 
-    const datasets = sigPapers.map(([name, p], i) => {
+    const datasets = sigPapers.map(([name, p]) => {
       const ts = meansTs[name] || {};
-      const color = colors[i % colors.length];
+      const color = PAPER_COLORS[name] || CHALK;
       const dir = p.trend_slope > 0 ? '+' : '';
       return {
         label: `${name} (${dir}${p.trend_slope.toFixed(2)}/yr)`,
-        data: years.map(y => ts[y] ?? null),
+        data: years.map(y => y === '2020' || y === '2023' ? null : (ts[y] ?? null)),
         borderColor: color,
         backgroundColor: color + '22',
         tension: 0.3,
         pointRadius: 4,
         borderWidth: 2,
-        spanGaps: true
+        spanGaps: false
       };
     });
 
@@ -278,11 +279,34 @@ const Overview = (() => {
       data: { labels: years, datasets },
       options: {
         ...CHART_DEFAULTS,
+        plugins: {
+          ...CHART_DEFAULTS.plugins,
+          tooltip: {
+            ...CHART_DEFAULTS.plugins.tooltip,
+            callbacks: {
+              afterLabel: (item) => {
+                if (item.label === '2020') return 'COVID — excluded';
+                if (item.label === '2023') return 'Boycott — no data';
+                return '';
+              }
+            }
+          }
+        },
         scales: {
           ...CHART_DEFAULTS.scales,
+          x: {
+            ...CHART_DEFAULTS.scales.x,
+            ticks: {
+              color: (ctx) => {
+                const v = years[ctx.index];
+                return (v === '2020' || v === '2023') ? CHALK_FAINT : CHALK_DIM;
+              },
+              font: { size: 11 }
+            }
+          },
           y: {
             ...CHART_DEFAULTS.scales.y,
-            title: { display: true, text: 'Mean mark', color: CHALK_DIM, font: { size: 12 } }
+            title: { display: true, text: 'Fitted mean mark', color: CHALK_DIM, font: { size: 12 } }
           }
         }
       }
@@ -296,32 +320,51 @@ const Overview = (() => {
     const popularity = DATA.paper_popularity || {};
     const catalogue = DATA.paper_catalogue || {};
 
-    const changes = Object.entries(popularity)
-      .map(([name, years]) => {
-        const y2015 = years['2015'] || 0;
-        const y2025 = years['2025'] || 0;
-        if (y2015 < 20 || y2025 < 5) return null;
-        return { name, y2015, y2025, change: y2025 - y2015, subject: catalogue[name]?.subject };
+    const items = Object.entries(popularity)
+      .map(([name, yearData]) => {
+        const subject = catalogue[name]?.subject;
+        if (!subject) return null;
+        const pts = Object.entries(yearData)
+          .filter(([y]) => y !== '2020' && y !== '2023')
+          .map(([y, n]) => [+y, n])
+          .filter(([, n]) => n >= 5)
+          .sort((a, b) => a[0] - b[0]);
+        if (pts.length < 5) return null;
+
+        const n = pts.length;
+        const meanX = pts.reduce((s, p) => s + p[0], 0) / n;
+        const meanY = pts.reduce((s, p) => s + p[1], 0) / n;
+        let ssxx = 0, ssxy = 0, ssyy = 0;
+        for (const [x, y] of pts) {
+          ssxx += (x - meanX) ** 2;
+          ssxy += (x - meanX) * (y - meanY);
+          ssyy += (y - meanY) ** 2;
+        }
+        const slope = ssxy / ssxx;
+        const r2 = ssxx > 0 && ssyy > 0 ? (ssxy * ssxy) / (ssxx * ssyy) : 0;
+        const se = Math.sqrt((ssyy - slope * ssxy) / ((n - 2) * ssxx));
+        const t = se > 0 ? Math.abs(slope / se) : 0;
+        const pApprox = Math.exp(-0.717 * t - 0.416 * t * t);
+
+        const avgCandidates = meanY;
+        const pctPerYear = (slope / avgCandidates) * 100;
+
+        return { name, subject, slope, pctPerYear, pApprox, avgCandidates, n };
       })
       .filter(Boolean)
-      .filter(d => d.subject);
+      .filter(d => d.pApprox < 0.1);
 
-    changes.sort((a, b) => b.change - a.change);
-    const top = changes.slice(0, 8);
-    const bottom = changes.slice(-8).reverse();
-    const items = [...top, ...bottom];
-
-    const subjectColor = (s) => s === 'Philosophy' ? BLUE : s === 'Politics' ? RED : GOLD;
+    items.sort((a, b) => b.pctPerYear - a.pctPerYear);
 
     new Chart(canvas, {
       type: 'bar',
       data: {
-        labels: items.map(d => d.name.length > 25 ? d.name.slice(0, 23) + '…' : d.name),
+        labels: items.map(d => d.name.length > 28 ? d.name.slice(0, 26) + '…' : d.name),
         datasets: [{
-          label: 'Change in candidates (2015→2025)',
-          data: items.map(d => d.change),
-          backgroundColor: items.map(d => (d.change >= 0 ? BLUE : RED) + '88'),
-          borderColor: items.map(d => d.change >= 0 ? BLUE : RED),
+          label: 'Avg annual growth (%/yr)',
+          data: items.map(d => +d.pctPerYear.toFixed(1)),
+          backgroundColor: items.map(d => (d.pctPerYear >= 0 ? BLUE : RED) + '88'),
+          borderColor: items.map(d => d.pctPerYear >= 0 ? BLUE : RED),
           borderWidth: 1
         }]
       },
@@ -336,7 +379,7 @@ const Overview = (() => {
             callbacks: {
               afterLabel: (item) => {
                 const d = items[item.dataIndex];
-                return `${d.y2015} → ${d.y2025} candidates`;
+                return `~${Math.round(d.avgCandidates)} avg candidates · ${d.slope > 0 ? '+' : ''}${d.slope.toFixed(1)}/yr`;
               }
             }
           }
@@ -344,7 +387,7 @@ const Overview = (() => {
         scales: {
           x: {
             ...CHART_DEFAULTS.scales.x,
-            title: { display: true, text: 'Change in candidates', color: CHALK_DIM, font: { size: 12 } }
+            title: { display: true, text: 'Avg growth rate (%/yr)', color: CHALK_DIM, font: { size: 12 } }
           },
           y: {
             ...CHART_DEFAULTS.scales.y,

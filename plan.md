@@ -138,139 +138,40 @@ All analysis code in `analysis.py`; outputs in `data/analysis/`. Run `python ana
 
 ---
 
-## Phase 3: Web Tool
+## Phase 3: Web Tool — IMPLEMENTED
 
-### Overview
+Static site (HTML + CSS + JS) with chalkboard aesthetic. All data pre-computed and bundled as JSON (`web/data.json`, ~59KB). No backend — runs entirely in the browser. Minimal build step: `python web/build.py` syncs copy from `web/copy/*.md` into `index.html`.
 
-Static site (HTML + CSS + JS). All data pre-computed and bundled as JSON (`data/analysis/web_bundle.json`). No backend — runs entirely in the browser. Hosted on GitHub Pages or similar.
+### Architecture
 
-### Page 1: Grade Prior Calculator (core feature)
+- Hash-routed SPA: `#calculator`, `#explorer`, `#overview`, `#methodology`
+- Chart.js for all interactive charts
+- KaTeX for math rendering (copyable)
+- URL query params for shareable state (`?papers=A|B|...&ability=75`)
+- SVG feTurbulence/feDisplacementMap for hand-drawn border effects
 
-The main draw. A student picks their papers, optionally says how good they think they are, and gets an estimated classification distribution.
+### Pages — all implemented
 
-#### Flow
+1. **Calculator** — Paper picker (grouped by subject, searchable), ability slider, Monte Carlo results (50k draws), paper swap suggestions, what-if comparison vs typical papers, per-paper breakdown
+2. **Explorer** — Scatter plot (mean vs volatility), paper profiles, temporal trends (significant + near-sig), popularity shifts, filter/sort/search
+3. **Overview** — First-class rate time series, gender gap, subject comparison, classification breakdown, score trends chart, popularity growth rates, COVID/kingmaker callouts, ToC
+4. **Methodology** — Full model description with KaTeX-rendered math
 
-1. **Paper picker.** Student selects 8 papers from the 81 in the catalogue. Grouped by subject (Philosophy / Politics / Economics), searchable. Each paper shows a one-line difficulty indicator (e.g. "μ=66, moderate volatility"). Route is auto-detected from the combination.
-
-2. **Ability self-assessment (optional).** A slider or set of radio buttons: "How would you rate yourself among PPE students?" Mapped to a percentile of the latent ability distribution θ. Options could be:
-   - **Qualitative tiers:** "Top third / Middle third / Bottom third" or a 5-point scale ("I'm struggling" → "I'm comfortably among the best")
-   - **Slider:** Continuous percentile from 10th to 90th, defaulting to 50th (median student). The slider adjusts the latent ability θ in the simulation model, shifting all paper means up or down.
-   - The default (no input) gives the population-average prior.
-
-3. **Results display.** A stacked bar or donut chart showing P(1st), P(2.1), P(2.2), P(3rd/below). Key numbers highlighted: "You have roughly a **22–26%** chance of a First with these papers." Range reflects bootstrap uncertainty + ability uncertainty.
- --> NOTE: it needs to be a lot clearer that this is just on priors. 
-
-4. **Contextual comparisons:**
-   - Historical route-level first rate for the detected route
-   - "If you swapped [worst paper] for [best available], your P(1st) would change by +Xpp"
-   - Per-paper difficulty badges: easy / moderate / hard / kingmaker
-
-5. **What-if mode.** Comparative statics and conditional simulation.
-
-#### What-if: implemented
+### What-if: implemented
 - **Comparison to typical papers:** "At your ability level, if you'd picked the 8 most popular papers instead, your P(1st) would be X% (currently Y%)."
 - **Best swap suggestion:** Pre-computed marginal paper values identify the single swap with highest P(1st) impact.
 
-#### What-if: planned ideas (in roughly decreasing feasibility)
+### What-if: planned ideas (not yet implemented)
 
-1. **Fix marks on some papers:** Student enters estimated marks for 1–3 papers they feel confident about (e.g. "I'll get ~65 on Macro"). Simulation conditions on those marks and simulates only the remaining papers. This lets students reason about "what do I need on my remaining papers to get a First?" — upper/lower bounding.
+1. **Fix marks on some papers:** Student enters estimated marks for 1–3 papers. Simulation conditions on those marks and simulates only the remaining papers.
+2. **Ability shift comparison:** "If you were one tier higher, your P(1st) would go from X% to Y%."
+3. **Best possible 8 papers at your level:** Paper combination that maximises P(1st).
+4. **Risk profile:** P(dropping below 2.1) — downside risk framing.
+5. **Subject-lock comparison:** How route choice interacts with ability.
+6. **Mark threshold analysis:** How many 70+ marks needed for a realistic First shot.
 
-2. **Ability shift comparison:** "If you were one tier higher (e.g. 75th instead of 50th percentile), your P(1st) would go from X% to Y%." Shows how much the ability slider matters vs paper choice.
-
-3. **Best possible 8 papers at your level:** Show the paper combination that maximises P(1st) at the student's current ability. Useful context — "you're leaving N pp on the table relative to the theoretical best."
-
-4. **Risk profile:** "With your papers, there's a Z% chance of dropping below a 2.1." Framed as downside risk rather than just upside probability. Especially relevant for kingmaker-heavy combos.
-
-5. **Subject-lock comparison:** "If you went full Phil-Econ (drop Politics papers) or full PPE (add a Politics paper), here's how things change." Shows how route choice interacts with ability.
-
-6. **Mark threshold analysis:** "You need at least N marks of 70+ to have a realistic shot at a First with your papers. Currently the model estimates you'll get M of those on average." Makes the conjunctive rules intuitive.
-
-#### Design notes
-
-- The ability slider is the most novel UX element. It transforms the tool from "here's the population average" to "here's a personalised estimate." The mapping is: θ = Φ⁻¹(percentile) × σ_ability, which shifts all paper means by that amount before simulating.
-- Present results as ranges, not point estimates — be honest about ~±3pp uncertainty (see notes/selection_and_ability.md).
-- The "swap paper" suggestion is the most actionable output. Marginal paper values are pre-computed (J29).
-
-### Page 2: Paper Explorer
-
-Browse and compare papers. Less structured, more exploratory.
-
-#### Features
-
-- **Paper profile cards.** Click any paper to see: μ, σ, %1st, %2.1, %below-50, popularity trend, historical candidate counts, temporal trend (if significant).
-- **Head-to-head comparison.** Select 2–3 papers, see side-by-side stats. Useful for "should I take Ethics or Knowledge & Reality?"
-- **Difficulty scatter plot.** Interactive version of the popularity-vs-difficulty chart. Hover to see paper names, click to navigate to profile card. Colour by subject.
-- **Kingmaker corner.** Highlight the high-σ papers with an explanation of what volatility means for classification.
-- **Popularity trends.** Animated or filterable chart showing how paper popularity has shifted over 15 years.
-
-### Page 3: The Big Picture
-
-Aggregate-level insights. Less interactive, more editorial.
-
-#### Sections
-
-- Overall first-class rate over time (with 2020 anomaly annotated)
-- Gender gap time series
-- Subject-level comparison (mean, volatility, first rate)
-- COVID finding: "the 2020 first rate doubled despite paper-level marks barely changing"
-- "31 papers are declining in popularity — is your subject shrinking?"
-
-### Technical plan
-
-#### Stack
-- **HTML/CSS/JS** — no framework. Single-page app with hash routing (#calculator, #explorer, #overview).
-- **Chart.js** for all charts (already a project dependency via visualise.py's matplotlib output style).
-- **Data:** Load `web_bundle.json` on page load (~100KB). Run simulation client-side in JS (port the Python Monte Carlo engine).
-
-#### Implementation TODO
-
-1. **Data layer**
-   - [ ] Port `classify()` to JS
-   - [ ] Port `simulate_classification()` to JS (simplified: no bootstrap, just point estimate + pre-computed CIs)
-   - [ ] Load and parse web_bundle.json
-   - [ ] Paper search/filter logic
-
-2. **Calculator page**
-   - [ ] Paper picker component (grouped by subject, searchable)
-   - [ ] Route auto-detection from paper selection
-   - [ ] Ability slider with percentile-to-θ mapping
-   - [ ] Results chart (stacked bar or donut)
-   - [ ] Contextual comparison panel (route rates, swap suggestions)
-   - [ ] What-if mode (enter marks for some papers)
-
-3. **Explorer page**
-   - [ ] Paper profile cards
-   - [ ] Head-to-head comparison view
-   - [ ] Interactive difficulty scatter (Chart.js)
-   - [ ] Popularity trends chart
-   - [ ] Kingmaker section
-
-4. **Big Picture page**
-   - [ ] First-rate time series chart
-   - [ ] Gender gap chart
-   - [ ] Subject comparison table
-   - [ ] COVID anomaly callout
-   - [ ] Popularity trends summary
-
-5. **Design and polish**
-   - [ ] Responsive layout (mobile-friendly)
-   - [ ] Page transitions and routing
-   - [ ] Loading states
-   - [ ] Methodology footnotes and caveats
-   - [ ] Deploy to GitHub Pages
-
-### Visual identity brainstorm
-
-**Option A: "Oxford Minimalist"**
-Dark navy (#002147, the Oxford blue) and white. Clean serif headings (e.g. EB Garamond), sans-serif body (Inter or similar). Gold (#B48B2B) for accents and highlights. Feels authoritative, academic. Risk: stuffy.
-
-**Option B: "Data Dashboard"**
-Light background, muted colour palette. Subtle grid lines, lots of whitespace. Subject colours: Philosophy = teal, Politics = coral, Economics = slate blue. Feels modern, professional. Similar to FiveThirtyEight or The Pudding. Risk: generic.
-
-**Option C: "Exam Hall Chalkboard"**
-Dark background (near-black or dark green), chalk-white text, hand-drawn-feeling chart styling. Slightly playful, evokes the exam experience. Monospace or quirky serif for headings. Risk: gimmicky, accessibility concerns with dark bg.
-
-**Option D: "Exam Results Day"**
-Bright, confident, slightly irreverent. White background with bold colour blocks. Subject-coloured pills/tags. Big numbers, clear hierarchy. Feels like a well-designed student tool — approachable but not childish. Closest to the "whimsical but not overdone" vibe.
-
-**Recommendation:** Option D as the base, borrowing the Oxford navy/gold from Option A for key branding elements. Subject colours from Option B. The ability slider and results display should feel interactive and responsive — think Stripe-level polish on a student-facing tool.
+### Remaining TODOs
+- [ ] Interactive hero graph on landing page (stretch goal)
+- [ ] Head-to-head paper comparison in Explorer
+- [ ] Deploy to GitHub Pages
+- [ ] Mobile responsiveness pass

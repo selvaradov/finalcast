@@ -242,7 +242,7 @@
   <section class="page-section" data-page="overview" style="display:none;">
     <div class="container">
       <h1 class="page-title">The Big Picture</h1>
-      <p class="page-intro">15 years of Oxford PPE results at a glance.</p>
+      <p class="page-intro"><!-- copy:overview.intro -->15 years of Oxford PPE results at a glance.<!-- /copy --></p>
 
       <nav class="overview-toc">
         <a data-scroll="ov-firsts">First-class rate</a>
@@ -255,7 +255,7 @@
 
       <div class="card" id="ov-firsts">
         <h2>First-class rate over time</h2>
-        <p class="section-note">Percentage of candidates awarded a First, 2005–2025. The 2020 spike is COVID, not a cohort change.</p>
+        <p class="section-note"><!-- copy:overview.first-class-rate-over-time -->Percentage of candidates awarded a First, 2005–2025. The 2020 spike is COVID, not a cohort change.<!-- /copy --></p>
         <div class="chart-wrap">
           <canvas id="firsts-chart"></canvas>
         </div>
@@ -263,7 +263,7 @@
 
       <div class="card" id="ov-gender">
         <h2>Gender gap</h2>
-        <p class="section-note">First-class rate by gender where data is available. The gap has been persistent at roughly 8–10 percentage points.</p>
+        <p class="section-note"><!-- copy:overview.gender-gap -->First-class rate by gender where data is available. The gap has been persistent at roughly 8–10 percentage points.<!-- /copy --></p>
         <div class="chart-wrap">
           <canvas id="gender-chart"></canvas>
         </div>
@@ -271,7 +271,7 @@
 
       <div class="card" id="ov-subjects">
         <h2>Subject comparison</h2>
-        <p class="section-note">Weighted averages across all papers in each subject.</p>
+        <p class="section-note"><!-- copy:overview.subject-comparison -->Weighted averages across all papers in each subject.<!-- /copy --></p>
         <div class="chart-wrap chart-wrap--short">
           <canvas id="subject-chart"></canvas>
         </div>
@@ -279,7 +279,7 @@
 
       <div class="card" id="ov-classification">
         <h2>Classification breakdown</h2>
-        <p class="section-note">Full distribution of results each year.</p>
+        <p class="section-note"><!-- copy:overview.classification-breakdown -->Full distribution of results each year.<!-- /copy --></p>
         <div class="chart-wrap">
           <canvas id="class-dist-chart"></canvas>
         </div>
@@ -287,13 +287,13 @@
 
       <div class="card" id="ov-trends">
         <h2>Score trends</h2>
-        <p class="section-note">Papers with statistically significant drift in mean mark over 2015–2025 (excluding 2020). Most papers are stable — only 3 of 65 show significant trends.</p>
+        <p class="section-note"><!-- copy:overview.score-trends -->Fitted mean marks for papers with statistically significant drift (p<0.05). Most papers are stable — only 3 of 65 show significant trends. Gaps: 2020 excluded (COVID), 2023 has no per-paper data (marking boycott). Phil Logic and Thesis weren't reported in 2024–25.<!-- /copy --></p>
         <div class="chart-wrap">
           <canvas id="trends-chart"></canvas>
         </div>
 
         <h2 style="margin-top:32px;">Popularity trends</h2>
-        <p class="section-note">Biggest shifts in candidate numbers, 2015 vs 2025 (papers with ≥20 candidates in both years).</p>
+        <p class="section-note"><!-- copy:overview.popularity-trends -->Average annual growth rate in candidate numbers for papers with a significant trend (p<0.1). Excludes 2020 and 2023. Sorted by growth rate.<!-- /copy --></p>
         <div class="chart-wrap" style="height:480px;">
           <canvas id="popularity-trends-chart"></canvas>
         </div>
@@ -303,11 +303,11 @@
         <div class="context-card">
           <h3>COVID 2020</h3>
           <div class="context-value">40% Firsts</div>
-          <div class="context-note">Marking scale was unchanged, but classification conventions were modified as a safety net: the lowest two passing results were dropped when calculating the classification average. Per-paper means shifted by only +0.3 marks — the doubled First rate came entirely from the classification rule change. 2020 is excluded from all model fitting.</div>
+          <div class="context-note"><!-- copy:overview.covid-2020 -->40% Firsts. Marking scale was unchanged, but classification conventions were modified as a safety net: the lowest two passing results were dropped when calculating the classification average. Per-paper means shifted by only +0.3 marks — the doubled First rate came entirely from the classification rule change. 2020 is excluded from all model fitting.<!-- /copy --></div>
         </div>
         <div class="context-card">
           <h3>Kingmaker papers</h3>
-          <div class="context-note kingmaker-defn">Papers with σ ≥ 10 — high enough variance that a single sitting can swing you up or down a full class.</div>
+          <div class="context-note kingmaker-defn"><!-- copy:overview.kingmaker-papers -->Papers with σ ≥ 10 — high enough variance that a single sitting can swing you up or down a full class.<!-- /copy --></div>
           <div class="context-value kingmaker-value" id="kingmaker-list"></div>
         </div>
       </div>

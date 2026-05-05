@@ -152,21 +152,30 @@ OLS regression of mean mark on year for each paper with >= 4 years of data (excl
 
 ### Phase 3: Web tool
 
-**`web/`** -- Interactive PPE Results Explorer. A static site (no build step) with a chalkboard aesthetic.
+**`web/`** -- Interactive PPE Results Explorer. A static site with a chalkboard aesthetic, using a minimal build step for copy management.
 
-Three pages, hash-routed:
+Four pages, hash-routed:
 
 - **Calculator** (`#calculator`) -- Pick 8 papers, set ability percentile, get classification probabilities via Monte Carlo simulation. Features: "use typical papers" quick-start, paper swap suggestions, what-if comparison vs default papers, per-paper breakdown with P(70+) and below-50 risk.
-- **Explorer** (`#explorer`) -- Interactive scatter plot (mean vs volatility, bubble size = popularity). Click any paper for a profile card with stats, temporal trends, and candidate sparkline. Filter by subject, sort by various metrics.
-- **Overview** (`#overview`) -- First-class rate time series, gender gap chart, subject comparison, classification breakdown. COVID 2020 and kingmaker callouts.
-- **Methodology** (`#methodology`) -- Full model description with MathJax rendering.
+- **Explorer** (`#explorer`) -- Interactive scatter plot (mean vs volatility, bubble size = popularity). Click any paper for a profile card with stats, temporal trends, and candidate sparkline. Filter by subject, sort by various metrics. Temporal trends section shows significant score drift and popularity shifts.
+- **Overview** (`#overview`) -- First-class rate time series, gender gap chart, subject comparison, classification breakdown, score trends (3 significant papers), popularity growth rates. COVID 2020 and kingmaker callouts. Table of contents for in-page navigation.
+- **Methodology** (`#methodology`) -- Full model description with KaTeX rendering (copyable math).
 
 Key files:
-- `web/data.json` -- Pre-computed bundle (~87KB): 81 papers with fits, route/subject summaries, popularity time series, gender/class distributions
+- `web/data.json` -- Pre-computed bundle (~59KB): 81 papers with fits, route/subject summaries, popularity time series, gender/class distributions, per-paper mean time series
 - `web/engine.js` -- Monte Carlo simulation engine (classify, simulate with proportional loading, paperMetrics)
 - `web/app.js` -- Application logic, routing, URL state persistence
-- `web/explorer.js` -- Explorer page (Chart.js scatter, paper profiles, filtering)
-- `web/overview.js` -- Overview page (Chart.js time series, bar charts)
+- `web/explorer.js` -- Explorer page (Chart.js scatter, paper profiles, filtering, temporal trends)
+- `web/overview.js` -- Overview page (Chart.js time series, bar charts, popularity trends)
+- `web/copy/*.md` -- Editable prose content for each page (methodology, overview, explorer, landing)
+- `web/build.py` -- Syncs copy from .md files into index.html (`python web/build.py`)
+- `web/style.css` -- Chalkboard theme: SVG displacement filter for hand-drawn borders, Fredericka the Great display font, Caveat for chalk labels, noise texture overlay, vignette
+
+Visual design:
+- Dark chalkboard background with SVG feTurbulence noise overlay
+- Hand-drawn border effect via SVG displacement filter on `::before` pseudo-elements
+- Fredericka the Great for hero heading, Caveat for chalk-style labels, Inter for body
+- Cards are transparent (no background fill) — just chalk borders on the board
 
 Paper selections + ability are encoded in URL query params for sharing (e.g. `?papers=Micro|Macro|...&ability=75`).
 
@@ -187,6 +196,7 @@ python analysis.py
 python visualise.py
 
 # Phase 3: Web tool
+python web/build.py              # sync copy from web/copy/*.md into index.html
 cd web && python -m http.server 8080
 ```
 
