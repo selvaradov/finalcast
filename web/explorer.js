@@ -15,6 +15,7 @@ const Explorer = (() => {
     initialized = true;
 
     buildScatterChart(DATA);
+    buildTrends(DATA);
     buildPaperList(DATA);
     wireExplorerEvents(DATA);
   }
@@ -105,6 +106,100 @@ const Explorer = (() => {
           }
         }
       }
+    });
+  }
+
+  function buildTrends(DATA) {
+    const el = document.getElementById('trends-section');
+    if (!el) return;
+
+    const catalogue = DATA.paper_catalogue;
+    const popularity = DATA.paper_popularity || {};
+
+    const withTrend = Object.entries(catalogue)
+      .filter(([, p]) => p.trend_slope !== undefined)
+      .sort((a, b) => a[1].trend_p - b[1].trend_p);
+
+    const significant = withTrend.filter(([, p]) => p.trend_p < 0.05);
+    const nearSig = withTrend.filter(([, p]) => p.trend_p >= 0.05 && p.trend_p < 0.15);
+
+    const trendRow = (name, p) => {
+      const dir = p.trend_slope > 0 ? 'easier' : 'harder';
+      const arrow = p.trend_slope > 0 ? '↑' : '↓';
+      const cls = p.trend_slope > 0 ? 'trend-up' : 'trend-down';
+      const subjectCls = p.subject === 'Philosophy' ? 'phil' : p.subject === 'Politics' ? 'pol' : 'econ';
+      return `
+        <div class="trend-row ${cls}" data-name="${name}">
+          <span class="subject-dot subject-dot--${subjectCls}"></span>
+          <span class="trend-name">${name}</span>
+          <span class="trend-arrow">${arrow}</span>
+          <span class="trend-slope">${p.trend_slope > 0 ? '+' : ''}${p.trend_slope.toFixed(2)} marks/yr</span>
+          <span class="trend-dir">(${dir})</span>
+          <span class="trend-p">p=${p.trend_p.toFixed(3)}</span>
+        </div>`;
+    };
+
+    let popHtml = '';
+    const popEntries = Object.entries(popularity);
+    if (popEntries.length > 0) {
+      const recent = popEntries
+        .map(([name, years]) => {
+          const y2025 = years['2025'] || 0;
+          const y2019 = years['2019'] || years['2018'] || 0;
+          const change = y2019 > 0 ? ((y2025 - y2019) / y2019 * 100) : 0;
+          return { name, y2025, y2019, change, subject: catalogue[name]?.subject };
+        })
+        .filter(d => d.y2019 > 10 && d.subject);
+
+      recent.sort((a, b) => b.change - a.change);
+      const growing = recent.slice(0, 5);
+      const declining = recent.slice(-5).reverse();
+
+      popHtml = `
+        <div class="trend-popularity">
+          <h3>Popularity shifts (2019 → 2025)</h3>
+          <div class="pop-cols">
+            <div class="pop-col">
+              <h4 class="pop-col-title pop-growing">Growing</h4>
+              ${growing.map(d => {
+                const subjectCls = d.subject === 'Philosophy' ? 'phil' : d.subject === 'Politics' ? 'pol' : 'econ';
+                return `<div class="pop-row">
+                  <span class="subject-dot subject-dot--${subjectCls}"></span>
+                  <span class="pop-name">${d.name}</span>
+                  <span class="pop-change pop-up">+${Math.round(d.change)}%</span>
+                </div>`;
+              }).join('')}
+            </div>
+            <div class="pop-col">
+              <h4 class="pop-col-title pop-declining">Declining</h4>
+              ${declining.map(d => {
+                const subjectCls = d.subject === 'Philosophy' ? 'phil' : d.subject === 'Politics' ? 'pol' : 'econ';
+                return `<div class="pop-row">
+                  <span class="subject-dot subject-dot--${subjectCls}"></span>
+                  <span class="pop-name">${d.name}</span>
+                  <span class="pop-change pop-down">${Math.round(d.change)}%</span>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    el.innerHTML = `
+      <div class="trend-group">
+        <h3>Significant score trends</h3>
+        ${significant.map(([n, p]) => trendRow(n, p)).join('')}
+      </div>
+      ${nearSig.length > 0 ? `
+        <div class="trend-group trend-group--near">
+          <h3>Near-significant (p &lt; 0.15)</h3>
+          ${nearSig.map(([n, p]) => trendRow(n, p)).join('')}
+        </div>` : ''}
+      ${popHtml}
+    `;
+
+    el.querySelectorAll('.trend-row').forEach(row => {
+      row.addEventListener('click', () => showProfile(row.dataset.name, DATA));
     });
   }
 
