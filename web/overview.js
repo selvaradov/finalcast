@@ -416,26 +416,38 @@ const Overview = (() => {
 
   function wireToc() {
     const links = document.querySelectorAll('.overview-toc a[data-scroll]');
+    const tocEl = document.querySelector('.overview-toc');
     links.forEach(a => {
       a.style.cursor = 'pointer';
       a.addEventListener('click', (e) => {
         e.preventDefault();
         const target = document.getElementById(a.dataset.scroll);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!target) return;
+        const navH = 53;
+        const tocH = tocEl ? tocEl.offsetHeight : 0;
+        const y = target.getBoundingClientRect().top + window.scrollY - navH - tocH - 12;
+        window.scrollTo({ top: y, behavior: 'smooth' });
       });
     });
 
     const sections = Array.from(links).map(a => document.getElementById(a.dataset.scroll)).filter(Boolean);
+    if (links.length > 0) links[0].classList.add('active');
+
     const visible = new Set();
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) visible.add(entry.target.id);
-        else visible.delete(entry.target.id);
-      }
+    const update = () => {
       const active = sections.find(s => visible.has(s.id));
       links.forEach(a => a.classList.toggle('active', active ? a.dataset.scroll === active.id : false));
-    }, { rootMargin: '-80px 0px -40% 0px' });
-    sections.forEach(s => observer.observe(s));
+    };
+    requestAnimationFrame(() => {
+      const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target.id);
+          else visible.delete(entry.target.id);
+        }
+        update();
+      }, { rootMargin: '-80px 0px -40% 0px' });
+      sections.forEach(s => observer.observe(s));
+    });
   }
 
 
