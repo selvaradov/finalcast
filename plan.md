@@ -257,21 +257,25 @@ Evidence:
 - [ ] If still missing, add year-specific guidance (these papers may be in a separate table/section)
 - [ ] Accept that papers with n≤5 will always be missing — genuinely suppressed in source PDFs
 
-### Problem 3: Alias mismatches (paper_numbers vs per_paper)
+### Problem 3: Alias mismatches (paper_numbers vs per_paper) — RESOLVED
 
-Economics papers (Econometrics, Game Theory, Mathematical Methods, Philosophy and Economics of the Environment) consistently appear in per_paper stats but NOT in paper_numbers for 2015–2019. The LLM clustered the per_paper name variant correctly but missed the paper_numbers variant (or vice versa).
+Economics papers (Econometrics, Game Theory, Mathematical Methods, Philosophy and Economics of the Environment) consistently appear in per_paper stats but NOT in paper_numbers for 2015–2019.
 
-Full list of mismatched papers by year:
-- 2015 (7): British Economic History since 1870, Command and Transitional Economies, Econometrics, Game Theory, Mathematical Methods, The Philosophy and Economics of the Environment, Thesis in Economics
-- 2016 (4): Econometrics, Game Theory, Mathematical Methods, The Philosophy and Economics of the Environment
-- 2017 (4): Econometrics, Game Theory, Mathematical Methods, The Philosophy and Economics of the Environment
-- 2018 (3): Behavioural and Experimental Economics, Econometrics, Game Theory
-- 2019 (12): Behavioural and Experimental Economics, Development of the World Economy since 1800, Econometrics, Economics of Developing Countries, Economics of Industry, Game Theory, International Economics, Labour Economics and Industrial Relations, Public Economics, Special Subject in Economics: Environmental Economics and Climate Change, Special Subject in Politics: Feminist Theory, Special Subjects in Philosophy (other)
+**Investigation result**: These are NOT alias issues. The paper_numbers tables in 2015–2017 reports only listed Philosophy and Politics papers (100/200-series codes). Economics papers (300-series) were not included in candidate count tables until 2018. For 2018–2019, a handful of newer economics papers (Behavioural Economics, Finance) aren't in paper_numbers because they weren't reported there either. All raw names across all years ARE properly aliased — verified with diagnostic script.
 
-**Fix**:
-- [ ] Write diagnostic script to print unmatched names from raw paper_numbers for 2015–2019 — these are the partner names that didn't get aliased
-- [ ] Add missing alias mappings to `paper_aliases.json` so both directions resolve to the same canonical name
-- [ ] Re-run `python build_canonical.py` and verify with `python audit_data_gaps.py`
+Remaining mismatches after fixes (all genuine data gaps, not fixable):
+- 2015 (7): economics papers not in paper_numbers table
+- 2016 (4): same
+- 2017 (4): same
+- 2018 (3): Behavioural & Experimental Economics, Econometrics, Game Theory — not in paper_numbers
+- 2019 (11): various economics papers + Environmental Economics special subject + Special Subjects in Philosophy catch-all
+
+**Fix** (completed):
+- [x] Wrote diagnostic scripts (`tmp_diagnose_aliases.py`, `tmp_unaliased_names.py`) to check all raw names
+- [x] Confirmed all raw names are in the alias_map — no missing aliases
+- [x] Removed incorrect "297. Special subject in Politics" → Feminist Theory alias (fixed in Problem 5)
+- [x] Added new alias variants for CPE and ISC with "297. Special subject in Politics:" prefix
+- [x] Re-ran `python build_canonical.py` and verified with `python audit_data_gaps.py`
 
 ### Problem 4: `web/data.json` pipeline — FIXED
 
@@ -290,10 +294,12 @@ The sigma discrepancy (1.18 vs 4.38) is a small-n MLE artefact: with only 19 obs
 **Additional issue**: The 2019 per_paper data contains TWO records for "Special Subject in Politics: Feminist Theory" (n=24 and n=44). The n=44 record is almost certainly **misattributed** — paper_numbers shows "International Security and Conflict" at n=44 for 2019, while Feminist Theory (Phil) has n=4. The n=44 record's stats (mean=66.1, sd=3.5, max=73) are likely International Security's data.
 
 **Fix**:
-- [ ] Verify 2019 misattribution by checking the raw PDF (the n=44 record with mean=66.1 should be International Security)
-- [ ] Merge both papers into one canonical name in `paper_aliases.json` (e.g. "Special Subject: Feminist Theory")
-- [ ] Fix the 2019 misattributed record (re-extract or manually correct)
-- [ ] Re-fit the merged paper — combined data: 2019 n=24, 2022 n=19+12=31 → should give a more reliable sigma estimate
+- [x] Verify 2019 misattribution by checking the raw PDF (the n=44 record with mean=66.1 should be International Security)
+  - Confirmed: paper_numbers shows ISC at n=44, CPE at n=24 for 2019. The two "297. Special subject in Politics" records were ISC and CPE, not Feminist Theory.
+- [x] Merge both papers into one canonical name in `paper_aliases.json` → "Special Subject: Feminist Theory"
+- [x] Fix the 2019 misattributed record — raw data corrected to use specific paper names (CPE n=24, ISC n=44)
+- [x] Removed ambiguous "297. Special subject in Politics" → Feminist Theory alias (was incorrect for 2019)
+- [ ] Re-fit the merged paper — combined data: 2022 n=19+12=31 → should give a more reliable sigma estimate
 - [ ] Document in methodology: small-n papers (n<30 per pool) produce unreliable sigma estimates; merging cross-route pools is necessary
 
 **Implications for fitting reliability**: When the same paper is split into sub-pools of n<20, the MLE fitting is unreliable. This suggests we should:
