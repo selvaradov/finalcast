@@ -208,17 +208,6 @@ Rather than just showing P(First) given fixed marks, answer the question inverse
 - "What if I ace one paper?" — show impact of moving a free paper to 75+
 - Shareable URL: `?papers=A|B|...&fixed=A:55,B:60&ability=75`
 
-### Popularity trends chart — rethink
-
-Current: horizontal bar showing total pp change in share of sittings. The chart fits OLS to each paper's share over all available years (2023 excluded — no data due to boycott). "Change" = slope × time span. Significance test uses OLS standard error on slope.
-
-Problem: doesn't show absolute sizes, hard to interpret without context.
-
-Options:
-- Sized-dot scatter (x = avg share, y = change pp, radius = latest n)
-- Arrow chart: start-share → end-share
-- Slope chart: first-year share vs last-year share
-
 ### Other planned features (not yet implemented)
 
 - [ ] Ability shift comparison: "If you were one tier higher, your P(1st) would go from X% to Y%"
@@ -231,6 +220,8 @@ Options:
 ---
 
 ## Data Quality & Pipeline Fixes
+
+Execution order: Problem 5 (feminist theory) → Problem 3 (aliases) → Problem 1 (2024/25) → Problem 2 (earlier years) → Problem 6 (dedup).
 
 ### Problem 1: 2024/2025 per-paper extraction is incomplete (59% miss rate)
 
@@ -246,29 +237,81 @@ Evidence:
 - Not an n-threshold issue: papers with n=112, 110, 87 are missed
 - Some missed papers (Phil Logic n=9, Thesis in Politics n=11) likely have only aggregate stats because small n prevents gender disaggregation
 
-**Fix needed in `llm_extract.py`**:
+**Fix in `llm_extract.py`**:
 - [ ] Strengthen the per_paper prompt to explicitly mention that 2024–2025 reports have MULTIPLE sections with per-paper stats (likely Section 2 and Section 3, or by subject area)
 - [ ] Tell the LLM to look for ALL tables with paper-level statistics, not just the first/largest one
 - [ ] For papers with small n that aren't gender-disaggregated, emit a single gender="All" row
 - [ ] Re-run extraction for 2024 and 2025: `python llm_extract.py --year 2024 --section per_paper` and same for 2025
-- [ ] Run `python audit_data_gaps.py` to verify improvement
+- [ ] Run `python audit_data_gaps.py` to verify miss rate drops to <15%
 
 **Also**: Phil Logic 2025 has a record but mean=None — the LLM saw the paper but didn't extract its stats. The data exists in the report (n=7, mean=64.1, SD=5.1).
 
 ### Problem 2: Earlier years have minor gaps
 
-2016–2022 have 7–20% miss rates, mostly papers with n ≤ 5 where stats are suppressed. A few anomalies:
-- 2019: Missing "Special Subject in Politics: International Security and Conflict" (n=44) and "Comparative Political Economy" (n=24)
-- 2020: Missing "Comparative Political Economy" (n=22)
+2016–2022 have 7–20% miss rates, mostly papers with n ≤ 5 where stats are suppressed. Genuine misses:
+- 2019: "International Security and Conflict" (n=44) and "Comparative Political Economy" (n=24)
+- 2020: "Comparative Political Economy" (n=22)
 
-These are worth re-extracting too, but lower priority than the 2024/2025 gap.
+**Fix**:
+- [ ] After Problem 1 prompt improvements, re-extract 2019 and 2020 with the improved prompt
+- [ ] If still missing, add year-specific guidance (these papers may be in a separate table/section)
+- [ ] Accept that papers with n≤5 will always be missing — genuinely suppressed in source PDFs
 
 ### Problem 3: Alias mismatches (paper_numbers vs per_paper)
 
-Some papers appear in per_paper but NOT in paper_numbers for certain years (e.g. Econometrics, Game Theory in 2015–2019). Possibly these are Economics papers reported in the per-paper stats table but listed under a different name in the paper_numbers table.
+Economics papers (Econometrics, Game Theory, Mathematical Methods, Philosophy and Economics of the Environment) consistently appear in per_paper stats but NOT in paper_numbers for 2015–2019. The LLM clustered the per_paper name variant correctly but missed the paper_numbers variant (or vice versa).
 
-- [ ] Investigate and fix alias mapping for these papers
+Full list of mismatched papers by year:
+- 2015 (7): British Economic History since 1870, Command and Transitional Economies, Econometrics, Game Theory, Mathematical Methods, The Philosophy and Economics of the Environment, Thesis in Economics
+- 2016 (4): Econometrics, Game Theory, Mathematical Methods, The Philosophy and Economics of the Environment
+- 2017 (4): Econometrics, Game Theory, Mathematical Methods, The Philosophy and Economics of the Environment
+- 2018 (3): Behavioural and Experimental Economics, Econometrics, Game Theory
+- 2019 (12): Behavioural and Experimental Economics, Development of the World Economy since 1800, Econometrics, Economics of Developing Countries, Economics of Industry, Game Theory, International Economics, Labour Economics and Industrial Relations, Public Economics, Special Subject in Economics: Environmental Economics and Climate Change, Special Subject in Politics: Feminist Theory, Special Subjects in Philosophy (other)
+
+**Fix**:
+- [ ] Write diagnostic script to print unmatched names from raw paper_numbers for 2015–2019 — these are the partner names that didn't get aliased
+- [ ] Add missing alias mappings to `paper_aliases.json` so both directions resolve to the same canonical name
+- [ ] Re-run `python build_canonical.py` and verify with `python audit_data_gaps.py`
 
 ### Problem 4: `web/data.json` pipeline — FIXED
 
 `bundle_web_data()` in `analysis.py` now produces all 15 keys the web tool needs, and the runner writes directly to `web/data.json`. Pipeline is deterministic: `python analysis.py` → `web/data.json`.
+
+### Problem 5: Feminist Theory — split paper with divergent sigma
+
+**Findings**: "Feminist Theory" exists as two separate canonical papers:
+- `Special Subject in Philosophy: Feminist Theory` — fitted sigma=1.18 (1 year, n=19)
+- `Special Subject in Politics: Feminist Theory` — fitted sigma=4.38 (2 years, n=80)
+
+These are the **same exam paper** taken by candidates from different degree routes (PPE vs HP). The subject tag reflects which route reports it, not different content or marking.
+
+The sigma discrepancy (1.18 vs 4.38) is a small-n MLE artefact: with only 19 observations spread across 2 bands (8 in ≥70, 10 in 60–69, 1 in 50–59), the optimiser finds an implausibly tight distribution. σ=1.18 is not credible for any exam.
+
+**Additional issue**: The 2019 per_paper data contains TWO records for "Special Subject in Politics: Feminist Theory" (n=24 and n=44). The n=44 record is almost certainly **misattributed** — paper_numbers shows "International Security and Conflict" at n=44 for 2019, while Feminist Theory (Phil) has n=4. The n=44 record's stats (mean=66.1, sd=3.5, max=73) are likely International Security's data.
+
+**Fix**:
+- [ ] Verify 2019 misattribution by checking the raw PDF (the n=44 record with mean=66.1 should be International Security)
+- [ ] Merge both papers into one canonical name in `paper_aliases.json` (e.g. "Special Subject: Feminist Theory")
+- [ ] Fix the 2019 misattributed record (re-extract or manually correct)
+- [ ] Re-fit the merged paper — combined data: 2019 n=24, 2022 n=19+12=31 → should give a more reliable sigma estimate
+- [ ] Document in methodology: small-n papers (n<30 per pool) produce unreliable sigma estimates; merging cross-route pools is necessary
+
+**Implications for fitting reliability**: When the same paper is split into sub-pools of n<20, the MLE fitting is unreliable. This suggests we should:
+1. Always merge cross-route/cross-subject instances of identical papers
+2. Flag papers with n_total < 30 as having uncertain sigma estimates
+3. Consider whether other papers have similar splits (check "Special Subjects in Philosophy (other)" catch-all)
+
+### Problem 6: Duplicate per_paper records (no deduplication)
+
+**Findings**: `build_canonical.py` does NOT deduplicate per_paper records (line 111: "no dedup needed" — but this is wrong). Multiple records exist for the same paper/year/gender:
+- Jurisprudence: 3 records in 2016, 2020, 2021, 2022, 2024, 2025 (likely reported in Phil, Pol, and joint sections)
+- Theory of Politics: 2–3 records in 2017, 2018, 2019
+- Various others with 2 records
+
+These duplicates inflate n_total in the fitting and may contain contradictory stats.
+
+**Fix**:
+- [ ] Add deduplication to `build_canonical.py` for per_paper, keyed on (report_year, paper, gender)
+- [ ] When duplicates exist, prefer: record with bands > record without; record with non-null n > null n; highest n if both have n (likely the aggregate vs a subset)
+- [ ] Re-run `python build_canonical.py` and re-fit
+- [ ] Check whether Jurisprudence's 3x records represent the same cohort reported in multiple sections, or genuine sub-populations (in which case, keep the largest/aggregate only)
