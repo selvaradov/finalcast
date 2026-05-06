@@ -259,6 +259,10 @@ def pool_and_fit_papers():
                 "method": "moment_mean_sd",
             }
 
+    # Flag reliability
+    for name, f in fits.items():
+        f["reliable"] = bool(f["n_total"] >= 30 and f["sigma"] >= 2.0)
+
     return fits
 
 
@@ -379,6 +383,7 @@ def compute_paper_profiles(paper_fits):
             "n_years": fit["n_years"],
             "method": fit["method"],
             "p_value": fit.get("p_value"),
+            "reliable": fit.get("reliable", True),
         })
 
     return sorted(profiles, key=lambda p: -p["mu"])
@@ -510,14 +515,15 @@ def compute_subject_analysis(paper_fits):
             "grand_mean": round(float(grand_mean), 2),
         }
 
-    # Kingmaker papers: σ >= 2× the median σ across all papers.
+    # Kingmaker papers: σ >= 2× the median σ across reliable papers.
     # These are high-variance papers that disproportionately determine
     # classification outcomes — a strong performance lifts the average,
     # a weak one can block a First via the sub-50 conjunctive rule.
-    all_sigmas = [f["sigma"] for _, f in paper_fits.items()]
+    reliable_fits = {n: f for n, f in paper_fits.items() if f.get("reliable", True)}
+    all_sigmas = [f["sigma"] for f in reliable_fits.values()]
     median_sigma = float(np.median(all_sigmas))
     kingmaker_threshold = 2 * median_sigma
-    all_papers = [(name, fit) for name, fit in paper_fits.items()]
+    all_papers = [(name, fit) for name, fit in reliable_fits.items()]
     all_papers.sort(key=lambda x: -x[1]["sigma"])
     kingmakers = [{
         "paper": name,
@@ -1278,6 +1284,7 @@ def bundle_web_data(sigma_ability):
             "pct_21": p["pct_21"],
             "pct_below_50": p["pct_below_50"],
             "method": p["method"],
+            "reliable": p.get("reliable", True),
         }
 
     # Add marginal value data

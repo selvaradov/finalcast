@@ -11,6 +11,7 @@ Usage:
 """
 
 import json
+import re
 from pathlib import Path
 
 RAW_DIR = Path("data/raw")
@@ -33,6 +34,81 @@ def load_alias_map():
 
 def normalise_paper(name, alias_map):
     return alias_map.get(name, name)
+
+
+COMPONENT_PATTERN = re.compile(
+    r"\((Essay|Exam|Coursework|Combined|old regs|old syllabus)\)",
+    re.IGNORECASE,
+)
+ASSESSMENT_CODE_PATTERN = re.compile(r"\(A\d+[A-Z]*\d*\)")
+
+
+def is_component_record(raw_name):
+    """True if this is a component/sub-assessment rather than the aggregate."""
+    if COMPONENT_PATTERN.search(raw_name):
+        return "Combined" not in raw_name
+    if ASSESSMENT_CODE_PATTERN.search(raw_name):
+        return True
+    return False
+
+
+def is_old_regs(raw_name):
+    return bool(re.search(r"\bold (regs|syllabus)\b", raw_name, re.IGNORECASE))
+
+
+def deduplicate_per_paper(records):
+    """Deduplicate per_paper records using priority rules.
+
+    For each (report_year, paper, gender) group:
+    1. Discard component records (Essay/Exam/Coursework/assessment codes)
+       unless the only records are components (keep Combined if present)
+    2. Discard old regs/syllabus records
+    3. Among remaining: prefer records with bands data, then highest n
+    """
+    from collections import defaultdict
+
+    groups = defaultdict(list)
+    for r in records:
+        key = (r.get("report_year"), r.get("paper"), r.get("gender", "All"))
+        groups[key].append(r)
+
+    result = []
+    for key, recs in groups.items():
+        if len(recs) == 1:
+            r = recs[0]
+            r.pop("_raw_name", None)
+            result.append(r)
+            continue
+
+        # Separate components from aggregates
+        aggregates = []
+        combined = []
+        for r in recs:
+            raw = r.get("_raw_name", "")
+            if "Combined" in raw:
+                combined.append(r)
+            elif not is_component_record(raw):
+                aggregates.append(r)
+
+        # Prefer aggregates; if none, use Combined; if none, keep all
+        candidates = aggregates or combined or recs
+
+        # Remove old regs
+        non_old = [r for r in candidates if not is_old_regs(r.get("_raw_name", ""))]
+        if non_old:
+            candidates = non_old
+
+        # Among remaining: prefer records with bands, then highest n
+        def score(r):
+            has_bands = 1 if r.get("bands") and any(v for v in r["bands"].values() if v) else 0
+            return (has_bands, r.get("n") or 0)
+
+        candidates.sort(key=score, reverse=True)
+        winner = candidates[0]
+        winner.pop("_raw_name", None)
+        result.append(winner)
+
+    return result
 
 
 def load_llm_data():
@@ -65,11 +141,14 @@ def build():
     print("Loading paper aliases...")
     alias_map = load_alias_map()
 
-    # Normalise paper names
-    for section in ["per_paper", "paper_numbers"]:
-        for r in llm_data[section]:
-            if "paper" in r:
-                r["paper"] = normalise_paper(r["paper"], alias_map)
+    # Normalise paper names (preserve raw name for per_paper dedup)
+    for r in llm_data["per_paper"]:
+        if "paper" in r:
+            r["_raw_name"] = r["paper"]
+            r["paper"] = normalise_paper(r["paper"], alias_map)
+    for r in llm_data["paper_numbers"]:
+        if "paper" in r:
+            r["paper"] = normalise_paper(r["paper"], alias_map)
 
     # 1. Class distribution — dedup by (data_year, class)
     canon = deduplicate(
@@ -107,8 +186,9 @@ def build():
         r.pop("report_year", None)
     save("gender_stats", canon)
 
-    # 5. Per-paper stats — no dedup needed (single report per year)
-    save("per_paper", llm_data["per_paper"])
+    # 5. Per-paper stats — dedup components, old regs, route splits
+    canon = deduplicate_per_paper(llm_data["per_paper"])
+    save("per_paper", canon)
 
     # 6. Route class distribution — dedup by (data_year, route, class)
     canon = deduplicate(

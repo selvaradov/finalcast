@@ -233,7 +233,7 @@ Execution order: Problem 5 (feminist theory) → Problem 3 (aliases) → Problem
 - Converted `call_llm` to streaming API (required for >10 min operations at 64k tokens)
 - Re-extracted 2024 and 2025
 
-**Result**: Coverage improved from ~41% to ~87–88%. All remaining gaps are n≤2 (suppressed from source reports):
+**Result**: Coverage by paper count: 87–88%. Population-weighted coverage: **99.3%** (all uncovered papers have n≤2, so they represent <1% of candidate-paper-sittings).
 - 2024: 9 papers missing, all n≤2
 - 2025: 8 papers missing, all n≤2
 
@@ -299,7 +299,7 @@ The sigma discrepancy (1.18 vs 4.38) is a small-n MLE artefact: with only 19 obs
 2. Flag papers with n_total < 30 as having uncertain sigma estimates
 3. Consider whether other papers have similar splits (check "Special Subjects in Philosophy (other)" catch-all)
 
-### Problem 6: Duplicate per_paper records (no deduplication)
+### Problem 6: Duplicate per_paper records (no deduplication) — RESOLVED
 
 **Findings**: `build_canonical.py` does NOT deduplicate per_paper records (line 111: "no dedup needed" — but this is wrong). 29 (year, paper, gender) groups have duplicates, totalling 79 records that should collapse to 29. These fall into 5 distinct categories:
 
@@ -338,8 +338,10 @@ The sigma discrepancy (1.18 vs 4.38) is a small-n MLE artefact: with only 19 obs
 3. Among remaining duplicates: prefer record with bands data over one without; then prefer highest n
 4. Exact ties: keep first encountered
 
-**Fix**:
-- [ ] Add deduplication to `build_canonical.py` for per_paper using the priority rules above
-- [ ] Need to preserve raw names through the pipeline to distinguish components from aggregates (currently only canonical name is kept)
-- [ ] Re-run `python build_canonical.py` and re-fit
-- [ ] Verify: after dedup, 717 records → ~638 records (717 − 79 duplicates + 29 kept = 667)
+**Fix** (implemented in `build_canonical.py`):
+- [x] Added `deduplicate_per_paper()` implementing the priority rules above
+- [x] Preserves raw names (`_raw_name`) through the pipeline for component detection
+- [x] Result: 912 → 852 records (60 duplicates removed, zero duplicate groups remain)
+- [x] Added `reliable` flag to paper fits: requires n_total ≥ 30 AND σ ≥ 2.0
+- [x] Kingmaker analysis now filters on reliability (removed spurious "Politics in Europe" σ=16.33 from n=11)
+- [x] 53/79 fitted papers are reliable; 26 flagged as low-confidence

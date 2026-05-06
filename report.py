@@ -166,9 +166,12 @@ def make_report():
         fig, ax = plt.subplots(figsize=(10, 7))
         for name, fit in fits.items():
             c = subject_colours.get(fit.get("subject"), "#6b7280")
-            ax.scatter(fit["mu"], fit["sigma"], c=c, s=50, alpha=0.7,
-                      edgecolors="white", linewidth=0.3)
-        top = sorted(fits.items(), key=lambda x: -x[1]["sigma"])[:10]
+            alpha = 0.7 if fit.get("reliable", True) else 0.25
+            marker = "o" if fit.get("reliable", True) else "x"
+            ax.scatter(fit["mu"], fit["sigma"], c=c, s=50, alpha=alpha,
+                      marker=marker, edgecolors="white", linewidth=0.3)
+        reliable_fits = {n: f for n, f in fits.items() if f.get("reliable", True)}
+        top = sorted(reliable_fits.items(), key=lambda x: -x[1]["sigma"])[:10]
         for name, fit in top:
             ax.annotate(name, (fit["mu"], fit["sigma"]), fontsize=7, alpha=0.9,
                        xytext=(5, 3), textcoords="offset points")
