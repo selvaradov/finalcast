@@ -309,15 +309,45 @@ The sigma discrepancy (1.18 vs 4.38) is a small-n MLE artefact: with only 19 obs
 
 ### Problem 6: Duplicate per_paper records (no deduplication)
 
-**Findings**: `build_canonical.py` does NOT deduplicate per_paper records (line 111: "no dedup needed" — but this is wrong). Multiple records exist for the same paper/year/gender:
-- Jurisprudence: 3 records in 2016, 2020, 2021, 2022, 2024, 2025 (likely reported in Phil, Pol, and joint sections)
-- Theory of Politics: 2–3 records in 2017, 2018, 2019
-- Various others with 2 records
+**Findings**: `build_canonical.py` does NOT deduplicate per_paper records (line 111: "no dedup needed" — but this is wrong). 29 (year, paper, gender) groups have duplicates, totalling 79 records that should collapse to 29. These fall into 5 distinct categories:
 
-These duplicates inflate n_total in the fitting and may contain contradictory stats.
+**Category 1: Component papers (16 groups)** — Papers with separate Essay/Exam/Coursework stats plus a Combined aggregate. All three/four records share the same n (same candidates, different assessment components).
+- Jurisprudence: (Combined), (Essay), (Exam) in 2016, 2020–2022, 2024–2025
+- Environmental Economics: (Combined), (Coursework), (Exam), (Exam old syllabus) in 2024–2025
+- Labour Economics and Inequality: base + (A16893H1), (A16894H1) in 2025 (assessment codes)
+- **Fix**: Keep only the "Combined"/base record (it represents the final mark the student receives). The component marks aren't what gets classified.
+
+**Category 2: Old/new regs (5 groups)** — Same paper offered under transitional regulations alongside current regs. The "old regs" cohort is tiny (n=7–12) vs the main cohort (n=98–138).
+- Theory of Politics 2019: n=98 (main) + n=20 (code 114) + n=7 (old regs)
+- Macroeconomics 2019: n=137 (main) + n=7 (old regs)
+- Microeconomics 2019: n=135 (main) + n=8 (old regs)
+- Quantitative Economics 2020: n=138 (main) + n=12 (old syllabus)
+- International Relations 2021: n=121 (main) + n=7 (old syllabus)
+- **Fix**: Keep the largest-n record only. The old-regs cohort is a remnant sitting the same exam under a legacy code. Including both inflates the pooled n and may skew the distribution (old-regs cohorts often have different ability profiles — e.g. Microeconomics old regs has mean=59.3 vs 64.4 for main).
+
+**Category 3: Route splits (2 groups)** — Same paper reported separately for PPE route (code 114) and HP route (code 203). Different candidate pools sitting the same paper.
+- Theory of Politics 2017: n=37 (code 203/PPE) + n=93 (code 114/HP)
+- Theory of Politics 2018: n=28 (code 203) + n=85 (code 114)
+- **Fix**: Keep the largest-n record (the main PPE cohort, code 114, which has the more representative distribution). The smaller route pool is a subset with different selection effects.
+
+**Category 4: Exact duplicates (3 groups)** — Same paper extracted under two name variants with identical stats.
+- Early Modern Philosophy 2018: "Early Modern Philosophy" and "Early Modern Philosophy (129)"
+- Comparative Demographic Systems 2018: "CDS (pre-2016 see 315)" and "Comparative Demographic Systems"
+- Sociology of Post-Industrial Societies 2018: two abbreviation variants
+- **Fix**: Keep either (they're identical).
+
+**Category 5: Cross-route merges (1 group)** — Same paper reported by Phil and Pol departments with different n (different route pools). Created by the Problem 5 Feminist Theory merge.
+- Feminist Theory 2022: n=19 (Phil route) + n=12 (Pol route)
+- **Fix**: Keep the largest-n record for fitting. Ideally these would be combined (n=31, weighted mean), but that requires recomputing stats from band data. For now, largest-n is adequate.
+
+**Dedup priority rules** (for `build_canonical.py`):
+1. Discard component records: if raw name contains "(Essay)", "(Exam)", "(Coursework)", or matches an assessment code pattern like `(A\d+H\d+)`, discard in favour of the base/Combined record
+2. Discard old regs: if raw name contains "(old regs)" or "(old syllabus)", discard
+3. Among remaining duplicates: prefer record with bands data over one without; then prefer highest n
+4. Exact ties: keep first encountered
 
 **Fix**:
-- [ ] Add deduplication to `build_canonical.py` for per_paper, keyed on (report_year, paper, gender)
-- [ ] When duplicates exist, prefer: record with bands > record without; record with non-null n > null n; highest n if both have n (likely the aggregate vs a subset)
+- [ ] Add deduplication to `build_canonical.py` for per_paper using the priority rules above
+- [ ] Need to preserve raw names through the pipeline to distinguish components from aggregates (currently only canonical name is kept)
 - [ ] Re-run `python build_canonical.py` and re-fit
-- [ ] Check whether Jurisprudence's 3x records represent the same cohort reported in multiple sections, or genuine sub-populations (in which case, keep the largest/aggregate only)
+- [ ] Verify: after dedup, 717 records → ~638 records (717 − 79 duplicates + 29 kept = 667)
