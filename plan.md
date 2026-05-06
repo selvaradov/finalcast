@@ -17,9 +17,9 @@ Extract 15 years of Oxford PPE Final Honour School examiners' report data (2011�
 - **gender_class**: 273 records, 2006–2025 — class distribution by gender (pct and sometimes counts)
 - **route_class**: 230 records, 2010–2025 (gap 2012–2015) — class distribution by route
 - **ethnicity_class**: 99 records, cohorts 2012/13–2022/23 — class distribution by ethnicity
-- **per_paper**: 717 records, 2015–2022 + 2024–2025 — mean, SD, bands, quartiles per paper
-- **paper_numbers**: 1339 records, 2005–2025 — candidate count per paper per year
-- **paper_aliases**: 97 canonical papers mapped from 391 name variants
+- **per_paper**: 912 records, 2015–2022 + 2024–2025 — mean, SD, bands, quartiles per paper
+- **paper_numbers**: 1326 records, 2005–2025 — candidate count per paper per year
+- **paper_aliases**: 95 canonical papers mapped from ~400 name variants
 
 ### Phase 1 remaining
 - [x] Re-extract class_distribution via LLM (fixed 2016/2017/2019 errors from regex parser)
@@ -223,39 +223,31 @@ Rather than just showing P(First) given fixed marks, answer the question inverse
 
 Execution order: Problem 5 (feminist theory) → Problem 3 (aliases) → Problem 1 (2024/25) → Problem 2 (earlier years) → Problem 6 (dedup).
 
-### Problem 1: 2024/2025 per-paper extraction is incomplete (59% miss rate)
+### Problem 1: 2024/2025 per-paper extraction is incomplete — RESOLVED
 
-**Findings** (see `audit_data_gaps.py` for full audit):
+**Root cause**: Token limit truncation + prompt not emphasizing multi-section structure.
 
-The LLM extraction for 2024 and 2025 only captured ~34 of ~70 papers each year. The missed papers include very large ones (Theory of Politics n=112, Quantitative Economics n=110, Political Sociology n=87).
+**Fix applied** (`llm_extract.py`):
+- Rewrote PER_PAPER_PROMPT to explicitly instruct extraction of ALL per-paper tables across multiple sections
+- Added per-section max_tokens config: `per_paper` → 64000 tokens (vs 16000 default)
+- Converted `call_llm` to streaming API (required for >10 min operations at 64k tokens)
+- Re-extracted 2024 and 2025
 
-**Root cause**: The 2024–2025 reports split per-paper stats across multiple tables/sections. The LLM is extracting only one section (the gender-disaggregated table, which covers ~34 papers with All/M/F breakdowns). A second section with aggregated stats for remaining papers (especially Philosophy and Politics) is being missed entirely.
+**Result**: Coverage improved from ~41% to ~87–88%. All remaining gaps are n≤2 (suppressed from source reports):
+- 2024: 9 papers missing, all n≤2
+- 2025: 8 papers missing, all n≤2
 
-Evidence:
-- Captured papers: 12 Econ, 9 Pol, 5 Phil
-- Missed papers: 5 Econ, 17 Pol, 21 Phil
-- Not an n-threshold issue: papers with n=112, 110, 87 are missed
-- Some missed papers (Phil Logic n=9, Thesis in Politics n=11) likely have only aggregate stats because small n prevents gender disaggregation
+### Problem 2: Earlier years have minor gaps — RESOLVED
 
-**Fix in `llm_extract.py`**:
-- [ ] Strengthen the per_paper prompt to explicitly mention that 2024–2025 reports have MULTIPLE sections with per-paper stats (likely Section 2 and Section 3, or by subject area)
-- [ ] Tell the LLM to look for ALL tables with paper-level statistics, not just the first/largest one
-- [ ] For papers with small n that aren't gender-disaggregated, emit a single gender="All" row
-- [ ] Re-run extraction for 2024 and 2025: `python llm_extract.py --year 2024 --section per_paper` and same for 2025
-- [ ] Run `python audit_data_gaps.py` to verify miss rate drops to <15%
+**Fix applied**:
+- Re-extracted 2020 per_paper with improved prompt → all n>2 papers now captured
+- Merged "Feminism and Philosophy" into "Feminist Theory" alias (same paper, code 198, renamed over time)
+- Merged "Special Subject in Politics: CPE" into "Comparative Political Economy" alias (same paper, different era naming)
 
-**Also**: Phil Logic 2025 has a record but mean=None — the LLM saw the paper but didn't extract its stats. The data exists in the report (n=7, mean=64.1, SD=5.1).
-
-### Problem 2: Earlier years have minor gaps
-
-2016–2022 have 7–20% miss rates, mostly papers with n ≤ 5 where stats are suppressed. Genuine misses:
-- 2019: "International Security and Conflict" (n=44) and "Comparative Political Economy" (n=24)
-- 2020: "Comparative Political Economy" (n=22)
-
-**Fix**:
-- [ ] After Problem 1 prompt improvements, re-extract 2019 and 2020 with the improved prompt
-- [ ] If still missing, add year-specific guidance (these papers may be in a separate table/section)
-- [ ] Accept that papers with n≤5 will always be missing — genuinely suppressed in source PDFs
+**Remaining gaps** (all genuine — suppressed in source or not in per-paper table):
+- 2016: 11 papers missing, 4 with n=4–5 (politics papers not in per-paper table in that era's format), rest n≤3
+- 2019: 7 papers missing, largest is Feminist Theory n=4 (likely suppressed), rest n≤2
+- 2020: 9 papers missing, all n≤2
 
 ### Problem 3: Alias mismatches (paper_numbers vs per_paper) — RESOLVED
 

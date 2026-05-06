@@ -48,7 +48,8 @@ def load_pdf_b64(path: Path) -> str:
 
 
 def call_llm(client, pdf_b64: str, prompt: str, max_tokens: int = 16000) -> str:
-    resp = client.messages.create(
+    result_parts = []
+    with client.messages.stream(
         model=MODEL,
         max_tokens=max_tokens,
         messages=[{
@@ -61,8 +62,10 @@ def call_llm(client, pdf_b64: str, prompt: str, max_tokens: int = 16000) -> str:
                 {"type": "text", "text": prompt},
             ],
         }],
-    )
-    return resp.content[0].text
+    ) as stream:
+        for text in stream.text_stream:
+            result_parts.append(text)
+    return "".join(result_parts)
 
 
 # ---------------------------------------------------------------------------
@@ -131,13 +134,25 @@ The format varies by year:
 - 2017-2018: Code, Candidates, >=70, >=60, >=50, >=40, >=30, <30, Q1, Median, Q3, Mean, St.Dev
 - 2019-2022: Paper name, Cands, >=70, >=60, >=50, >=40, >=30, <30, Q1, Median, Q3, Mean, St.Dev, Max, Min
 - 2023: No data (boycott year) — return empty array
-- 2024-2025: Per-paper broken down by gender (Paper, Code, Gender, N, Mean, SD, Max, Min)
-  PLUS a bands-of-marks table by gender (>=70, 60-69, 50-59, 40-49, 30-39, <30)
+- 2024-2025: There are TWO tables in Section 3 that you MUST extract from:
+  (a) Section 3a: "Average mark, standard deviation, maximum and minimum mark by assessment and gender"
+      — columns: Assessment Title, No. of candidates, Average mark, Standard deviation, Maximum mark, Minimum mark
+      — rows are grouped: paper name (bold, with total n), then assessment code (with All stats), then F, then M
+      — THIS TABLE SPANS MANY PAGES (typically pages 7-18). You MUST extract ALL papers through to the end
+        including Theory of Politics, Thesis papers, etc. Do NOT stop early.
+  (b) Section 3b: "Bands of marks by assessment and gender"
+      — columns: Row Labels, No of candidates, >=70, 60-69, 50-59, 40-49, 30-39, <30
+      — same paper/gender structure as 3a
+
+  CRITICAL: The table in Section 3a contains approximately 70 papers. You MUST extract ALL of them.
+  Papers appear in alphabetical order. The LAST papers alphabetically include:
+  Theory of Politics, Thesis in Economics, Thesis in Philosophy, Thesis in Politics.
+  If your output does not include these papers, you have stopped too early.
 
 Return a JSON array of objects. Each object is one row:
 {
   "report_year": <int>,
-  "paper": <string, full paper name>,
+  "paper": <string, full paper name as shown in bold>,
   "subject": <string, "Philosophy", "Politics", "Economics", or "Joint" if identifiable, else null>,
   "gender": <string, "M", "F", or "All" if not broken down by gender>,
   "n": <int or null>,
@@ -159,13 +174,15 @@ Return a JSON array of objects. Each object is one row:
 }
 
 Rules:
-- Include EVERY paper listed. Do not skip any.
+- Include EVERY paper listed. Do not skip any. There are approximately 70 papers.
 - Where candidates <=5 and stats are suppressed, include the row with null values.
-- If band data is given as percentages, still include them but note in the values.
-  Actually, convert percentage bands to counts if total n is known; otherwise give the raw number.
+- If band data is given as percentages, convert to counts if total n is known; otherwise give the raw number.
 - Papers with <=2 candidates may be entirely suppressed — that's fine, skip those.
-- For 2024-2025: emit separate rows for gender="F", gender="M", and gender="All" (the paper total line).
-- Preserve the exact paper name as given in the report.
+- For 2024-2025: emit ONE row per paper with gender="All" using the paper-level totals (bold row).
+  Also emit separate rows for gender="F" and gender="M" where stats are given.
+- Use the paper name from the bold header row (e.g. "Theory of Politics"), NOT the assessment code.
+- Merge stats from Section 3a and bands from Section 3b into the same record (matching by paper+gender).
+- Output COMPACT JSON (no indentation, no extra whitespace) to fit all records.
 
 Return ONLY the JSON array, no other text."""
 
@@ -328,9 +345,16 @@ SECTIONS = {
 }
 
 
+MAX_TOKENS_BY_SECTION = {
+    "per_paper": 64000,
+}
+DEFAULT_MAX_TOKENS = 16000
+
+
 def extract_section(client, report_year: int, pdf_b64: str, section_key: str) -> list[dict]:
     label, prompt = SECTIONS[section_key]
-    raw = call_llm(client, pdf_b64, prompt)
+    max_tokens = MAX_TOKENS_BY_SECTION.get(section_key, DEFAULT_MAX_TOKENS)
+    raw = call_llm(client, pdf_b64, prompt, max_tokens=max_tokens)
 
     # Parse the JSON from the response (strip markdown fences if present)
     text = raw.strip()
