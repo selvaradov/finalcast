@@ -17,9 +17,11 @@ Extract 15 years of Oxford PPE Final Honour School examiners' report data (2011�
 - **gender_class**: 273 records, 2006–2025 — class distribution by gender (pct and sometimes counts)
 - **route_class**: 230 records, 2010–2025 (gap 2012–2015) — class distribution by route
 - **ethnicity_class**: 99 records, cohorts 2012/13–2022/23 — class distribution by ethnicity
-- **per_paper**: 912 records, 2015–2022 + 2024–2025 — mean, SD, bands, quartiles per paper
+- **per_paper**: 852 records (deduplicated), 2015–2022 + 2024–2025 — mean, SD, bands, quartiles per paper
+  - Coverage: 88.8% by paper count, **99.3% population-weighted** (uncovered papers all n≤2)
 - **paper_numbers**: 1326 records, 2005–2025 — candidate count per paper per year
 - **paper_aliases**: 95 canonical papers mapped from ~400 name variants
+- **paper_fits**: 79 papers fitted (53 reliable with n≥30 and σ≥2.0; 26 flagged low-confidence)
 
 ### Phase 1 remaining
 - [x] Re-extract class_distribution via LLM (fixed 2016/2017/2019 errors from regex parser)
