@@ -221,7 +221,7 @@ Rather than just showing P(First) given fixed marks, answer the question inverse
 
 ---
 
-## Data Quality & Pipeline Fixes
+## Data Quality & Pipeline Fixes — ALL RESOLVED
 
 Execution order: Problem 5 (feminist theory) → Problem 3 (aliases) → Problem 1 (2024/25) → Problem 2 (earlier years) → Problem 6 (dedup).
 

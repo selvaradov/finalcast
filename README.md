@@ -30,11 +30,15 @@ reports/*.pdf  ──►  llm_extract.py  ──►  data/raw/
 
 Uses `json_repair` for robust parsing of LLM JSON output.
 
-**`build_paper_aliases.py`** -- Paper name normalisation. Sends all 391 unique paper name variants to Claude for clustering, producing 97 canonical paper names.
+**`build_paper_aliases.py`** -- Paper name normalisation. Sends all unique paper name variants to Claude for clustering, producing ~95 canonical paper names from ~400 variants.
 
-**`build_canonical.py`** -- Deduplicates overlapping observations across reports (preferring the latest report year), normalises paper names, and writes canonical JSON files.
+**`build_canonical.py`** -- Deduplicates overlapping observations across reports (preferring the latest report year), normalises paper names, deduplicates per_paper records (removes component splits, old-regs duplicates, route splits), and writes canonical JSON files.
 
 **`validate.py`** -- Cross-validates overlapping observations across reports.
+
+**`validate_data.py`** -- Post-build validation suite: alias completeness, population-weighted coverage, dedup integrity, fit reliability flags, data sanity checks. Run after any pipeline change.
+
+**`audit_data_gaps.py`** -- Detailed coverage audit comparing paper_numbers vs per_paper, with alias mismatch detection and raw extraction analysis.
 
 ### Phase 2: Analysis
 
@@ -56,7 +60,7 @@ For each of the 97 canonical papers, we fit a truncated normal distribution (sup
 
 **Exclusions**: 2020 excluded (COVID). Degenerate fits (mu outside [20, 90] or sigma outside [0.5, 25]) discarded.
 
-**Result**: 81 papers fitted (65 from band-count MLE, 16 from moment estimates).
+**Result**: 79 papers fitted (63 from band-count MLE, 16 from moment estimates). 53 flagged as reliable (n_total >= 30 and sigma >= 2.0); 26 flagged low-confidence.
 
 ### Classification rules
 
@@ -101,16 +105,20 @@ The proportional loading addresses a key flaw of the additive model (constant sh
 
 OLS regression of mean mark on year for each paper with >= 4 years of data (excluding 2020). Reports slope, 95% CI, p-value, R-squared.
 
-3 of 65 papers show significant drift (p < 0.05):
-- Philosophical Logic: -1.01 marks/year, 95% CI [-1.52, -0.51], p = 0.004
-- Microeconomic Analysis: +1.65 marks/year, 95% CI [+0.82, +2.49], p = 0.005
-- Thesis in Politics: +0.38 marks/year, 95% CI [+0.07, +0.68], p = 0.025
+7 of 64 papers show significant drift (p < 0.05):
+- Quantitative Economics: +0.55 marks/year, p = 0.001
+- Microeconomic Analysis: +1.65 marks/year, p = 0.005
+- Political Thought: Plato to Rousseau: +0.24 marks/year, p = 0.006
+- Political Thought: Bentham to Weber: +0.35 marks/year, p = 0.010
+- Philosophical Logic: -0.63 marks/year, p = 0.015
+- Politics in South Asia: +0.47 marks/year, p = 0.016
+- Public Economics: +0.26 marks/year, p = 0.036
 
 ### Subject-level analysis
 
 **Variance decomposition**: within-paper variance dominates in all subjects (29--75x between-paper). Economics within-paper var = 71.8 vs Philosophy 30.2. The wide economics SD is individual paper volatility, not differences in paper difficulty.
 
-**Kingmaker papers**: Econometrics (sigma=14.0), Game Theory (sigma=12.3), Quantitative Economics (sigma=10.6) -- all economics.
+**Kingmaker papers** (sigma >= 10, one full grade class width): Econometrics (sigma=14.0), Game Theory (sigma=12.3), Quantitative Economics (sigma=10.7) -- all economics.
 
 ## Data files
 
@@ -122,17 +130,17 @@ OLS regression of mean mark on year for each paper with >= 4 years of data (excl
 | `subject_aggregates.json` | ~63 | Mean and SD per subject per year |
 | `gender_class.json` | 273 | Class distribution by gender, 2006--2025 |
 | `gender_stats.json` | 30 | Candidates, mean, SD by gender, 2011--2025 |
-| `per_paper.json` | 717 | Per-paper stats, 2015--2025 |
+| `per_paper.json` | 852 | Per-paper stats (deduplicated), 2015--2025 |
 | `route_class.json` | 230 | Class distribution by route, 2010--2025 |
 | `ethnicity_class.json` | 99 | Class distribution by ethnicity |
-| `paper_numbers.json` | 1339 | Candidate counts per paper, 2005--2025 |
+| `paper_numbers.json` | 1326 | Candidate counts per paper, 2005--2025 |
 
 ### Analysis outputs (`data/analysis/`)
 
 | File | Description |
 |------|-------------|
-| `paper_fits.json` | Fitted (mu, sigma) for 81 papers, with method and GOF p-value |
-| `paper_profiles.json` | Difficulty profiles: mu, sigma, %1st, %2.1, %below-50 |
+| `paper_fits.json` | Fitted (mu, sigma) for 79 papers, with method, GOF p-value, and reliability flag |
+| `paper_profiles.json` | Difficulty profiles: mu, sigma, %1st, %2.1, %below-50, reliable |
 | `temporal_trends.json` | OLS trend per paper: slope, 95% CI, p-value, R-squared |
 | `subject_analysis.json` | Subject summaries, variance decomposition, kingmaker papers |
 | `simulation_params.json` | Calibrated sigma_ability (additive model, used in analysis pipeline) |
@@ -162,7 +170,7 @@ Four pages, hash-routed:
 - **Methodology** (`#methodology`) -- Full model description with KaTeX rendering (copyable math).
 
 Key files:
-- `web/data.json` -- Pre-computed bundle (~60KB, generated by `analysis.py`): 81 papers with fits, route/subject summaries, popularity time series, gender/class distributions, per-paper mean time series
+- `web/data.json` -- Pre-computed bundle (~61KB, generated by `analysis.py`): 79 papers with fits + reliability flags, route/subject summaries, popularity time series, gender/class distributions, per-paper mean time series
 - `web/engine.js` -- Monte Carlo simulation engine (classify, simulate with proportional loading, paperMetrics)
 - `web/app.js` -- Application logic, routing, URL state persistence
 - `web/explorer.js` -- Explorer page (Chart.js scatter, paper profiles, filtering, temporal trends)
@@ -195,9 +203,13 @@ python build_canonical.py
 python analysis.py               # also writes web/data.json
 python visualise.py
 
+# Validate
+python validate_data.py          # post-build checks (coverage, dedup, reliability)
+python validate_data.py --quick  # just coverage + dedup
+
 # Phase 3: Web tool
 python web/build.py              # sync copy from web/copy/*.md into index.html
-cd web && python -m http.server 8080
+python web/serve.py              # dev server with live reload on :8000
 ```
 
 ## Known limitations
@@ -207,7 +219,7 @@ See `notes/model_limitations.md` for quantitative analysis of the two main model
 - **Truncated normal assumption**: UK marks are asymmetric (compressed 58–68, ceiling ~75–80). The fitted model overstates Q3 by 2–4 marks for kingmaker papers (e.g. Econometrics: fitted Q3=74.7 vs observed 70.5). Band-level P(>=70) is well-calibrated (within 1–3pp), but the within-band distribution is wrong — the conditional mean E\[mark | mark>=70\] is ~79 in the model vs ~72–73 in reality. Net impact on First rates: ~1–2pp overestimate for kingmaker-heavy combos.
 - **Single-factor correlation**: The latent ability model assumes constant ρ=0.196 across all paper pairs. Same-subject papers are likely more correlated (ρ≈0.3–0.5). A two-factor model (global + per-subject) gives substantially different conditional results — e.g. P(First) at the 95th percentile drops from 84% to 61% for the popular 8 combo under ρ_within=0.30. Population-level rates are stable (~23%) across all scenarios. The model is under-identified without individual-level data.
 - **Selection effects**: The simulation assumes a random student. Self-selection into papers means observed distributions reflect who chose the paper. Plausible magnitude: ±1–3 marks on paper means, ±2–3pp on classification probabilities. See `notes/selection_and_ability.md`.
-- **Temporal pooling**: Pooled across years. Justified by trend analysis (3/65 significant), but represents an average, not any single year.
+- **Temporal pooling**: Pooled across years. Justified by trend analysis (7/64 significant, all modest slopes), but represents an average, not any single year.
 - **COVID exclusion**: 2020 excluded (40% first rate from safety-net policies).
 - **2023 boycott**: No per-paper statistics published that year.
 

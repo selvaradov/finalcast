@@ -20,7 +20,7 @@ Full distribution of results each year.
 
 ## Score trends
 
-Mean marks for papers with statistically significant drift (p<0.05). Most papers are stable — only 3 of 65 show significant trends. 2020 is included (marking was normal that year — only classification was anomalous). 2023 has no per-paper data (marking boycott). Phil Logic and Thesis weren't reported in 2024–25.
+Mean marks for papers with statistically significant drift (p<0.05), coloured by subject. Most papers are stable — 7 of 64 show significant trends (6 rising, 1 falling). 2020 included (marking was normal; only classification was anomalous). 2023 has no per-paper data (marking boycott).
 
 ## Popularity trends
 

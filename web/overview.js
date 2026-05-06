@@ -245,29 +245,37 @@ const Overview = (() => {
     const catalogue = DATA.paper_catalogue;
     const meansTs = DATA.paper_means_ts || {};
 
-    const PAPER_COLORS = {
-      'Philosophical Logic': BLUE,
-      'Thesis in Politics': RED,
-      'Microeconomic Analysis': GOLD
+    const SUBJECT_COLORS = {
+      'Philosophy': BLUE,
+      'Politics': RED,
+      'Economics': GOLD
     };
 
+    const SUBJECT_ORDER = {'Philosophy': 0, 'Politics': 1, 'Economics': 2};
     const sigPapers = Object.entries(catalogue)
       .filter(([, p]) => p.trend_p !== undefined && p.trend_p < 0.05)
-      .sort((a, b) => a[0].localeCompare(b[0]));
+      .sort((a, b) => (SUBJECT_ORDER[a[1].subject] ?? 9) - (SUBJECT_ORDER[b[1].subject] ?? 9)
+        || a[0].localeCompare(b[0]));
 
     const years = ['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'];
 
+    const DASH_PATTERNS = [[], [5,5], [2,3]];
+    const subjectIndex = {};
+
     const datasets = sigPapers.map(([name, p]) => {
       const ts = meansTs[name] || {};
-      const color = PAPER_COLORS[name] || CHALK;
+      const color = SUBJECT_COLORS[p.subject] || CHALK;
+      const idx = subjectIndex[p.subject] || 0;
+      subjectIndex[p.subject] = idx + 1;
       const dir = p.trend_slope > 0 ? '+' : '';
       return {
         label: `${name} (${dir}${p.trend_slope.toFixed(2)}/yr)`,
         data: years.map(y => y === '2023' ? null : (ts[y] ?? null)),
         borderColor: color,
-        backgroundColor: color + '22',
+        backgroundColor: 'transparent',
+        borderDash: DASH_PATTERNS[idx % DASH_PATTERNS.length],
         tension: 0,
-        pointRadius: 4,
+        pointRadius: 3,
         pointBackgroundColor: years.map(y => y === '2020' ? color + '55' : color),
         borderWidth: 2,
         spanGaps: true
@@ -281,6 +289,14 @@ const Overview = (() => {
         ...CHART_DEFAULTS,
         plugins: {
           ...CHART_DEFAULTS.plugins,
+          legend: {
+            ...CHART_DEFAULTS.plugins.legend,
+            labels: {
+              ...CHART_DEFAULTS.plugins.legend.labels,
+              boxWidth: 28,
+              boxHeight: 0
+            }
+          },
           tooltip: {
             ...CHART_DEFAULTS.plugins.tooltip,
             callbacks: {
