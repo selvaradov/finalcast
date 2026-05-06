@@ -64,7 +64,8 @@ def make_report():
         fig.text(0.5, 0.6, "Oxford PPE Finals", ha="center", fontsize=28, fontweight="bold")
         fig.text(0.5, 0.54, "Statistical Analysis of Examiners' Reports 2011–2025",
                  ha="center", fontsize=16, color="#555")
-        fig.text(0.5, 0.42, "81 papers fitted · 100k Monte Carlo simulations · 15 years of data",
+        n_reliable = sum(1 for f in fits.values() if f.get("reliable", True))
+        fig.text(0.5, 0.42, f"{n_reliable} papers fitted ({len(fits)} total) · 100k Monte Carlo sims · 15 years of data",
                  ha="center", fontsize=11, color="#888")
         fig.text(0.5, 0.35, f"σ_ability = {params['sigma_ability']:.2f}  |  "
                  f"Calibration target: 23.4% first rate", ha="center", fontsize=10, color="#888")
