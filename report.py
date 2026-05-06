@@ -296,11 +296,12 @@ def make_report():
         table.auto_set_font_size(False)
         table.set_fontsize(8)
         table.scale(1, 1.4)
+        n_sig = sum(1 for t in trends if t["p_value"] < 0.05)
         for (row, col), cell in table.get_celld().items():
             if row == 0:
                 cell.set_facecolor("#e2e8f0")
                 cell.set_text_props(fontweight="bold")
-            elif row <= 3:  # first 3 are significant
+            elif row <= n_sig:
                 cell.set_facecolor("#fef3c7")
             else:
                 cell.set_facecolor("#f8fafc" if row % 2 == 0 else "white")
@@ -526,7 +527,8 @@ def make_report():
             "Distribution fitting",
             "  Truncated normal (support [0,100]) fitted via MLE on pooled band counts.",
             "  6 bins: ≥70, 60–69, 50–59, 40–49, 30–39, <30.",
-            "  81 papers fitted (65 band MLE, 16 moment estimates). 2020 excluded.",
+            f"  {len(fits)} papers fitted ({sum(1 for f in fits.values() if f['method'] == 'mle_bands')} band MLE, "
+            f"{sum(1 for f in fits.values() if f['method'] == 'moment_mean_sd')} moment estimates). 2020 excluded.",
             "  Goodness of fit: chi-squared test (bins merged where expected < 5).",
             "",
             "Classification rules",

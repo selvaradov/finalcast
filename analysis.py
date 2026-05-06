@@ -515,14 +515,14 @@ def compute_subject_analysis(paper_fits):
             "grand_mean": round(float(grand_mean), 2),
         }
 
-    # Kingmaker papers: σ >= 2× the median σ across reliable papers.
+    # Kingmaker papers: σ >= 10 (one full grade class width).
     # These are high-variance papers that disproportionately determine
     # classification outcomes — a strong performance lifts the average,
     # a weak one can block a First via the sub-50 conjunctive rule.
     reliable_fits = {n: f for n, f in paper_fits.items() if f.get("reliable", True)}
     all_sigmas = [f["sigma"] for f in reliable_fits.values()]
     median_sigma = float(np.median(all_sigmas))
-    kingmaker_threshold = 2 * median_sigma
+    kingmaker_threshold = 10.0
     all_papers = [(name, fit) for name, fit in reliable_fits.items()]
     all_papers.sort(key=lambda x: -x[1]["sigma"])
     kingmakers = [{
