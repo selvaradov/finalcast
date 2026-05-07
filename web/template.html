@@ -38,7 +38,7 @@
   <section class="page-section landing" data-page="landing">
     <div class="landing-inner">
       <div class="landing-text">
-        <h1>What might your<br>final result be?</h1>
+        <h1>What might your<br class="desktop-only"> final result be?</h1>
         <p class="landing-sub"><!-- copy:landing.intro --><!-- /copy --></p>
         <div class="landing-actions">
           <a href="#calculator" class="btn btn-primary">Start calculator</a>
@@ -274,7 +274,7 @@
       <h1 class="page-title">The Big Picture</h1>
       <p class="page-intro"><!-- copy:overview.intro --><!-- /copy --></p>
 
-      <nav class="overview-toc">
+      <nav class="sticky-toc overview-toc">
         <a data-scroll="ov-firsts">First-class rate</a>
         <a data-scroll="ov-gender">Gender gap</a>
         <a data-scroll="ov-subjects">Subjects</a>
@@ -330,7 +330,7 @@
       <div class="card" id="ov-popularity">
         <h2>Popularity trends</h2>
         <p class="section-note"><!-- copy:overview.popularity-trends --><!-- /copy --></p>
-        <div class="chart-wrap" style="height:480px;">
+        <div class="chart-wrap chart-wrap--tall">
           <canvas id="popularity-arrow-chart"></canvas>
         </div>
       </div>
@@ -360,6 +360,13 @@
   <section class="page-section" data-page="methodology" style="display:none;">
     <div class="container methodology-full">
       <h1 class="page-title">Methodology</h1>
+      <nav class="sticky-toc methodology-toc">
+        <a data-scroll="meth-1-the-model">The model</a>
+        <a data-scroll="meth-2-classification-rules">Classification</a>
+        <a data-scroll="meth-3-simulation">Simulation</a>
+        <a data-scroll="meth-4-data">Data</a>
+        <a data-scroll="meth-5-limitations">Limitations</a>
+      </nav>
       <!-- copy-html:methodology.body --><!-- /copy-html -->
     </div>
   </section>

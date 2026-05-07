@@ -21,13 +21,17 @@ const App = (() => {
 
     if (pushState) {
       const hash = page === 'landing' ? '' : '#' + page;
-      if (window.location.hash !== hash) {
-        history.pushState(null, '', hash || window.location.pathname + window.location.search);
+      const keepParams = page === 'calculator';
+      const search = keepParams ? window.location.search : '';
+      const url = window.location.pathname + search + (hash || '');
+      if (window.location.hash !== hash || (!keepParams && window.location.search)) {
+        history.pushState(null, '', url);
       }
     }
 
     if (page === 'explorer' && DATA) Explorer.init(DATA);
     if (page === 'overview' && DATA) Overview.init(DATA);
+    if (page === 'methodology') wireMethodologyToc();
 
     window.scrollTo(0, 0);
   }
@@ -1085,6 +1089,16 @@ const App = (() => {
     `;
   }
 
+  // ── Methodology TOC ────────────────────────────────────────
+
+  let methTocWired = false;
+
+  function wireMethodologyToc() {
+    if (methTocWired) return;
+    methTocWired = true;
+    Overview.wireTocNav('.methodology-toc');
+  }
+
   // ── Methodology modal ─────────────────────────────────────
 
   function openMethodologyModal() {
@@ -1212,7 +1226,11 @@ const App = (() => {
 
     // Hash routing
     window.addEventListener('hashchange', () => {
-      navigate(routeFromHash(), false);
+      const page = routeFromHash();
+      if (page !== 'calculator' && window.location.search) {
+        history.replaceState(null, '', window.location.pathname + window.location.hash);
+      }
+      navigate(page, false);
     });
 
     window.addEventListener('keydown', (e) => {

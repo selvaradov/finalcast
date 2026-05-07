@@ -447,7 +447,7 @@ const Overview = (() => {
             },
             ticks: {
               color: CHALK_DIM,
-              font: { size: 11 },
+              font: { size: window.innerWidth <= 600 ? 9 : 11 },
               autoSkip: false,
               callback: (val) => Number.isInteger(val) ? (labels[val] || '') : ''
             },
@@ -502,41 +502,47 @@ const Overview = (() => {
   }
 
   function wireToc() {
-    const links = document.querySelectorAll('.overview-toc a[data-scroll]');
-    const tocEl = document.querySelector('.overview-toc');
+    wireTocNav('.overview-toc');
+  }
+
+
+  function wireTocNav(selector) {
+    const tocEl = document.querySelector(selector);
+    if (!tocEl) return;
+    const links = tocEl.querySelectorAll('a[data-scroll]');
+    if (links.length === 0) return;
+
+    const navH = 53;
     links.forEach(a => {
-      a.style.cursor = 'pointer';
       a.addEventListener('click', (e) => {
         e.preventDefault();
         const target = document.getElementById(a.dataset.scroll);
         if (!target) return;
-        const navH = 53;
-        const tocH = tocEl ? tocEl.offsetHeight : 0;
+        const tocH = tocEl.offsetHeight || 0;
         const y = target.getBoundingClientRect().top + window.scrollY - navH - tocH - 12;
         window.scrollTo({ top: y, behavior: 'smooth' });
       });
     });
 
     const sections = Array.from(links).map(a => document.getElementById(a.dataset.scroll)).filter(Boolean);
-    if (links.length > 0) links[0].classList.add('active');
 
-    const visible = new Set();
-    const update = () => {
-      const active = sections.find(s => visible.has(s.id));
-      links.forEach(a => a.classList.toggle('active', active ? a.dataset.scroll === active.id : false));
-    };
-    requestAnimationFrame(() => {
-      const observer = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) visible.add(entry.target.id);
-          else visible.delete(entry.target.id);
+    function update() {
+      const mid = window.innerHeight / 2;
+      let active = null;
+      for (const s of sections) {
+        if (s.getBoundingClientRect().top <= mid) {
+          active = s.id;
+        } else {
+          break;
         }
-        update();
-      }, { rootMargin: '-80px 0px -40% 0px' });
-      sections.forEach(s => observer.observe(s));
-    });
+      }
+      links.forEach(a => a.classList.toggle('active', a.dataset.scroll === active));
+    }
+
+    window.addEventListener('scroll', update, { passive: true });
+    update();
   }
 
 
-  return { init };
+  return { init, wireTocNav };
 })();

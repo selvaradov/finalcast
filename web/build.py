@@ -82,13 +82,21 @@ def build():
         print(f"  WARNING: no copy found for {key}")
         return m.group(0)
 
+    def add_heading_ids(html_str):
+        def heading_id(m):
+            tag = m.group(1)
+            content = m.group(2)
+            slug = re.sub(r'[^a-z0-9]+', '-', re.sub(r'<[^>]+>', '', content).lower()).strip('-')
+            return f'<{tag} id="meth-{slug}">{content}</{tag}>'
+        return re.sub(r'<(h[23])>(.*?)</\1>', heading_id, html_str)
+
     def html_replacer(m):
         key = m.group(1)
         file_key, section_key = key.split('.', 1)
         sections = copy.get(file_key, {})
         new_text = sections.get(section_key, None)
         if new_text is not None:
-            rendered = md_render(new_text)
+            rendered = add_heading_ids(md_render(new_text))
             return f'<!-- copy-html:{key} -->\n{rendered}<!-- /copy-html -->'
         print(f"  WARNING: no copy found for {key}")
         return m.group(0)
