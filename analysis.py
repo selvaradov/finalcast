@@ -267,21 +267,25 @@ def pool_and_fit_papers():
 
 
 # ---------------------------------------------------------------------------
-# D. Monte Carlo simulation
+# D. Monte Carlo simulation (proportional loading model)
 # ---------------------------------------------------------------------------
 
 def simulate_classification(
     paper_fits: dict[str, dict],
     papers: list[str],
-    sigma_ability: float,
+    rho: float,
     n_sim: int = 100_000,
     rng: np.random.Generator | None = None,
 ) -> dict[str, float]:
     """Run Monte Carlo simulation for a given set of 8 papers.
 
-    Model: mark_i = mu_i + theta + eps_i
-           theta ~ N(0, sigma_ability^2)
-           eps_i ~ N(0, sigma_paper_i^2 - sigma_ability^2)  (clamped to >0)
+    Proportional ability loading model:
+        mark_i = mu_i + sigma_i * sqrt(rho) * theta + sigma_i * sqrt(1-rho) * z_i
+        theta ~ N(0, 1)   (standardised ability, integrated over population)
+        z_i   ~ N(0, 1)   (independent residual noise)
+
+    All paper pairs have implied correlation rho. Higher-sigma papers have
+    proportionally more ability-explained variance.
 
     Returns dict of {class: probability}.
     """
@@ -302,13 +306,15 @@ def simulate_classification(
     mus = np.array(mus)
     sigmas_paper = np.array(sigmas_paper)
 
-    # Paper-specific noise (residual after removing ability)
-    sigma_eps = np.sqrt(np.maximum(sigmas_paper**2 - sigma_ability**2, 0.1))
+    sqrt_rho = np.sqrt(rho)
+    sqrt_1m_rho = np.sqrt(1 - rho)
+    lambdas = sigmas_paper * sqrt_rho
+    sigma_eps = sigmas_paper * sqrt_1m_rho
 
     # Sample
-    theta = rng.normal(0, sigma_ability, size=n_sim)  # (n_sim,)
+    theta = rng.normal(0, 1, size=n_sim)  # (n_sim,)
     eps = rng.normal(0, 1, size=(n_sim, 8)) * sigma_eps[None, :]  # (n_sim, 8)
-    marks = mus[None, :] + theta[:, None] + eps  # (n_sim, 8)
+    marks = mus[None, :] + lambdas[None, :] * theta[:, None] + eps  # (n_sim, 8)
     marks = np.clip(marks, 0, 100)
 
     # Classify each simulation
@@ -320,32 +326,33 @@ def simulate_classification(
     return {k: round(v / n_sim, 4) for k, v in counts.items()}
 
 
-def calibrate_sigma_ability(paper_fits, target_first_rate=0.234, tol=0.005):
-    """Calibrate sigma_ability to match the observed overall first-class rate.
+def calibrate_rho(paper_fits, target_first_rate=0.232, tol=0.005):
+    """Calibrate rho to match the observed overall first-class rate.
 
-    Uses a representative "average" set of papers (picks the 8 most popular).
+    Uses the 8 most popular papers as representative. Searches for the
+    inter-paper correlation rho such that the population-average First rate
+    (integrating theta ~ N(0,1)) matches the observed ~23.2%.
     """
-    # Pick 8 papers with the most data
     top_papers = sorted(paper_fits.keys(), key=lambda p: paper_fits[p]["n_total"], reverse=True)[:8]
 
-    def objective(sigma_ab):
-        result = simulate_classification(paper_fits, top_papers, sigma_ab, n_sim=50_000)
+    def objective(rho_val):
+        result = simulate_classification(paper_fits, top_papers, rho_val, n_sim=50_000)
         return (result["1st"] - target_first_rate) ** 2
 
-    best_sigma = 0.0
+    best_rho = 0.0
     best_err = float("inf")
-    for s in np.arange(0.5, 8.0, 0.25):
-        err = objective(s)
+    for r in np.arange(0.05, 0.50, 0.01):
+        err = objective(r)
         if err < best_err:
             best_err = err
-            best_sigma = s
+            best_rho = r
         if err < tol**2:
             break
 
     # Refine
     result = optimize.minimize_scalar(
         objective,
-        bounds=(max(0.1, best_sigma - 1), best_sigma + 1),
+        bounds=(max(0.01, best_rho - 0.05), min(0.99, best_rho + 0.05)),
         method="bounded",
     )
     return result.x
@@ -816,7 +823,7 @@ def _assess_asymmetry(results):
 # J29. Marginal paper value analysis
 # ---------------------------------------------------------------------------
 
-def compute_marginal_paper_value(paper_fits, sigma_ability, n_sim=100_000):
+def compute_marginal_paper_value(paper_fits, rho, n_sim=100_000):
     """Compute the marginal effect of each paper on classification probabilities.
 
     Takes the 7 most popular papers as a base, then simulates adding each
@@ -831,14 +838,14 @@ def compute_marginal_paper_value(paper_fits, sigma_ability, n_sim=100_000):
     median_8th = ranked[7][0]
 
     # Baseline: the 8 most popular
-    baseline = simulate_classification(paper_fits, base_7 + [median_8th], sigma_ability, n_sim, rng)
+    baseline = simulate_classification(paper_fits, base_7 + [median_8th], rho, n_sim, rng)
 
     results = []
     for paper, fit in paper_fits.items():
         if paper in base_7:
             continue
         rng_copy = np.random.default_rng(42)
-        dist = simulate_classification(paper_fits, base_7 + [paper], sigma_ability, n_sim, rng_copy)
+        dist = simulate_classification(paper_fits, base_7 + [paper], rho, n_sim, rng_copy)
         delta_first = dist["1st"] - baseline["1st"]
         delta_22_plus = (dist["2.2"] + dist["3rd"] + dist["Pass"] + dist["Fail"]) - \
                         (baseline["2.2"] + baseline["3rd"] + baseline["Pass"] + baseline["Fail"])
@@ -862,7 +869,7 @@ def compute_marginal_paper_value(paper_fits, sigma_ability, n_sim=100_000):
         "median_8th_paper": median_8th,
         "baseline_distribution": baseline,
         "n_sim": n_sim,
-        "sigma_ability": round(sigma_ability, 4),
+        "rho": round(rho, 4),
         "per_paper": results,
     }
 
@@ -871,7 +878,7 @@ def compute_marginal_paper_value(paper_fits, sigma_ability, n_sim=100_000):
 # J31. Bootstrap confidence intervals on simulation
 # ---------------------------------------------------------------------------
 
-def bootstrap_simulation_cis(paper_fits, sigma_ability, n_bootstrap=200, n_sim=50_000):
+def bootstrap_simulation_cis(paper_fits, rho, n_bootstrap=200, n_sim=50_000):
     """Bootstrap CIs on classification probabilities for the default paper set.
 
     Resamples the per-paper band data (with replacement across years),
@@ -932,7 +939,7 @@ def bootstrap_simulation_cis(paper_fits, sigma_ability, n_bootstrap=200, n_sim=5
                 boot_fits[paper] = paper_fits[paper]
 
         sim_rng = np.random.default_rng(42 + b)
-        dist = simulate_classification(boot_fits, top_8, sigma_ability, n_sim, sim_rng)
+        dist = simulate_classification(boot_fits, top_8, rho, n_sim, sim_rng)
         boot_results.append(dist)
 
     # Compute CIs
@@ -951,13 +958,13 @@ def bootstrap_simulation_cis(paper_fits, sigma_ability, n_bootstrap=200, n_sim=5
 
     # Point estimate for reference
     point_rng = np.random.default_rng(42)
-    point = simulate_classification(paper_fits, top_8, sigma_ability, n_sim * 2, point_rng)
+    point = simulate_classification(paper_fits, top_8, rho, n_sim * 2, point_rng)
 
     return {
         "papers": top_8,
         "n_bootstrap": n_bootstrap,
         "n_sim_per_bootstrap": n_sim,
-        "sigma_ability": round(sigma_ability, 4),
+        "rho": round(rho, 4),
         "point_estimate": point,
         "bootstrap_95_ci": cis,
     }
@@ -1252,7 +1259,7 @@ def check_boycott_residual():
 # I27+I28. Bundle data for web tool
 # ---------------------------------------------------------------------------
 
-def bundle_web_data(sigma_ability):
+def bundle_web_data(rho):
     """Create a single JSON bundle with everything the web tool needs.
 
     This produces the complete web/data.json — no manual additions needed.
@@ -1385,9 +1392,6 @@ def bundle_web_data(sigma_ability):
     for r in pn:
         paper_popularity.setdefault(r["paper"], {})[str(r["data_year"])] = r["n"]
 
-    # Calibrated rho for proportional loading model
-    RHO = 0.196
-
     bundle = {
         "paper_catalogue": paper_catalogue,
         "subject_summary": subject["subject_summary"],
@@ -1401,7 +1405,7 @@ def bundle_web_data(sigma_ability):
         },
         "paper_aliases": reverse_aliases,
         "kingmaker_papers": subject["kingmaker_papers"],
-        "rho": RHO,
+        "rho": rho,
         "class_distribution_ts": class_distribution_ts,
         "gender_class_ts": gender_class_ts,
         "gender_stats_ts": gender_stats_ts,
@@ -1439,11 +1443,11 @@ def run_all():
     subject = compute_subject_analysis(paper_fits)
     _save("subject_analysis", subject)
 
-    print("Calibrating sigma_ability...")
-    sigma_ab = calibrate_sigma_ability(paper_fits)
-    params = {"sigma_ability": round(float(sigma_ab), 4)}
+    print("Calibrating rho (proportional loading)...")
+    rho = calibrate_rho(paper_fits)
+    params = {"rho": round(float(rho), 4)}
     _save("simulation_params", params)
-    print(f"  sigma_ability = {params['sigma_ability']}")
+    print(f"  rho = {params['rho']}")
 
     print("Validating pooled fits per-year (A2)...")
     validation = validate_pooled_fits(paper_fits)
@@ -1459,7 +1463,7 @@ def run_all():
           f"Assessment: {asymmetry['assessment']}")
 
     print("Computing marginal paper values (J29)...")
-    marginal = compute_marginal_paper_value(paper_fits, sigma_ab)
+    marginal = compute_marginal_paper_value(paper_fits, rho)
     _save("marginal_paper_value", marginal)
     top = marginal["per_paper"][0]
     bot = marginal["per_paper"][-1]
@@ -1467,7 +1471,7 @@ def run_all():
     print(f"  Worst 8th paper: {bot['paper']} (Δ1st = {bot['delta_first_vs_median']:.1%})")
 
     print("Bootstrap CIs on simulation (J31)...")
-    boot_cis = bootstrap_simulation_cis(paper_fits, sigma_ab)
+    boot_cis = bootstrap_simulation_cis(paper_fits, rho)
     _save("bootstrap_cis", boot_cis)
     ci = boot_cis["bootstrap_95_ci"]["1st"]
     print(f"  P(1st) = {boot_cis['point_estimate']['1st']:.1%} "
@@ -1497,7 +1501,7 @@ def run_all():
           f"p={boycott['p_value']}. Assessment: {boycott['assessment']}")
 
     print("Bundling web tool data (I27+I28)...")
-    bundle = bundle_web_data(sigma_ab)
+    bundle = bundle_web_data(rho)
     _save("web_bundle", bundle)
     web_data_path = Path("web/data.json")
     with open(web_data_path, "w") as f:

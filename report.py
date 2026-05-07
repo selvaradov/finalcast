@@ -67,8 +67,8 @@ def make_report():
         n_reliable = sum(1 for f in fits.values() if f.get("reliable", True))
         fig.text(0.5, 0.42, f"{n_reliable} papers fitted ({len(fits)} total) · 100k Monte Carlo sims · 15 years of data",
                  ha="center", fontsize=11, color="#888")
-        fig.text(0.5, 0.35, f"σ_ability = {params['sigma_ability']:.2f}  |  "
-                 f"Calibration target: 23.4% first rate", ha="center", fontsize=10, color="#888")
+        fig.text(0.5, 0.35, f"ρ = {params['rho']:.3f}  |  "
+                 f"Calibration target: 23.2% first rate", ha="center", fontsize=10, color="#888")
         pdf.savefig(fig)
         plt.close()
 
@@ -537,10 +537,10 @@ def make_report():
             "  2.2: avg ≥ 49.0, ≥ 3 marks of 50+.",
             "  3rd: avg ≥ 40.0, ≥ 3 marks of 40+.",
             "",
-            "Monte Carlo simulation",
-            "  mark_i = μ_i + θ + ε_i,  θ ~ N(0, σ²_ability),  "
-            "ε_i ~ N(0, σ²_paper − σ²_ability).",
-            f"  σ_ability = {params['sigma_ability']:.2f}, calibrated to 23.4% first-class rate.",
+            "Monte Carlo simulation (proportional loading)",
+            "  mark_i = μ_i + σ_i√ρ · θ + σ_i√(1−ρ) · z_i,  "
+            "θ ~ N(0,1),  z_i ~ N(0,1).",
+            f"  ρ = {params['rho']:.3f}, calibrated to 23.2% first-class rate.",
             "  100,000 simulations per paper combination.",
             "",
             "Temporal trends",
