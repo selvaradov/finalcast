@@ -171,6 +171,12 @@
           </div>
         </div>
 
+        <div class="step-actions">
+          <button id="btn-back-ability" class="btn btn-secondary">← Adjust</button>
+          <button id="btn-whatif" class="btn btn-primary">What if I know some marks?</button>
+          <button id="btn-restart" class="btn btn-secondary">Start over</button>
+        </div>
+
         <div class="paper-breakdown" id="paper-breakdown">
           <!-- Populated by JS -->
         </div>
@@ -178,38 +184,35 @@
         <div class="context-panels" id="context-panels">
           <!-- Route comparison, swap suggestion -->
         </div>
-
-        <div class="step-actions">
-          <button id="btn-back-ability" class="btn btn-secondary">← Adjust</button>
-          <button id="btn-whatif" class="btn btn-primary">What if I know some marks?</button>
-          <button id="btn-restart" class="btn btn-secondary">Start over</button>
-        </div>
       </section>
 
       <!-- Step 4: What-if conditional marks -->
       <section id="step-whatif" class="card step-section">
-        <h2>What do you need?</h2>
-        <p class="section-note">Fix marks on papers you have a sense about, and see what you need on the rest.</p>
+        <h2 id="whatif-heading"><!-- copy:calculator.whatif-title -->What do you need?<!-- /copy --></h2>
 
-        <div class="whatif-reference" id="whatif-reference">
-          <!-- Shows headline from step 3 as context -->
+        <div class="whatif-subheader" id="whatif-subheader">
+          <p class="section-note" id="whatif-intro"><!-- copy:calculator.whatif-intro -->Enter marks on papers you have a feel for — the rest will be simulated. For example: "If Ethics and IR are average but Micro goes badly, what do the others need to look like?"<!-- /copy --></p>
+          <div class="step-actions" id="whatif-input-actions">
+            <button id="btn-back-results" class="btn btn-secondary">← Results</button>
+            <button id="btn-whatif-run" class="btn btn-primary">Calculate</button>
+            <button id="btn-restart-2" class="btn btn-secondary">Start over</button>
+          </div>
         </div>
 
-        <div class="whatif-papers" id="whatif-papers">
-          <!-- Populated by JS: each paper gets a row with lock toggle + mark input -->
-        </div>
-
-        <div class="whatif-actions">
-          <button id="btn-whatif-run" class="btn btn-primary">Recalculate</button>
+        <div class="whatif-subheader" id="whatif-result-subheader" style="display:none;">
+          <p class="whatif-explanation" id="whatif-explanation"></p>
+          <div class="step-actions">
+            <button id="btn-whatif-back-input" class="btn btn-secondary">← Change marks</button>
+            <button id="btn-restart-3" class="btn btn-secondary">Start over</button>
+          </div>
         </div>
 
         <div class="whatif-results" id="whatif-results" style="display:none;">
           <!-- Conditional simulation output -->
         </div>
 
-        <div class="step-actions">
-          <button id="btn-back-results" class="btn btn-secondary">← Results</button>
-          <button id="btn-restart-2" class="btn btn-secondary">Start over</button>
+        <div class="whatif-papers" id="whatif-papers">
+          <!-- Populated by JS: each paper gets a row with mark input -->
         </div>
       </section>
     </div>

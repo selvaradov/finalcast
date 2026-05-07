@@ -170,45 +170,25 @@ Static site (HTML + CSS + JS) with chalkboard aesthetic. All data pre-computed a
 - **Comparison to typical papers:** "At your ability level, if you'd picked the 8 most popular papers instead, your P(1st) would be X% (currently Y%)."
 - **Best swap suggestion:** Pre-computed marginal paper values identify the single swap with highest P(1st) impact.
 
-### What-if: Conditional marks mode (next to implement)
+### What-if: Conditional marks mode — IMPLEMENTED
 
-**Use case**: "I'm taking these 8 papers. Assume Ethics and Nic Eth are quite mid and Micro Analysis goes badly. What do I need in the other papers to get a First?"
+Step 4 in Calculator flow. User fixes marks on 1–7 papers, remaining papers are simulated conditionally. Answers "what do I need?" via binary search over ability percentile.
 
-The value is NOT just "what average do you need" (trivial arithmetic) — it's:
-1. Contextualising qualitative language ("mid", "badly") into paper-specific marks and percentiles
-2. Showing what percentile the remaining papers need to be at
-3. Accounting for conjunctive rules (2 marks of 70+, no mark below 50) not just the 68.5 average
+**Features:**
+- Fix marks on any subset of papers (max 7, at least 1 free) with immediate percentile/label feedback
+- Padlock icon and colour-coded status for fixed papers ("well below average" to "strong")
+- Unfixed papers show "simulated each draw" — they vary with MC noise each iteration
+- `findThreshold()`: binary search over ability percentile (5–95) for ≥50% P(First)
+- Results show: threshold percentile heading, explanation text, classification probabilities card, paper table with expected/needed marks
+- Two-mode UI: input mode (flex subheader with intro text + buttons) ↔ results mode (explanation + buttons)
+- Clear button per-row, "Change marks" to return to input, "Start over" to restart
 
-**Design:**
+**Engine functions** (in `web/engine.js`):
+- `simulateConditional(papers, fixedMarks, rho, abilityPercentile, nSim)` — MC with fixed/free split
+- `findThreshold(papers, fixedMarks, rho, targetClass, targetProb, nSim)` — binary search for classification threshold
+- `markContext(mark, mu, sigma, rho, abilityPercentile)` — percentile and qualitative label for a fixed mark
 
-- In Calculator, after selecting papers + ability, user can optionally **fix marks** on any subset of papers (1–7; at least 1 must remain free)
-- Each fixable paper gets a mark input (number field or slider) with contextual info:
-  - "55 = 30th percentile for this paper" (derived from fitted distribution)
-  - Qualitative label: "well below average" / "below average" / "average" / "above average" / "strong"
-- Fixed marks are **not** simulated — they're treated as constants
-- Remaining (free) papers are still simulated via the proportional loading model, conditioned on the same latent ability θ
-
-**Output — "what do I need?" framing:**
-
-Rather than just showing P(First) given fixed marks, answer the question inversely:
-- "To have a ≥50% chance of a First, you need to perform at roughly the **Xth percentile** across your remaining papers"
-- Show this as a binary search over θ (or equivalently, over the ability slider)
-- Also show: "That translates to roughly [mark₁, mark₂, ...] in your free papers" (expected marks at that percentile for each paper)
-- And: "Key constraint: you need 2+ marks of 70. At this level, P(getting 2+ of 70) in your free papers = Y%"
-
-**Implementation approach:**
-
-1. UI: Add a "Fix marks" toggle/section below paper picker. When active, each selected paper shows a mark input (disabled by default, click to fix).
-2. Engine: New function `simulateConditional(papers, fixedMarks, ability, nDraws)`:
-   - For each draw: set fixed papers to their fixed marks, simulate free papers as normal
-   - Classify as usual, return distribution
-3. Threshold search: Binary search over ability percentile to find where P(target_class) crosses 50% (or user-chosen threshold)
-4. Display: Show both the "given these marks, here's your distribution" AND the "here's what you need" inverse framing
-
-**Stretch features:**
-- Preset mark suggestions: "quite mid" = paper mean, "badly" = mean − 1σ, "well" = mean + 1σ
-- "What if I ace one paper?" — show impact of moving a free paper to 75+
-- Shareable URL: `?papers=A|B|...&fixed=A:55,B:60&ability=75`
+**Tests:** `tests/test_whatif_engine.py` (10 tests), `tests/test_whatif_dom.js` (30 DOM tests via jsdom)
 
 ### Other planned features (not yet implemented)
 

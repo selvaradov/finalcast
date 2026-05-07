@@ -55,7 +55,6 @@ setTimeout(async () => {
   console.log('What-if DOM tests:');
   console.log('-'.repeat(60));
 
-  // Select 8 papers and go to results
   const picks = [
     'Microeconomics', 'Macroeconomics', 'Ethics',
     'International Relations', 'Quantitative Economics',
@@ -73,76 +72,123 @@ setTimeout(async () => {
   document.getElementById('btn-to-results').click();
   await new Promise(r => setTimeout(r, 500));
 
-  // Step 4 button should exist
   const whatifBtn = document.getElementById('btn-whatif');
   assert(whatifBtn !== null, 'What-if button exists in step 3');
 
-  // Click what-if button to go to step 4
   whatifBtn.click();
   await new Promise(r => setTimeout(r, 100));
 
   const whatifSection = document.getElementById('step-whatif');
   assert(whatifSection.classList.contains('active-section'), 'Step 4 section is active');
 
-  // Check step indicator shows step 4
   const step4Indicator = document.querySelector('.step[data-step="4"]');
   assert(step4Indicator.classList.contains('active'), 'Step 4 indicator is active');
 
-  // Check 8 paper rows rendered
   const rows = document.querySelectorAll('.whatif-row');
   assert(rows.length === 8, `8 paper rows rendered (got ${rows.length})`);
 
-  // Check all mark inputs start disabled
+  // Inputs start empty
   const inputs = document.querySelectorAll('.whatif-mark-input');
-  const allDisabled = Array.from(inputs).every(i => i.disabled);
-  assert(allDisabled, 'All mark inputs start disabled');
+  const allEmpty = Array.from(inputs).every(i => i.value === '');
+  assert(allEmpty, 'All mark inputs start empty');
 
-  // Lock one paper
-  const firstCheck = document.querySelector('.whatif-check[data-idx="0"]');
-  firstCheck.checked = true;
-  firstCheck.dispatchEvent(new window.Event('change', { bubbles: true }));
+  // No rows are fixed initially
+  assert(document.querySelectorAll('.whatif-row.fixed').length === 0, 'No rows are fixed initially');
 
+  // Status shows simulated state for unfixed papers
+  const firstStatus = document.querySelector('.whatif-status[data-idx="0"]');
+  assert(firstStatus.textContent.includes('simulated'), 'Status shows simulated initially');
+
+  // Focus does NOT prefill (user should type fresh)
   const firstInput = document.querySelector('.whatif-mark-input[data-idx="0"]');
-  assert(!firstInput.disabled, 'First input enabled after locking');
-
+  firstInput.dispatchEvent(new window.Event('focus', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
   const firstRow = rows[0];
-  assert(firstRow.classList.contains('fixed'), 'First row has fixed class');
+  assert(!firstRow.classList.contains('fixed'), 'Row not fixed on mere focus');
 
-  // Set mark and check context updates
+  // Type a value to fix
+  firstInput.value = '65';
+  firstInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
+  assert(firstRow.classList.contains('fixed'), 'Row fixed after typing');
+
+  // Status updates with percentile info
+  assert(firstStatus.textContent.includes('%ile'), 'Status shows percentile after fixing');
+
+  // Padlock icon appears
+  const lockIcon = document.querySelector('.whatif-lock-icon[data-idx="0"]');
+  assert(lockIcon.textContent !== '', 'Lock icon appears when fixed');
+
+  // Clear button resets
+  const clearBtn = document.querySelector('.whatif-clear-btn[data-idx="0"]');
+  clearBtn.click();
+  await new Promise(r => setTimeout(r, 50));
+  assert(!firstRow.classList.contains('fixed'), 'Row unfixed after clear');
+  assert(firstInput.value === '', 'Input cleared');
+  assert(firstStatus.textContent.includes('simulated'), 'Status shows simulated after clear');
+  assert(lockIcon.textContent === '', 'Lock icon gone after clear');
+
+  // Fix again for simulation test
   firstInput.value = '55';
   firstInput.dispatchEvent(new window.Event('input', { bubbles: true }));
   await new Promise(r => setTimeout(r, 50));
-
-  const context = document.querySelector('.whatif-context[data-idx="0"]');
-  assert(context.textContent.includes('percentile'), 'Context shows percentile info');
+  assert(firstRow.classList.contains('fixed'), 'Row re-fixed after typing');
 
   // Run simulation
   document.getElementById('btn-whatif-run').click();
   await new Promise(r => setTimeout(r, 1500));
 
   const resultsDiv = document.getElementById('whatif-results');
-  assert(resultsDiv.style.display !== 'none', 'Results div is visible');
-  assert(resultsDiv.innerHTML.includes('big-number'), 'Results contain headline');
+  assert(resultsDiv.style.display !== 'none', 'Results visible after simulation');
+  assert(resultsDiv.innerHTML.includes('whatif-table'), 'Results contain paper table');
 
-  // Mark below 50 should show constraint warning
-  firstInput.value = '45';
-  firstInput.dispatchEvent(new window.Event('input', { bubbles: true }));
-  document.getElementById('btn-whatif-run').click();
-  await new Promise(r => setTimeout(r, 1500));
-  assert(resultsDiv.innerHTML.includes('whatif-constraint--warning'), 'Below-50 constraint warning shown');
+  // Input table hidden after calculation
+  const papersDiv = document.getElementById('whatif-papers');
+  assert(papersDiv.style.display === 'none', 'Input table hidden after calculation');
 
-  // Go back to results
+  // Heading changes to the answer
+  const heading = document.getElementById('whatif-heading');
+  assert(!heading.textContent.includes('What do you need'), 'Heading changes from question to answer');
+
+  // Input subheader hidden, result subheader shown
+  assert(document.getElementById('whatif-subheader').style.display === 'none', 'Input subheader hidden');
+  assert(document.getElementById('whatif-result-subheader').style.display !== 'none', 'Result subheader visible');
+
+  // Explanation text populated
+  const explanation = document.getElementById('whatif-explanation');
+  assert(explanation.textContent.length > 0, 'Explanation text populated in result subheader');
+
+  // Table has 8 rows
+  const tableRows = resultsDiv.querySelectorAll('.whatif-table tbody tr');
+  assert(tableRows.length === 8, `Results table has 8 rows (got ${tableRows.length})`);
+
+  // Fixed paper annotated in results
+  assert(resultsDiv.innerHTML.includes('fixed'), 'Fixed paper annotated in results table');
+
+  // "← Change marks" returns to input mode
+  document.getElementById('btn-whatif-back-input').click();
+  await new Promise(r => setTimeout(r, 50));
+  assert(papersDiv.style.display !== 'none', 'Papers visible after back to input');
+  assert(heading.textContent.includes('What do you need'), 'Heading reverts to question');
+  assert(document.getElementById('whatif-subheader').style.display !== 'none', 'Input subheader visible again');
+  assert(document.getElementById('whatif-result-subheader').style.display === 'none', 'Result subheader hidden again');
+
+  // "← Results" returns to step 3
   document.getElementById('btn-back-results').click();
   const resultsSection = document.getElementById('step-results');
-  assert(resultsSection.classList.contains('active-section'), 'Back button returns to step 3');
+  assert(resultsSection.classList.contains('active-section'), 'Back results returns to step 3');
 
-  // Reference card should show previous results
-  await new Promise(r => setTimeout(r, 600));
+  // Max 7 fixed
   whatifBtn.click();
   await new Promise(r => setTimeout(r, 100));
-  const refCard = document.querySelector('.whatif-ref-card');
-  assert(refCard !== null, 'Reference card shows previous results');
-  assert(refCard.textContent.includes('chance of a'), 'Reference card has result text');
+  for (let i = 0; i < 8; i++) {
+    const inp = document.querySelector(`.whatif-mark-input[data-idx="${i}"]`);
+    inp.value = String(60 + i);
+    inp.dispatchEvent(new window.Event('input', { bubbles: true }));
+  }
+  await new Promise(r => setTimeout(r, 50));
+  const fixedCount = document.querySelectorAll('.whatif-row.fixed').length;
+  assert(fixedCount <= 7, `Max 7 papers fixed (got ${fixedCount})`);
 
   console.log('-'.repeat(60));
   if (failures === 0) {
