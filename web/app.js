@@ -174,62 +174,294 @@ const App = (() => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
-    const w = 320, h = 140;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    ctx.scale(dpr, dpr);
+    // Canvas is larger than the border box — extra bleed for particles
+    const bleed = 24;
+    const innerW = 360, innerH = 180;
+    const w = innerW + bleed * 2, h = innerH + bleed * 2;
+    const backingW = Math.max(1, Math.round(w * dpr));
+    const backingH = Math.max(1, Math.round(h * dpr));
+    canvas.width = backingW;
+    canvas.height = backingH;
+    ctx.setTransform(backingW / w, 0, 0, backingH / h, 0, 0);
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
 
     const mu = 64, sigma = 8;
-    const xMin = 35, xMax = 90;
-    const points = [];
-    for (let x = xMin; x <= xMax; x += 0.5) {
+    const xMin = 42, xMax = 86;
+    const baseline = bleed + innerH - 28;
+    const topPad = bleed + 20;
+    const pad = bleed + 20;
+    const plotW = innerW - 40;
+    const px = x => pad + ((x - xMin) / (xMax - xMin)) * plotW;
+    const maxDeform = 2;
+    const py = y => baseline - Math.min(y, maxDeform) * (baseline - topPad);
+
+    function gauss(x) {
       const z = (x - mu) / sigma;
-      const y = Math.exp(-0.5 * z * z);
-      points.push([x, y]);
+      return Math.exp(-0.5 * z * z);
     }
-    const maxY = 1;
-    const px = x => ((x - xMin) / (xMax - xMin)) * (w - 40) + 20;
-    const py = y => h - 20 - (y / maxY) * (h - 30);
 
-    ctx.beginPath();
-    ctx.moveTo(px(xMin), py(0));
-    for (const [x, y] of points) ctx.lineTo(px(x), py(y));
-    ctx.lineTo(px(xMax), py(0));
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(91,155,245,0.08)';
-    ctx.fill();
+    // Displacement array — spring physics
+    const N = 120;
+    const xs = [];
+    for (let i = 0; i < N; i++) xs.push(xMin + (xMax - xMin) * i / (N - 1));
+    const displacement = new Float64Array(N);
+    const velocity = new Float64Array(N);
+    const stiffness = 0.14;
+    const damping = 0.72;
 
-    ctx.beginPath();
-    for (let i = 0; i < points.length; i++) {
-      const [x, y] = points[i];
-      if (i === 0) ctx.moveTo(px(x), py(y));
-      else ctx.lineTo(px(x), py(y));
+    let mouseX = -1, mouseY = -1;
+    let mouseDown = false;
+    let animating = false;
+
+    // Chalk dust particles
+    const particles = [];
+    const MAX_PARTICLES = 60;
+
+    function spawnDust(cx, cy, amount) {
+      for (let i = 0; i < amount; i++) {
+        if (particles.length >= MAX_PARTICLES) particles.shift();
+        particles.push({
+          x: cx + (Math.random() - 0.5) * 12,
+          y: cy + (Math.random() - 0.5) * 8,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: -Math.random() * 1.2 - 0.3,
+          life: 1.0,
+          size: Math.random() * 2 + 0.5
+        });
+      }
     }
-    ctx.strokeStyle = 'rgba(232,229,220,0.6)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
 
-    const thresholds = [
-      { x: 50, label: '50', color: 'rgba(232,97,77,0.5)' },
-      { x: 60, label: '60', color: 'rgba(240,199,94,0.4)' },
-      { x: 70, label: '70', color: 'rgba(91,155,245,0.5)' }
-    ];
-    for (const t of thresholds) {
+    function getDeformedY(i) {
+      const baseY = gauss(xs[i]);
+      return Math.max(0, baseY + displacement[i]);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+
+      // Filled area under curve, split by class bands
+      const bands = [
+        { from: xMin, to: 50, color: 'rgba(232,97,77,0.06)' },
+        { from: 50, to: 60, color: 'rgba(240,199,94,0.06)' },
+        { from: 60, to: 70, color: 'rgba(232,229,220,0.05)' },
+        { from: 70, to: xMax, color: 'rgba(91,155,245,0.08)' }
+      ];
+      for (const band of bands) {
+        ctx.beginPath();
+        ctx.moveTo(px(band.from), py(0));
+        for (let i = 0; i < N; i++) {
+          if (xs[i] < band.from) continue;
+          if (xs[i] > band.to) break;
+          ctx.lineTo(px(xs[i]), py(getDeformedY(i)));
+        }
+        ctx.lineTo(px(band.to), py(0));
+        ctx.closePath();
+        ctx.fillStyle = band.color;
+        ctx.fill();
+      }
+
+      // Curve stroke
       ctx.beginPath();
-      ctx.moveTo(px(t.x), py(0));
-      ctx.lineTo(px(t.x), py(0.85));
-      ctx.strokeStyle = t.color;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
+      for (let i = 0; i < N; i++) {
+        const x = px(xs[i]), y = py(getDeformedY(i));
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = 'rgba(232,229,220,0.7)';
+      ctx.lineWidth = 2;
       ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = t.color;
-      ctx.font = '11px Inter, system-ui';
+
+      // Threshold lines — from baseline up to the curve
+      const thresholds = [
+        { x: 50, color: 'rgba(232,97,77,0.4)' },
+        { x: 60, color: 'rgba(240,199,94,0.3)' },
+        { x: 70, color: 'rgba(91,155,245,0.45)' }
+      ];
+      for (const t of thresholds) {
+        const i = Math.round((t.x - xMin) / (xMax - xMin) * (N - 1));
+        const curveY = py(getDeformedY(i));
+        ctx.beginPath();
+        ctx.moveTo(px(t.x), py(0));
+        ctx.lineTo(px(t.x), curveY);
+        ctx.strokeStyle = t.color;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Class labels — centered between thresholds, below baseline
+      const labels = [
+        { text: '3rd', from: xMin, to: 50, color: 'rgba(232,97,77,0.5)' },
+        { text: '2.2', from: 50, to: 60, color: 'rgba(240,199,94,0.5)' },
+        { text: '2.1', from: 60, to: 70, color: 'rgba(232,229,220,0.5)' },
+        { text: '1st', from: 70, to: xMax, color: 'rgba(91,155,245,0.6)' }
+      ];
+      ctx.font = '14px Caveat, cursive';
       ctx.textAlign = 'center';
-      ctx.fillText(t.label, px(t.x), py(0) + 12);
+      ctx.textBaseline = 'top';
+      for (const l of labels) {
+        const cx = px((l.from + l.to) / 2);
+        ctx.fillStyle = l.color;
+        ctx.fillText(l.text, cx, baseline + 5);
+      }
+
+      // Chalk dust — fuzzy particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        const r = p.size * 2.5;
+        const alpha = p.life * 0.5;
+        if (alpha < 0.001) continue;
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+        grad.addColorStop(0, `rgba(232,229,220,${alpha})`);
+        grad.addColorStop(0.4, `rgba(232,229,220,${alpha * 0.5})`);
+        grad.addColorStop(1, 'rgba(232,229,220,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(p.x - r, p.y - r, r * 2, r * 2);
+      }
+
+      // Custom cursor — small chalk dot
+      if (mouseX >= 0) {
+        const cr = 4;
+        const cgrad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, cr);
+        cgrad.addColorStop(0, 'rgba(232,229,220,0.8)');
+        cgrad.addColorStop(0.5, 'rgba(232,229,220,0.3)');
+        cgrad.addColorStop(1, 'rgba(232,229,220,0)');
+        ctx.fillStyle = cgrad;
+        ctx.fillRect(mouseX - cr, mouseY - cr, cr * 2, cr * 2);
+      }
     }
+
+    function physics() {
+      const influence = mouseDown ? 120 : 90;
+      const strength = mouseDown ? 0.8 : 0.5;
+
+      let totalDisturb = 0;
+      for (let i = 0; i < N; i++) {
+        let target = 0;
+        if (mouseX >= 0) {
+          const ptX = px(xs[i]);
+          const ptY = py(gauss(xs[i]));
+          const dx = ptX - mouseX;
+          const dy = ptY - mouseY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < influence) {
+            const factor = (1 - dist / influence);
+            const pull = (mouseY - ptY) / (baseline - topPad);
+            target = pull * factor * factor * strength;
+          }
+        }
+        const force = -stiffness * (displacement[i] - target);
+        velocity[i] = (velocity[i] + force) * damping;
+        displacement[i] += velocity[i];
+        totalDisturb += Math.abs(velocity[i]);
+      }
+
+      // Spawn dust where the curve is being disturbed most
+      if (mouseX >= 0 && totalDisturb > 0.02) {
+        const closestI = Math.round((mouseX - pad) / plotW * (N - 1));
+        if (closestI >= 0 && closestI < N) {
+          const cy = py(getDeformedY(Math.max(0, Math.min(N - 1, closestI))));
+          spawnDust(mouseX, cy, mouseDown ? 3 : 1);
+        }
+      }
+
+      // Update particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.04;
+        p.life -= 0.02;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
+
+    function tick() {
+      physics();
+      draw();
+      const moving = displacement.some((d, i) => Math.abs(d) > 0.0005 || Math.abs(velocity[i]) > 0.0005);
+      if (moving || mouseX >= 0 || particles.length > 0) {
+        animating = true;
+        requestAnimationFrame(tick);
+      } else {
+        animating = false;
+      }
+    }
+
+    function startAnim() {
+      if (!animating) {
+        animating = true;
+        requestAnimationFrame(tick);
+      }
+    }
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = (e.clientX - rect.left) * (w / rect.width);
+      mouseY = (e.clientY - rect.top) * (h / rect.height);
+      startAnim();
+    });
+
+    canvas.addEventListener('mousedown', () => { mouseDown = true; });
+    canvas.addEventListener('mouseup', () => { mouseDown = false; });
+
+    canvas.addEventListener('mouseleave', () => {
+      mouseX = -1;
+      mouseY = -1;
+      mouseDown = false;
+      startAnim();
+    });
+
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      mouseX = (touch.clientX - rect.left) * (w / rect.width);
+      mouseY = (touch.clientY - rect.top) * (h / rect.height);
+      mouseDown = true;
+      startAnim();
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => {
+      mouseX = -1;
+      mouseY = -1;
+      mouseDown = false;
+      startAnim();
+    });
+
+    draw();
+
+    // Page-load flourish: up, down below, settle — 2 cycles then done
+    setTimeout(() => {
+      let t = 0;
+      const totalFrames = 90;
+      const amp = 0.15;
+      function flourishTick() {
+        t++;
+        if (t > totalFrames) {
+          for (let i = 0; i < N; i++) displacement[i] = 0;
+          draw();
+          return;
+        }
+        const progress = t / totalFrames;
+        const envelope = amp * (1 - progress) * (1 - progress);
+        const wave = Math.sin(progress * Math.PI * 4);
+        for (let i = 0; i < N; i++) {
+          const center = N / 2;
+          const dist = (i - center) / (N / 2);
+          const shape = Math.exp(-dist * dist * 3);
+          displacement[i] = wave * envelope * shape;
+        }
+        if (t === 8) spawnDust(px(mu), py(getDeformedY(Math.round(N / 2))), 2);
+        if (t === 30) spawnDust(px(mu), py(getDeformedY(Math.round(N / 2))), 2);
+        physics();
+        draw();
+        requestAnimationFrame(flourishTick);
+      }
+      flourishTick();
+    }, 800);
   }
 
   // ── Paper picker ──────────────────────────────────────────

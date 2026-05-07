@@ -221,9 +221,10 @@ body::after {
   background: transparent;
   border: none;
   border-radius: 6px;
-  padding: 16px;
   margin-bottom: 16px;
   position: relative;
+  overflow: visible;
+  height: 180px;
 }
 
 .hero-chart::before {
@@ -238,17 +239,11 @@ body::after {
 
 .hero-chart canvas {
   display: block;
-  width: 100%;
-  height: auto;
-}
-
-.hero-chart-labels {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 6px;
-  font-family: var(--font-chalk);
-  font-size: 16px;
-  color: var(--chalk-dim);
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: none;
 }
 
 /* ── Layout ────────────────────────────────────────────────── */
