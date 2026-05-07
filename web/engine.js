@@ -153,5 +153,92 @@ const Engine = (() => {
     });
   }
 
-  return { classify, simulate, detectRoute, norminv, normcdf, paperMetrics };
+  /**
+   * Simulate with some papers fixed to known marks.
+   * @param {Object[]} papers - Array of {mu, sigma} for each paper
+   * @param {Map|Object} fixedMarks - index → mark for fixed papers
+   * @param {number} rho
+   * @param {number} abilityPercentile
+   * @param {number} nSim
+   * @returns {Object} { distribution, freeMetrics }
+   */
+  function simulateConditional(papers, fixedMarks, rho, abilityPercentile, nSim = 50000) {
+    const theta = norminv(abilityPercentile / 100);
+    const sqrtRho = Math.sqrt(rho);
+    const sqrt1mRho = Math.sqrt(1 - rho);
+
+    const mus = papers.map(p => p.mu + p.sigma * sqrtRho * theta);
+    const sigmaEps = papers.map(p => p.sigma * sqrt1mRho);
+
+    const counts = { "1st": 0, "2.1": 0, "2.2": 0, "3rd": 0, "Pass": 0, "Fail": 0 };
+
+    for (let i = 0; i < nSim; i++) {
+      const marks = [];
+      for (let j = 0; j < papers.length; j++) {
+        if (fixedMarks.has !== undefined ? fixedMarks.has(j) : j in fixedMarks) {
+          marks.push(fixedMarks.has !== undefined ? fixedMarks.get(j) : fixedMarks[j]);
+        } else {
+          let mark = mus[j] + randn() * sigmaEps[j];
+          mark = Math.max(0, Math.min(100, mark));
+          marks.push(mark);
+        }
+      }
+      counts[classify(marks)]++;
+    }
+
+    const distribution = {};
+    for (const cls of ["1st", "2.1", "2.2", "3rd", "Pass", "Fail"]) {
+      distribution[cls] = counts[cls] / nSim;
+    }
+    return { distribution };
+  }
+
+  /**
+   * Binary search over ability percentile to find where P(targetClass) >= targetProb.
+   * Returns the percentile needed, or null if not achievable.
+   */
+  function findThreshold(papers, fixedMarks, rho, targetClass = "1st", targetProb = 0.5, nSim = 15000) {
+    let lo = 5, hi = 95;
+
+    const hiResult = simulateConditional(papers, fixedMarks, rho, hi, nSim);
+    if (hiResult.distribution[targetClass] < targetProb) return null;
+
+    const loResult = simulateConditional(papers, fixedMarks, rho, lo, nSim);
+    if (loResult.distribution[targetClass] >= targetProb) return lo;
+
+    for (let iter = 0; iter < 15; iter++) {
+      const mid = (lo + hi) / 2;
+      const result = simulateConditional(papers, fixedMarks, rho, mid, nSim);
+      if (result.distribution[targetClass] >= targetProb) {
+        hi = mid;
+      } else {
+        lo = mid;
+      }
+      if (hi - lo < 1) break;
+    }
+    return Math.round(hi);
+  }
+
+  /**
+   * Get qualitative label and percentile for a mark on a given paper at a given ability.
+   */
+  function markContext(mark, mu, sigma, rho, abilityPercentile) {
+    const theta = norminv(abilityPercentile / 100);
+    const sqrtRho = Math.sqrt(rho);
+    const sqrt1mRho = Math.sqrt(1 - rho);
+    const shiftedMu = mu + sigma * sqrtRho * theta;
+    const sigmaEps = sigma * sqrt1mRho;
+    const percentile = Math.round(normcdf((mark - shiftedMu) / sigmaEps) * 100);
+
+    let label;
+    if (percentile <= 10) label = 'well below average';
+    else if (percentile <= 30) label = 'below average';
+    else if (percentile <= 70) label = 'around average';
+    else if (percentile <= 90) label = 'above average';
+    else label = 'strong';
+
+    return { percentile, label };
+  }
+
+  return { classify, simulate, simulateConditional, findThreshold, detectRoute, norminv, normcdf, paperMetrics, markContext };
 })();

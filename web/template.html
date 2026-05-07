@@ -96,6 +96,11 @@
           <span class="step-num">3</span>
           <span class="step-label">See Results</span>
         </div>
+        <div class="step-line"></div>
+        <div class="step" data-step="4">
+          <span class="step-num">4</span>
+          <span class="step-label">What If?</span>
+        </div>
       </div>
 
       <!-- Step 1: Paper Picker -->
@@ -176,7 +181,35 @@
 
         <div class="step-actions">
           <button id="btn-back-ability" class="btn btn-secondary">← Adjust</button>
+          <button id="btn-whatif" class="btn btn-primary">What if I know some marks?</button>
           <button id="btn-restart" class="btn btn-secondary">Start over</button>
+        </div>
+      </section>
+
+      <!-- Step 4: What-if conditional marks -->
+      <section id="step-whatif" class="card step-section">
+        <h2>What do you need?</h2>
+        <p class="section-note">Fix marks on papers you have a sense about, and see what you need on the rest.</p>
+
+        <div class="whatif-reference" id="whatif-reference">
+          <!-- Shows headline from step 3 as context -->
+        </div>
+
+        <div class="whatif-papers" id="whatif-papers">
+          <!-- Populated by JS: each paper gets a row with lock toggle + mark input -->
+        </div>
+
+        <div class="whatif-actions">
+          <button id="btn-whatif-run" class="btn btn-primary">Recalculate</button>
+        </div>
+
+        <div class="whatif-results" id="whatif-results" style="display:none;">
+          <!-- Conditional simulation output -->
+        </div>
+
+        <div class="step-actions">
+          <button id="btn-back-results" class="btn btn-secondary">← Results</button>
+          <button id="btn-restart-2" class="btn btn-secondary">Start over</button>
         </div>
       </section>
     </div>

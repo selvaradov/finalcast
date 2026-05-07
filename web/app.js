@@ -295,10 +295,11 @@ const App = (() => {
     document.querySelectorAll('.step-section').forEach(el => {
       el.classList.remove('active-section');
     });
-    const ids = { 1: 'step-papers', 2: 'step-ability', 3: 'step-results' };
+    const ids = { 1: 'step-papers', 2: 'step-ability', 3: 'step-results', 4: 'step-whatif' };
     document.getElementById(ids[n]).classList.add('active-section');
 
     if (n === 3) runSimulation();
+    if (n === 4) initWhatIf();
   }
 
   // ── Ability slider ────────────────────────────────────────
@@ -546,6 +547,206 @@ const App = (() => {
     return { out: worstSelected.name, in: bestCandidate.name, delta };
   }
 
+  // ── What-if: conditional marks ─────────────────────────────
+
+  let lastUnconditionalResults = null;
+
+  function initWhatIf() {
+    const refEl = document.getElementById('whatif-reference');
+    const headlineEl = document.getElementById('result-headline');
+    refEl.innerHTML = `<div class="whatif-ref-card">${headlineEl.innerHTML}</div>`;
+
+    const container = document.getElementById('whatif-papers');
+    const papers = Array.from(selectedPapers.entries());
+    const pct = +document.getElementById('ability-slider').value;
+
+    container.innerHTML = papers.map(([name, p], idx) => {
+      const metrics = Engine.paperMetrics([{ name, subject: p.subject, mu: p.mu, sigma: p.sigma }], DATA.rho, pct);
+      const expectedMark = Math.round(metrics[0].shiftedMu);
+      const subjectCls = p.subject === 'Philosophy' ? 'phil' : p.subject === 'Politics' ? 'pol' : 'econ';
+      return `
+        <div class="whatif-row" data-idx="${idx}">
+          <label class="whatif-lock">
+            <input type="checkbox" class="whatif-check" data-idx="${idx}">
+            <span class="whatif-lock-icon">🔓</span>
+          </label>
+          <span class="whatif-paper-name"><span class="subject-dot subject-dot--${subjectCls}"></span>${name}</span>
+          <input type="number" class="whatif-mark-input" data-idx="${idx}" min="0" max="100" value="${expectedMark}" disabled>
+          <span class="whatif-context" data-idx="${idx}"></span>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('.whatif-check').forEach(cb => {
+      cb.addEventListener('change', onWhatIfToggle);
+    });
+    container.querySelectorAll('.whatif-mark-input').forEach(input => {
+      input.addEventListener('input', onWhatIfMarkChange);
+    });
+
+    document.getElementById('whatif-results').style.display = 'none';
+  }
+
+  function onWhatIfToggle(e) {
+    const idx = +e.target.dataset.idx;
+    const row = e.target.closest('.whatif-row');
+    const input = row.querySelector('.whatif-mark-input');
+    const icon = row.querySelector('.whatif-lock-icon');
+
+    const fixedCount = document.querySelectorAll('.whatif-check:checked').length;
+
+    if (e.target.checked && fixedCount >= 7) {
+      const allChecked = document.querySelectorAll('.whatif-check:checked');
+      if (allChecked.length > 7) {
+        e.target.checked = false;
+        return;
+      }
+    }
+
+    if (e.target.checked) {
+      input.disabled = false;
+      icon.textContent = '🔒';
+      row.classList.add('fixed');
+      updateMarkContext(idx);
+    } else {
+      input.disabled = true;
+      icon.textContent = '🔓';
+      row.classList.remove('fixed');
+      row.querySelector('.whatif-context').textContent = '';
+    }
+  }
+
+  function onWhatIfMarkChange(e) {
+    const idx = +e.target.dataset.idx;
+    updateMarkContext(idx);
+  }
+
+  function updateMarkContext(idx) {
+    const papers = Array.from(selectedPapers.entries());
+    const [, p] = papers[idx];
+    const input = document.querySelector(`.whatif-mark-input[data-idx="${idx}"]`);
+    const contextEl = document.querySelector(`.whatif-context[data-idx="${idx}"]`);
+    const mark = +input.value;
+    const pct = +document.getElementById('ability-slider').value;
+
+    if (isNaN(mark) || mark < 0 || mark > 100) {
+      contextEl.textContent = '';
+      return;
+    }
+
+    const ctx = Engine.markContext(mark, p.mu, p.sigma, DATA.rho, pct);
+    contextEl.textContent = `${ctx.percentile}th percentile — ${ctx.label}`;
+    contextEl.className = 'whatif-context whatif-context--' + ctx.label.replace(/\s+/g, '-');
+  }
+
+  function runWhatIfSimulation() {
+    const papers = Array.from(selectedPapers.entries()).map(([name, p]) => ({
+      name, subject: p.subject, mu: p.mu, sigma: p.sigma
+    }));
+    const pct = +document.getElementById('ability-slider').value;
+
+    const fixedMarks = new Map();
+    document.querySelectorAll('.whatif-check:checked').forEach(cb => {
+      const idx = +cb.dataset.idx;
+      const mark = +document.querySelector(`.whatif-mark-input[data-idx="${idx}"]`).value;
+      if (!isNaN(mark) && mark >= 0 && mark <= 100) {
+        fixedMarks.set(idx, mark);
+      }
+    });
+
+    if (fixedMarks.size === 0) {
+      document.getElementById('whatif-results').innerHTML =
+        '<p class="whatif-hint">Lock at least one paper to a mark to see conditional results.</p>';
+      document.getElementById('whatif-results').style.display = '';
+      return;
+    }
+
+    const resultsEl = document.getElementById('whatif-results');
+    resultsEl.style.display = '';
+    resultsEl.innerHTML = '<div class="range-text">Simulating…</div>';
+
+    setTimeout(() => {
+      const { distribution } = Engine.simulateConditional(papers, fixedMarks, DATA.rho, pct, 50000);
+
+      const threshold = Engine.findThreshold(papers, fixedMarks, DATA.rho, "1st", 0.5, 12000);
+
+      const freeIndices = [];
+      for (let i = 0; i < papers.length; i++) {
+        if (!fixedMarks.has(i)) freeIndices.push(i);
+      }
+
+      renderWhatIfResults(distribution, threshold, papers, fixedMarks, freeIndices, pct);
+    }, 16);
+  }
+
+  function renderWhatIfResults(distribution, threshold, papers, fixedMarks, freeIndices, pct) {
+    const el = document.getElementById('whatif-results');
+
+    const CLASS_ORDER_LOCAL = ['1st', '2.1', '2.2', '3rd', 'Pass', 'Fail'];
+    const breakdown = CLASS_ORDER_LOCAL
+      .filter(c => distribution[c] >= 0.001)
+      .map(cls => {
+        const p = (distribution[cls] * 100).toFixed(1);
+        const style = cls === '1st' ? 'class-first' : cls === '2.1' ? 'class-21' : cls === '2.2' ? 'class-22' : 'class-low';
+        return `<span class="headline-class ${style}">${cls}: ${p}%</span>`;
+      }).join('');
+
+    const top = CLASS_ORDER_LOCAL.find(c => distribution[c] > 0.01) || '2.1';
+    const pctVal = (distribution[top] * 100);
+    const lo = Math.max(0, pctVal - 3).toFixed(0);
+    const hi = Math.min(100, pctVal + 3).toFixed(0);
+
+    let thresholdHtml = '';
+    if (threshold !== null) {
+      const thresholdMetrics = freeIndices.map(i => {
+        const p = papers[i];
+        const theta = Engine.norminv(threshold / 100);
+        const shiftedMu = p.mu + p.sigma * Math.sqrt(DATA.rho) * theta;
+        return { name: p.name, expectedMark: Math.round(shiftedMu) };
+      });
+
+      const marksStr = thresholdMetrics.map(m => `${m.name}: ~${m.expectedMark}`).join(', ');
+      thresholdHtml = `
+        <div class="whatif-threshold">
+          <h3>What do you need for a First?</h3>
+          <p>For a ≥50% chance of a First, you'd need to perform at roughly the <strong>${threshold}th percentile</strong> on your remaining ${freeIndices.length} papers.</p>
+          <p class="whatif-target-marks">That translates to roughly: ${marksStr}</p>
+        </div>`;
+    } else {
+      const pFirst = distribution['1st'];
+      if (pFirst < 0.01) {
+        thresholdHtml = `
+          <div class="whatif-threshold">
+            <h3>First unlikely</h3>
+            <p>With these fixed marks, reaching ≥50% P(First) isn't achievable even at the 95th percentile on remaining papers.</p>
+          </div>`;
+      }
+    }
+
+    // Conjunctive constraint info
+    const fixedAbove70 = Array.from(fixedMarks.values()).filter(m => m >= 70).length;
+    const fixedBelow50 = Array.from(fixedMarks.values()).filter(m => m < 50).length;
+    let constraintHtml = '';
+    if (fixedBelow50 > 0) {
+      constraintHtml = `<div class="whatif-constraint whatif-constraint--warning">A fixed mark is below 50 — this vetoes a First regardless of average.</div>`;
+    } else {
+      const need70 = Math.max(0, 2 - fixedAbove70);
+      if (need70 > 0) {
+        constraintHtml = `<div class="whatif-constraint">You need ${need70} more mark${need70 > 1 ? 's' : ''} of 70+ from your ${freeIndices.length} free papers for the conjunctive First requirement.</div>`;
+      } else {
+        constraintHtml = `<div class="whatif-constraint whatif-constraint--ok">70+ requirement already met by your fixed marks.</div>`;
+      }
+    }
+
+    el.innerHTML = `
+      <div class="whatif-headline">
+        <div class="big-number">~${lo}–${hi}% chance of a ${top}</div>
+        <div class="headline-breakdown">${breakdown}</div>
+      </div>
+      ${constraintHtml}
+      ${thresholdHtml}
+    `;
+  }
+
   // ── Methodology modal ─────────────────────────────────────
 
   function openMethodologyModal() {
@@ -594,6 +795,21 @@ const App = (() => {
     document.getElementById('btn-back-papers').addEventListener('click', () => goToStep(1));
     document.getElementById('btn-to-results').addEventListener('click', () => goToStep(3));
     document.getElementById('btn-back-ability').addEventListener('click', () => goToStep(2));
+    document.getElementById('btn-whatif').addEventListener('click', () => goToStep(4));
+    document.getElementById('btn-back-results').addEventListener('click', () => goToStep(3));
+    document.getElementById('btn-whatif-run').addEventListener('click', runWhatIfSimulation);
+    document.getElementById('btn-restart-2').addEventListener('click', () => {
+      selectedPapers.clear();
+      document.querySelectorAll('.paper-item').forEach(el => {
+        el.classList.remove('selected');
+        el.querySelector('input').checked = false;
+      });
+      document.getElementById('ability-slider').value = 50;
+      updateAbilityReadout();
+      updateSelectionCount();
+      saveStateToURL();
+      goToStep(1);
+    });
     document.getElementById('btn-restart').addEventListener('click', () => {
       selectedPapers.clear();
       document.querySelectorAll('.paper-item').forEach(el => {

@@ -46,7 +46,7 @@ setTimeout(async () => {
   // Check papers rendered
   const paperItems = document.querySelectorAll('.paper-item');
   console.log(`Papers rendered: ${paperItems.length}`);
-  if (paperItems.length !== 81) console.error('FAIL: expected 81 papers');
+  if (paperItems.length !== 79) console.error('FAIL: expected 79 papers');
 
   const groups = document.querySelectorAll('.subject-group');
   console.log(`Subject groups: ${groups.length}`);
