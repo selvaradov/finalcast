@@ -19,7 +19,7 @@ The parameters:
 - $\sigma_i$ — paper-specific standard deviation (total spread). Both $\mu_i$ and $\sigma_i$ are fitted jointly by MLE.
 - $\theta$ — standardised latent ability. The ability slider sets $\theta = \Phi^{-1}(\text{percentile})$, where $\Phi^{-1}$ is the standard normal quantile function. So the 75th percentile → $\theta \approx 0.67$.
 - $\lambda_i = \sigma_i \sqrt{\rho}$ — ability loading, proportional to paper spread.
-- $\varepsilon_i \sim \mathcal{N}(0,\; \sigma_i^2(1-\rho))$ — residual exam-day noise, independent across papers.
+- $\varepsilon_i \sim \mathcal{N}(0,\\; \sigma_i^2(1-\rho))$ — residual exam-day noise, independent across papers.
 
 ### Why truncated normal?
 
@@ -39,13 +39,16 @@ Note that at $\theta = 0$ specifically (the median student), the First rate is o
 
 PPE uses *conjunctive* classification — candidates need both an average threshold and a minimum count of papers at the relevant mark level:
 
-| Class | Average ≥ | Additional requirement |
-|-------|-----------|----------------------|
-| 1st   | 68.5      | ≥ 2 marks of 70+, no mark below 50 |
-| 2.1   | 59.0      | ≥ 3 marks of 60+ |
-| 2.2   | 49.0      | ≥ 3 marks of 50+ |
-| 3rd   | 40.0      | ≥ 3 marks of 40+ |
-| Pass  | 30.0      | — |
+<table class="methodology-rules-table">
+<thead><tr><th>Class</th><th>Average ≥</th><th>Additional requirement</th></tr></thead>
+<tbody>
+<tr><td class="class-first">1st</td><td>68.5</td><td>≥ 2 marks of 70+, no mark below 50</td></tr>
+<tr><td class="class-21">2.1</td><td>59.0</td><td>≥ 3 marks of 60+</td></tr>
+<tr><td class="class-22">2.2</td><td>49.0</td><td>≥ 3 marks of 50+</td></tr>
+<tr><td class="class-low">3rd</td><td>40.0</td><td>≥ 3 marks of 40+</td></tr>
+<tr><td class="class-low">Pass</td><td>30.0</td><td>—</td></tr>
+</tbody>
+</table>
 
 These conjunctive rules create non-linear interactions with paper variance — for instance, a single mark below 50 vetoes a First regardless of average, making high-$\sigma$ papers risky even when their mean is above 70.
 

@@ -869,7 +869,7 @@ body::after {
   padding-bottom: 60px;
 }
 
-.methodology-abstract {
+.methodology-full > p:first-of-type {
   font-size: 14px;
   color: var(--chalk-dim);
   line-height: 1.8;

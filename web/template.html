@@ -365,76 +365,7 @@
   <section class="page-section" data-page="methodology" style="display:none;">
     <div class="container methodology-full">
       <h1 class="page-title">Methodology</h1>
-      <p class="methodology-abstract">This page describes the statistical model behind the grade prior calculator. The approach uses a latent ability factor model fitted to 15 years of Oxford PPE examiners' report data, with Monte Carlo simulation to estimate classification probabilities.</p>
-
-      <h2>1. The model</h2>
-      <p>Each paper's mark is modelled as a draw from:</p>
-      <p>$$\text{mark}_i = \mu_i + \lambda_i \cdot \theta + \varepsilon_i$$</p>
-      <p>The key idea is a <strong>variance decomposition</strong>: the total spread in marks on any paper ($\sigma_i^2$) is split into two components:</p>
-      <ul>
-        <li><strong>Ability component</strong> ($\lambda_i^2 = \sigma_i^2 \rho$): the part of variance explained by how good you are overall. Papers with higher total spread are assumed to be more discriminating.</li>
-        <li><strong>Noise component</strong> ($\sigma_i^2(1-\rho)$): residual randomness — exam-day luck, marker variation, topic lottery.</li>
-      </ul>
-      <p>The parameters:</p>
-      <ul>
-        <li>$\mu_i$ — paper-specific mean mark.</li>
-        <li>$\sigma_i$ — paper-specific standard deviation (total spread). Both $\mu_i$ and $\sigma_i$ are fitted jointly by MLE.</li>
-        <li>$\theta$ — standardised latent ability. The ability slider sets $\theta = \Phi^{-1}(\text{percentile})$, where $\Phi^{-1}$ is the standard normal quantile function. So the 75th percentile → $\theta \approx 0.67$.</li>
-        <li>$\lambda_i = \sigma_i \sqrt{\rho}$ — ability loading, proportional to paper spread.</li>
-        <li>$\varepsilon_i \sim \mathcal{N}(0,\; \sigma_i^2(1-\rho))$ — residual exam-day noise, independent across papers.</li>
-      </ul>
-
-      <h3>Why truncated normal?</h3>
-      <p>Marks are bounded in $[0, 100]$ and typically clustered in the 55–75 range. An ordinary normal would place implausible probability mass below 0 or above 100. The truncated normal respects these bounds and better fits the observed compression of marks near class boundaries.</p>
-
-      <h3>Fitting $\mu_i$ and $\sigma_i$</h3>
-      <p>The examiners' reports give <em>band counts</em>: for each paper, the number of candidates scoring 70+, 60–69, 50–59, 40–49, 30–39, and &lt;30. We fit a truncated normal $\mathcal{N}(\mu_i, \sigma_i^2)$ truncated to $[0, 100]$ by maximising the multinomial log-likelihood of these bin counts. Data is pooled across all available years (2017–2022, 2024–2025) excluding 2020.</p>
-
-      <h3>Calibration of $\rho$</h3>
-      <p>The inter-paper correlation $\rho \approx 0.196$ is calibrated so that the model reproduces the observed ~23% first-class rate <em>when averaged across the full ability distribution</em> (integrating over $\theta \sim \mathcal{N}(0,1)$). This was done via binary search on 500k simulations with the 8 most popular papers.</p>
-      <p>Note that at $\theta = 0$ specifically (the median student), the First rate is only ~11%. The population average is pulled up by the right tail — analogous to how mean income exceeds median income.</p>
-
-      <h2>2. Classification rules</h2>
-      <p>PPE uses <em>conjunctive</em> classification — candidates need both an average threshold and a minimum count of papers at the relevant mark level:</p>
-      <table class="methodology-rules-table">
-        <thead><tr><th>Class</th><th>Average ≥</th><th>Additional requirement</th></tr></thead>
-        <tbody>
-          <tr><td class="class-first">1st</td><td>68.5</td><td>≥ 2 marks of 70+, no mark below 50</td></tr>
-          <tr><td class="class-21">2.1</td><td>59.0</td><td>≥ 3 marks of 60+</td></tr>
-          <tr><td class="class-22">2.2</td><td>49.0</td><td>≥ 3 marks of 50+</td></tr>
-          <tr><td class="class-low">3rd</td><td>40.0</td><td>≥ 3 marks of 40+</td></tr>
-          <tr><td class="class-low">Pass</td><td>30.0</td><td>—</td></tr>
-        </tbody>
-      </table>
-      <p>These conjunctive rules create non-linear interactions with paper variance — for instance, a single mark below 50 vetoes a First regardless of average, making high-$\sigma$ papers risky even when their mean is above 70.</p>
-
-      <h2>3. Simulation</h2>
-      <p>For a given set of 8 papers and ability percentile, the tool draws $N = 50{,}000$ independent exam sittings. Each draw:</p>
-      <ol>
-        <li>Computes the shifted mean for each paper: $\tilde{\mu}_i = \mu_i + \sigma_i \sqrt{\rho} \cdot \theta$</li>
-        <li>Draws $\varepsilon_i \sim \mathcal{N}(0, \sigma_i^2(1-\rho))$ independently for each paper</li>
-        <li>Clips $\text{mark}_i = \max(0, \min(100, \tilde{\mu}_i + \varepsilon_i))$</li>
-        <li>Classifies the 8 marks using the conjunctive rules above</li>
-      </ol>
-      <p>The reported probability for each class is the empirical frequency across all $N$ draws. Uncertainty from finite simulation is negligible ($\lt 0.1\text{pp}$ at $N = 50{,}000$); the reported $\pm 3\text{pp}$ uncertainty reflects model limitations rather than Monte Carlo error.</p>
-
-      <h2>4. Data</h2>
-      <p>Source data is extracted from Oxford PPE Final Honour School internal examiners' reports, 2011–2025. Mark distributions come from band data: the percentage of candidates achieving each class-level mark on each paper. 81 papers are fitted in total — 65 via MLE on band data, 16 via method-of-moments from reported mean and standard deviation.</p>
-      <p>Two years receive special treatment:</p>
-      <ul>
-        <li><strong>2020 (COVID):</strong> excluded from all fitting. The first-class rate doubled (~40%) despite paper-level marks barely shifting (+0.3 on average). The anomaly was caused by modified classification conventions: the lowest two passing results were dropped as a safety net, while the marking scale was unchanged.</li>
-        <li><strong>2023 (marking boycott):</strong> no per-paper data available; excluded by data absence.</li>
-      </ul>
-
-      <h2>5. Limitations</h2>
-      <ul>
-        <li>Uses aggregate band data, not individual marks — the true joint distribution across papers for any one candidate is unobservable.</li>
-        <li>Assumes a single latent ability factor with constant $\rho$ across all paper pairs. In reality, within-subject correlations are likely higher than cross-subject correlations.</li>
-        <li>No conditioning on prior performance — the ability slider is a self-assessment, not a calibrated prediction from collections data.</li>
-        <li>Temporal trends exist for some papers (e.g. Microeconomic Analysis: +1.65 marks/year) but are ignored in simulation, which uses pooled estimates.</li>
-        <li>Estimates are priors — they describe what has happened historically for similar paper combinations, not what will happen to any individual candidate.</li>
-      </ul>
-
+      <!-- copy-html:methodology.body --><!-- /copy-html -->
     </div>
   </section>
 
