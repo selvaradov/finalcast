@@ -2,6 +2,7 @@ const App = (() => {
   let DATA = null;
   let selectedPapers = new Map();
   let currentStep = 1;
+  let restoringState = false;
 
   // ── Router ──────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ const App = (() => {
   // ── URL state ─────────────────────────────────────────────
 
   function saveStateToURL() {
+    if (restoringState) return;
     const params = new URLSearchParams();
     if (selectedPapers.size > 0) {
       params.set('papers', Array.from(selectedPapers.keys()).join('|'));
@@ -47,12 +49,32 @@ const App = (() => {
     if (ability && ability !== '50') {
       params.set('ability', ability);
     }
+    if (currentStep > 1) {
+      params.set('step', currentStep);
+    }
+    // Persist what-if fixed marks
+    const fixedRows = document.querySelectorAll('.whatif-row.fixed');
+    if (fixedRows.length > 0) {
+      const papers = Array.from(selectedPapers.keys());
+      const parts = [];
+      fixedRows.forEach(row => {
+        const idx = +row.dataset.idx;
+        const mark = row.querySelector('.whatif-mark-input').value.trim();
+        if (mark && papers[idx]) {
+          parts.push(papers[idx] + ':' + mark);
+        }
+      });
+      if (parts.length > 0) {
+        params.set('whatif', parts.join('|'));
+      }
+    }
     const qs = params.toString();
     const newURL = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
     history.replaceState(null, '', newURL);
   }
 
   function loadStateFromURL() {
+    restoringState = true;
     const params = new URLSearchParams(window.location.search);
 
     const papersParam = params.get('papers');
@@ -74,11 +96,46 @@ const App = (() => {
       updateAbilityReadout();
     }
 
-    if (selectedPapers.size === 8) {
+    const step = +(params.get('step') || 0);
+    const whatifParam = params.get('whatif');
+
+    restoringState = false;
+
+    if (selectedPapers.size === 8 && step >= 2) {
       const page = routeFromHash();
-      if (page === 'calculator') {
-        goToStep(3);
+      if (page !== 'calculator') {
+        navigate('calculator', true);
       }
+      if (step === 4) {
+        goToStep(4);
+        if (whatifParam) {
+          restoreWhatIfMarks(whatifParam);
+          runWhatIfSimulation();
+        }
+      } else {
+        goToStep(step);
+      }
+    }
+  }
+
+  function restoreWhatIfMarks(whatifParam) {
+    const papers = Array.from(selectedPapers.keys());
+    const entries = whatifParam.split('|');
+    for (const entry of entries) {
+      const colonIdx = entry.lastIndexOf(':');
+      if (colonIdx === -1) continue;
+      const name = entry.slice(0, colonIdx);
+      const mark = entry.slice(colonIdx + 1);
+      const idx = papers.indexOf(name);
+      if (idx === -1 || isNaN(+mark)) continue;
+
+      const row = document.querySelector(`.whatif-row[data-idx="${idx}"]`);
+      if (!row) continue;
+      const input = row.querySelector('.whatif-mark-input');
+      input.value = mark;
+      row.classList.add('fixed');
+      row.querySelector('.whatif-lock-icon').textContent = '\u{1F512}';
+      updateMarkStatus(idx);
     }
   }
 
@@ -102,6 +159,7 @@ const App = (() => {
   async function init() {
     const resp = await fetch('data.json');
     DATA = await resp.json();
+    restoringState = true;
     drawHeroChart();
     buildPaperPicker();
     wireEvents();
@@ -300,6 +358,7 @@ const App = (() => {
 
     if (n === 3) runSimulation();
     if (n === 4) initWhatIf();
+    saveStateToURL();
   }
 
   // ── Ability slider ────────────────────────────────────────
@@ -322,8 +381,7 @@ const App = (() => {
   // ── Simulation ────────────────────────────────────────────
 
   function runSimulation() {
-    document.getElementById('result-headline').innerHTML =
-      '<div class="range-text">Simulating…</div>';
+    document.body.style.cursor = 'wait';
 
     setTimeout(() => {
       const papers = Array.from(selectedPapers.entries()).map(([name, p]) => ({
@@ -332,6 +390,7 @@ const App = (() => {
       const pct = +document.getElementById('ability-slider').value;
       const results = Engine.simulate(papers, DATA.rho, pct, 50000);
       renderResults(results, papers, pct);
+      document.body.style.cursor = '';
     }, 16);
   }
 
@@ -601,6 +660,7 @@ const App = (() => {
     const statusEl = row.querySelector('.whatif-status');
     statusEl.innerHTML = '<span class="whatif-status-sim">simulated each draw</span>';
     row.querySelector('.whatif-lock-icon').textContent = '';
+    saveStateToURL();
   }
 
   function onWhatIfMarkChange(e) {
@@ -613,6 +673,7 @@ const App = (() => {
       const statusEl = row.querySelector('.whatif-status');
       statusEl.innerHTML = '<span class="whatif-status-sim">simulated each draw</span>';
       row.querySelector('.whatif-lock-icon').textContent = '';
+      saveStateToURL();
       return;
     }
 
@@ -625,6 +686,7 @@ const App = (() => {
     row.classList.add('fixed');
     row.querySelector('.whatif-lock-icon').textContent = '\u{1F512}';
     updateMarkStatus(idx);
+    saveStateToURL();
   }
 
   function updateMarkStatus(idx) {
@@ -667,9 +729,7 @@ const App = (() => {
       return;
     }
 
-    const resultsEl = document.getElementById('whatif-results');
-    resultsEl.style.display = '';
-    resultsEl.innerHTML = '<div class="range-text">Simulating…</div>';
+    document.body.style.cursor = 'wait';
 
     setTimeout(() => {
       const { distribution } = Engine.simulateConditional(papers, fixedMarks, DATA.rho, pct, 50000);
@@ -680,8 +740,12 @@ const App = (() => {
         if (!fixedMarks.has(i)) freeIndices.push(i);
       }
 
+      const resultsEl = document.getElementById('whatif-results');
       renderWhatIfResults(distribution, threshold, papers, fixedMarks, freeIndices, pct);
       showWhatIfResultsMode(threshold, distribution, freeIndices.length);
+      resultsEl.style.display = '';
+      document.body.style.cursor = '';
+      saveStateToURL();
     }, 16);
   }
 
@@ -712,6 +776,7 @@ const App = (() => {
     document.getElementById('whatif-result-subheader').style.display = 'none';
     document.getElementById('whatif-results').style.display = 'none';
     document.getElementById('whatif-heading').textContent = 'What do you need?';
+    saveStateToURL();
   }
 
   function renderWhatIfResults(distribution, threshold, papers, fixedMarks, freeIndices, pct) {
@@ -741,8 +806,8 @@ const App = (() => {
     let classificationHtml = `
       <div class="whatif-secondary">
         <h3>Classification probabilities at the ${pct}th percentile</h3>
-        <p class="whatif-secondary-note">Holding your entered marks fixed and simulating the rest at your selected ability level, the model assigns these probabilities to each classification. Estimates are approximate (±3pp from model limitations).</p>
         <div class="headline-breakdown">${breakdown}</div>
+        <p class="whatif-secondary-note">Holding your entered marks fixed and simulating the rest at your selected ability level, the model assigns these probabilities to each classification. Estimates are approximate (±3pp from model limitations).</p>
       </div>`;
 
     // Build results table
