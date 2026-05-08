@@ -1,6 +1,6 @@
 # The Big Picture
 
-15 years of Oxford PPE results at a glance.
+Oxford PPE results at a glance — drawn from 15 examiner reports (2011–2025), with candidate numbers back to 2005.
 
 ## First-class rate over time
 

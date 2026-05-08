@@ -4,7 +4,7 @@ Browse and compare 79 papers across Philosophy, Politics, and Economics.
 
 ## Mean mark vs Volatility
 
-Each dot is a paper. Hover for details. Bubble size reflects average recent candidate numbers (2019–2025). X-axis: mean mark (higher = easier). Y-axis: standard deviation (higher = more volatile outcomes).
+Each dot is a paper — size proportional to candidate numbers, ✕ markers have limited data. Hover for details, click to see a full profile.
 
 ## Kingmaker papers
 

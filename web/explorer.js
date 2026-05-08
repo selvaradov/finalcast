@@ -34,28 +34,44 @@ const Explorer = (() => {
     const popularity = DATA.paper_popularity || {};
 
 
-    const datasets = ['Philosophy', 'Politics', 'Economics'].map(subj => {
-      const points = Object.entries(catalogue)
-        .filter(([, p]) => p.subject === subj)
-        .map(([name, p]) => {
-          const popData = popularity[name] || {};
-          const years = Object.keys(popData).map(Number);
-          const recentYears = years.filter(y => y >= 2019 && y !== 2023);
-          const avgPop = recentYears.length > 0
-            ? recentYears.reduce((s, y) => s + popData[y], 0) / recentYears.length
-            : 0;
-          return { x: p.mu, y: p.sigma, name, avgPop, r: Math.max(4, Math.min(14, Math.sqrt(avgPop) * 1.5)) };
-        });
+    // Collect all average popularities to normalise dot sizes
+    const allPoints = Object.entries(catalogue).map(([name, p]) => {
+      const popData = popularity[name] || {};
+      const years = Object.keys(popData).map(Number);
+      const recentYears = years.filter(y => y >= 2019 && y !== 2023);
+      const avgPop = recentYears.length > 0
+        ? recentYears.reduce((s, y) => s + popData[y], 0) / recentYears.length
+        : 0;
+      return { name, p, avgPop };
+    });
+    const maxPop = Math.max(...allPoints.map(d => d.avgPop), 1);
 
-      return {
-        label: subj,
-        data: points,
-        backgroundColor: SUBJECT_COLORS[subj] + '99',
-        borderColor: SUBJECT_COLORS[subj],
-        borderWidth: 1,
-        pointRadius: points.map(p => p.r),
-        pointHoverRadius: points.map(p => p.r + 3),
-      };
+    const datasets = ['Philosophy', 'Politics', 'Economics'].flatMap(subj => {
+      const subjPoints = allPoints.filter(d => d.p.subject === subj);
+      const reliable = subjPoints.filter(d => d.p.reliable !== false);
+      const unreliable = subjPoints.filter(d => d.p.reliable === false);
+
+      function makeDataset(points, isUnreliable) {
+        const data = points.map(d => {
+          const r = Math.max(3, Math.sqrt(d.avgPop / maxPop) * 16);
+          return { x: d.p.mu, y: d.p.sigma, name: d.name, avgPop: d.avgPop, r, reliable: !isUnreliable };
+        });
+        const base = {
+          label: isUnreliable ? subj + ' (limited data)' : subj,
+          data,
+          backgroundColor: isUnreliable ? 'rgba(0,0,0,0)' : SUBJECT_COLORS[subj] + '99',
+          borderColor: SUBJECT_COLORS[subj],
+          borderWidth: isUnreliable ? 2 : 1,
+          pointRadius: data.map(p => p.r),
+          pointHoverRadius: data.map(p => p.r + 3),
+          pointStyle: isUnreliable ? 'crossRot' : 'circle',
+        };
+        return base;
+      }
+
+      const sets = [makeDataset(reliable, false)];
+      if (unreliable.length > 0) sets.push(makeDataset(unreliable, true));
+      return sets;
     });
 
     const ctx = document.getElementById('scatter-chart');
@@ -67,7 +83,12 @@ const Explorer = (() => {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: { color: '#e8e5dc', font: { family: "'Caveat', cursive", size: 16, weight: 700 }, padding: 16 }
+            labels: {
+              color: '#e8e5dc',
+              font: { family: "'Caveat', cursive", size: 16, weight: 700 },
+              padding: 16,
+              filter: (item) => !item.text.includes('(limited data)')
+            }
           },
           tooltip: {
             mode: 'nearest',
@@ -128,18 +149,26 @@ const Explorer = (() => {
     const limitedHtml = p.reliable === false ? ' <span class="paper-limited" title="Fewer than 30 candidates or very low variance">(limited data)</span>' : '';
 
     const popYears = Object.keys(popData).sort();
+    const recentPopYears = popYears.filter(y => +y >= 2019 && +y !== 2023);
+    const avgCandidates = recentPopYears.length > 0
+      ? Math.round(recentPopYears.reduce((s, y) => s + popData[y], 0) / recentPopYears.length)
+      : null;
+
     let popHtml = '';
     if (popYears.length > 0) {
-      const sparkData = popYears.map(y => popData[y]);
-      const sparkMax = Math.max(...sparkData);
+      const allYears = [];
+      for (let y = 2005; y <= 2025; y++) allYears.push(String(y));
+      const sparkData = allYears.map(y => popData[y] || 0);
+      const sparkMax = Math.max(...sparkData, 1);
       popHtml = `
         <div class="profile-pop">
           <h4>Candidates over time</h4>
           <div class="sparkline">
-            ${popYears.map((y, i) => {
-              const h = Math.max(4, (sparkData[i] / sparkMax) * 60);
+            ${allYears.map((y, i) => {
+              const val = sparkData[i];
+              const h = val > 0 ? Math.max(4, (val / sparkMax) * 60) : 0;
               const isRecent = +y >= 2020;
-              return `<div class="spark-bar-wrap" title="${y}: ${sparkData[i]}">
+              return `<div class="spark-bar-wrap" title="${val > 0 ? y + ': ' + val : y + ': —'}">
                 <div class="spark-bar ${isRecent ? 'spark-recent' : ''}" style="height:${h}px"></div>
                 <span class="spark-year">${y.slice(2)}</span>
               </div>`;
@@ -159,28 +188,39 @@ const Explorer = (() => {
       <div class="profile-header">
         <span class="subject-dot subject-dot--${subjectCls}"></span>
         <h3>${name}${limitedHtml}</h3>
+        ${avgCandidates !== null ? `<span class="profile-candidates">~${avgCandidates} candidates/yr</span>` : ''}
         <span class="paper-badge ${badge.cls}">${badge.label}</span>
       </div>
       <div class="profile-stats">
-        <div class="profile-stat">
-          <div class="profile-stat-value">${p.mu.toFixed(1)}</div>
-          <div class="profile-stat-label">mean mark</div>
+        <div class="profile-stat-group">
+          <div class="profile-stat-group-label">Mark profile</div>
+          <div class="profile-stat-group-row">
+            <div class="profile-stat">
+              <div class="profile-stat-value">${p.mu.toFixed(1)}</div>
+              <div class="profile-stat-label">mean</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-value">${p.sigma.toFixed(1)}</div>
+              <div class="profile-stat-label">sd</div>
+            </div>
+          </div>
         </div>
-        <div class="profile-stat">
-          <div class="profile-stat-value">${p.sigma.toFixed(1)}</div>
-          <div class="profile-stat-label">volatility (sd)</div>
-        </div>
-        <div class="profile-stat">
-          <div class="profile-stat-value">${p.pct_first.toFixed(0)}%</div>
-          <div class="profile-stat-label">get a First</div>
-        </div>
-        <div class="profile-stat">
-          <div class="profile-stat-value">${p.pct_21.toFixed(0)}%</div>
-          <div class="profile-stat-label">get a 2.1</div>
-        </div>
-        <div class="profile-stat">
-          <div class="profile-stat-value">${p.pct_below_50.toFixed(1)}%</div>
-          <div class="profile-stat-label">below 50</div>
+        <div class="profile-stat-group">
+          <div class="profile-stat-group-label">Outcomes</div>
+          <div class="profile-stat-group-row">
+            <div class="profile-stat">
+              <div class="profile-stat-value">${p.pct_first.toFixed(0)}%</div>
+              <div class="profile-stat-label">First</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-value">${p.pct_21.toFixed(0)}%</div>
+              <div class="profile-stat-label">2.1</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-value">${p.pct_below_50.toFixed(1)}%</div>
+              <div class="profile-stat-label">below 50</div>
+            </div>
+          </div>
         </div>
       </div>
       ${trendHtml}
@@ -293,7 +333,7 @@ const Explorer = (() => {
   function filterScatter(DATA, subject) {
     if (!scatterChart) return;
     scatterChart.data.datasets.forEach(ds => {
-      const visible = subject === 'all' || ds.label === subject;
+      const visible = subject === 'all' || ds.label.startsWith(subject);
       ds.hidden = !visible;
     });
     scatterChart.update();
