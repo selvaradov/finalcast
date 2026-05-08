@@ -7,7 +7,7 @@ Analysis of 15 years of PPE FHS outcomes (2011-2025), estimating classification 
 Data extraction and coding by Claude; it's possible that there are errors (particularly in data extraction) -- although I
 have manually verified some results and they seem broadly reasonable.
 
-The remainder of this README describes the implementation details. To look at some headline statistics, look at the
+The remainder of this README describes the implementation details. For an overview of the key findings, look at the
 [PDF report](output/report.pdf).
 
 ## Data pipeline
