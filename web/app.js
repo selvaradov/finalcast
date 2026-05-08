@@ -505,10 +505,11 @@ const App = (() => {
           <h3>${subj} <span class="subject-count">(${papers.length})</span> <span class="subject-selected-count" data-subject="${subj}"></span></h3>
           ${papers.map(([name, p]) => {
             const badge = difficultyBadge(p);
+            const limited = p.reliable === false ? ' <span class="paper-limited" title="Fewer than 30 candidates or very low variance">(limited&nbsp;data)</span>' : '';
             return `
               <label class="paper-item" data-name="${name}" data-subject="${subj}">
                 <input type="checkbox">
-                <span class="paper-name">${name}</span>
+                <span class="paper-name">${name}${limited}</span>
                 <span class="paper-badge ${badge.cls}" title="${BADGE_TOOLTIPS[badge.cls]}">${badge.label}</span>
                 <span class="paper-stats">μ${p.mu.toFixed(0)} σ${p.sigma.toFixed(1)}</span>
               </label>`;

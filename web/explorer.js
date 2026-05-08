@@ -244,11 +244,12 @@ const Explorer = (() => {
         const cls = p.trend_slope > 0 ? 'badge-trend-up' : 'badge-trend-down';
         trendBadge = `<span class="paper-badge ${cls}">${arrow} ${Math.abs(p.trend_slope).toFixed(1)}/yr</span>`;
       }
+      const limited = p.reliable === false ? ' <span class="paper-limited" title="Fewer than 30 candidates or very low variance">(limited&nbsp;data)</span>' : '';
       return `
         <div class="explorer-paper-card" data-name="${name}">
           <div class="explorer-card-header">
             <span class="subject-dot subject-dot--${subjectCls}"></span>
-            <span class="explorer-card-name">${name}</span>
+            <span class="explorer-card-name">${name}${limited}</span>
             ${trendBadge}
             <span class="paper-badge ${badge.cls}">${badge.label}</span>
           </div>

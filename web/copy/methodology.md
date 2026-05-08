@@ -65,7 +65,7 @@ The reported probability for each class is the empirical frequency across all $N
 
 ## 4. Data
 
-Source data is extracted from Oxford PPE Final Honour School internal examiners' reports, 2011–2025. Mark distributions come from band data: the percentage of candidates achieving each class-level mark on each paper. 81 papers are fitted in total — 65 via MLE on band data, 16 via method-of-moments from reported mean and standard deviation.
+Source data is extracted from Oxford PPE Final Honour School internal examiners' reports, 2011–2025. Mark distributions come from band data: the percentage of candidates achieving each class-level mark on each paper. 79 papers are fitted in total — 63 via MLE on band data, 16 via method-of-moments from reported mean and standard deviation.
 
 Two years receive special treatment:
 

@@ -488,6 +488,13 @@ body::after {
 .badge-trend-up { background: rgba(91,155,245,0.15); color: var(--blue); font-size: 11px; }
 .badge-trend-down { background: rgba(232,97,77,0.15); color: var(--red); font-size: 11px; }
 
+.paper-limited {
+  color: var(--chalk-faint);
+  font-size: 11px;
+  font-style: italic;
+  white-space: nowrap;
+}
+
 .paper-stats {
   color: var(--chalk-faint);
   font-size: 11px;

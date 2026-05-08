@@ -1,6 +1,6 @@
 # Paper Explorer
 
-Browse and compare 81 papers across Philosophy, Politics, and Economics.
+Browse and compare 79 papers across Philosophy, Politics, and Economics.
 
 ## Mean mark vs Volatility
 
