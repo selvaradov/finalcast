@@ -125,6 +125,7 @@ const Explorer = (() => {
     const badge = diffBadge(p.sigma);
     const popData = (DATA.paper_popularity || {})[name] || {};
     const subjectCls = p.subject === 'Philosophy' ? 'phil' : p.subject === 'Politics' ? 'pol' : 'econ';
+    const limitedHtml = p.reliable === false ? ' <span class="paper-limited" title="Fewer than 30 candidates or very low variance">(limited data)</span>' : '';
 
     const popYears = Object.keys(popData).sort();
     let popHtml = '';
@@ -157,7 +158,7 @@ const Explorer = (() => {
     el.innerHTML = `
       <div class="profile-header">
         <span class="subject-dot subject-dot--${subjectCls}"></span>
-        <h3>${name}</h3>
+        <h3>${name}${limitedHtml}</h3>
         <span class="paper-badge ${badge.cls}">${badge.label}</span>
       </div>
       <div class="profile-stats">
