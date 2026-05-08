@@ -358,10 +358,9 @@
       <h2>How it works</h2>
       <p>Each paper's mark distribution is modelled using a <strong>latent ability factor model</strong>. The idea: students have some underlying ability level, and each paper's marks reflect that ability plus paper-specific noise.</p>
       <ul class="methodology-brief">
-        <li><strong>Paper fits:</strong> 79 papers fitted to truncated normal distributions using 15 years of examiner band data (excluding 2020).</li>
-        <li><strong>Ability slider:</strong> shifts all your expected marks up or down, like moving along the ability distribution of all PPE students.</li>
-        <li><strong>Simulation:</strong> 50,000 exam sittings are drawn, each classified using the official PPE conjunctive rules (average thresholds + paper count requirements).</li>
-        <li><strong>Uncertainty:</strong> estimates are roughly ±3 percentage points — treat them as priors, not predictions.</li>
+        <li><strong>Paper fits:</strong> 79 papers fitted to truncated normal distributions using data in examiners' reports from 2011–2025, covering candidates all the way back to 2005.</li>
+        <li><strong>Simulation:</strong> we sample 50,000 sittings, and classify each using the examination conventions to produce probability distributions over outcomes.</li>
+        <li><strong>Uncertainty:</strong> estimates are accurate to ~±3 percentage points, and do not account for selection bias or other confounders.</li>
       </ul>
       <div class="modal-actions">
         <a href="#methodology" class="btn btn-secondary" id="modal-to-full">Full mathematical details →</a>
