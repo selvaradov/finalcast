@@ -19,9 +19,15 @@ const { document } = window;
 
 class MockCtx {
   beginPath() {} arc() {} closePath() {} fill() {} clearRect() {} scale() {}
-  moveTo() {} lineTo() {} stroke() {} setLineDash() {}
+  moveTo() {} lineTo() {} stroke() {} setLineDash() {} setTransform() {}
+  save() {} restore() {} translate() {} rotate() {} quadraticCurveTo() {}
+  bezierCurveTo() {} rect() {} clip() {} createLinearGradient() {
+    return { addColorStop() {} };
+  }
+  measureText() { return { width: 0 }; }
   set fillStyle(v) {} set font(v) {} set textAlign(v) {} set textBaseline(v) {}
-  set strokeStyle(v) {} set lineWidth(v) {}
+  set strokeStyle(v) {} set lineWidth(v) {} set globalAlpha(v) {}
+  set lineCap(v) {} set lineJoin(v) {} set shadowBlur(v) {} set shadowColor(v) {}
   fillText() {}
 }
 if (window.HTMLCanvasElement) {

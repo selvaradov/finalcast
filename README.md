@@ -1,6 +1,8 @@
-# Oxford PPE Finals Results Analysis
+# Finalcast — Oxford PPE Results
 
 Statistical analysis of 15 years (2011--2025) of Oxford PPE Final Honour School examiners' reports. Extracts structured data from PDF reports, fits per-paper mark distributions, and runs Monte Carlo simulations to estimate classification probabilities given a student's paper choices.
+
+**Live site**: https://selvaradov.github.io/finalcast
 
 ## Data pipeline
 
@@ -160,7 +162,7 @@ OLS regression of mean mark on year for each paper with >= 4 years of data (excl
 
 ### Phase 3: Web tool
 
-**`web/`** -- Interactive PPE Results Explorer. A static site with a chalkboard aesthetic, using a minimal build step for copy management.
+**`web/`** -- Finalcast interactive tool. A static site with a chalkboard aesthetic, using a minimal build step for copy management.
 
 Four pages, hash-routed:
 
@@ -179,7 +181,7 @@ Key files:
 - `web/build.py` -- Syncs copy from .md files into index.html (`python web/build.py`)
 - `web/style.css` -- Chalkboard theme: SVG displacement filter for hand-drawn borders, Fredericka the Great display font, Caveat for chalk labels, noise texture overlay, vignette
 
-**Important**: `web/index.html` is a build artefact — never edit it directly. All text copy lives in `web/copy/*.md` and structural HTML in `web/template.html`. The build step (`python web/build.py`) fills `<!-- copy:file.section --><!-- /copy -->` placeholders in the template to produce `index.html`.
+**Important**: `web/index.html` is a build artefact (gitignored) — never edit it directly. All text copy lives in `web/copy/*.md` and structural HTML in `web/template.html`. Run `python web/build.py` to generate `index.html` from the template. Deployment is handled by GitHub Actions (`.github/workflows/deploy.yml`), which runs the build step and publishes the `web/` directory to GitHub Pages.
 
 Visual design:
 - Dark chalkboard background with SVG feTurbulence noise overlay
@@ -209,8 +211,8 @@ python visualise.py
 python validate_data.py          # post-build checks (coverage, dedup, reliability)
 python validate_data.py --quick  # just coverage + dedup
 
-# Phase 3: Web tool
-python web/build.py              # sync copy from web/copy/*.md into index.html
+# Phase 3: Web tool (run after clone)
+python web/build.py              # build index.html from template + copy/*.md
 python web/serve.py              # dev server with live reload on :8000
 ```
 

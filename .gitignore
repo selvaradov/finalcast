@@ -1,6 +1,7 @@
 data/
 reports/
 node_modules/
+web/index.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

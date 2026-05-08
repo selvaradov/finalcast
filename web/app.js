@@ -47,7 +47,7 @@ const App = (() => {
     if (restoringState) return;
     const params = new URLSearchParams();
     if (selectedPapers.size > 0) {
-      params.set('papers', Array.from(selectedPapers.keys()).join('|'));
+      params.set('papers', Array.from(selectedPapers.keys()).map(encodeURIComponent).join('|'));
     }
     const ability = document.getElementById('ability-slider')?.value;
     if (ability && ability !== '50') {
@@ -65,7 +65,7 @@ const App = (() => {
         const idx = +row.dataset.idx;
         const mark = row.querySelector('.whatif-mark-input').value.trim();
         if (mark && papers[idx]) {
-          parts.push(papers[idx] + ':' + mark);
+          parts.push(encodeURIComponent(papers[idx]) + ':' + mark);
         }
       });
       if (parts.length > 0) {
@@ -83,7 +83,7 @@ const App = (() => {
 
     const papersParam = params.get('papers');
     if (papersParam && DATA) {
-      const names = papersParam.split('|');
+      const names = papersParam.split('|').map(decodeURIComponent);
       selectedPapers.clear();
       for (const name of names) {
         if (DATA.paper_catalogue[name] && selectedPapers.size < 8) {
@@ -128,7 +128,7 @@ const App = (() => {
     for (const entry of entries) {
       const colonIdx = entry.lastIndexOf(':');
       if (colonIdx === -1) continue;
-      const name = entry.slice(0, colonIdx);
+      const name = decodeURIComponent(entry.slice(0, colonIdx));
       const mark = entry.slice(colonIdx + 1);
       const idx = papers.indexOf(name);
       if (idx === -1 || isNaN(+mark)) continue;
@@ -1152,7 +1152,7 @@ const App = (() => {
     document.getElementById('btn-back-results').addEventListener('click', () => goToStep(3));
     document.getElementById('btn-whatif-run').addEventListener('click', runWhatIfSimulation);
     document.getElementById('btn-whatif-back-input').addEventListener('click', showWhatIfInputMode);
-    document.getElementById('btn-restart-2').addEventListener('click', () => {
+    function restart() {
       selectedPapers.clear();
       document.querySelectorAll('.paper-item').forEach(el => {
         el.classList.remove('selected');
@@ -1163,31 +1163,10 @@ const App = (() => {
       updateSelectionCount();
       saveStateToURL();
       goToStep(1);
-    });
-    document.getElementById('btn-restart-3').addEventListener('click', () => {
-      selectedPapers.clear();
-      document.querySelectorAll('.paper-item').forEach(el => {
-        el.classList.remove('selected');
-        el.querySelector('input').checked = false;
-      });
-      document.getElementById('ability-slider').value = 50;
-      updateAbilityReadout();
-      updateSelectionCount();
-      saveStateToURL();
-      goToStep(1);
-    });
-    document.getElementById('btn-restart').addEventListener('click', () => {
-      selectedPapers.clear();
-      document.querySelectorAll('.paper-item').forEach(el => {
-        el.classList.remove('selected');
-        el.querySelector('input').checked = false;
-      });
-      document.getElementById('ability-slider').value = 50;
-      updateAbilityReadout();
-      updateSelectionCount();
-      saveStateToURL();
-      goToStep(1);
-    });
+    }
+    document.getElementById('btn-restart').addEventListener('click', restart);
+    document.getElementById('btn-restart-2').addEventListener('click', restart);
+    document.getElementById('btn-restart-3').addEventListener('click', restart);
 
     document.querySelectorAll('.step').forEach(el => {
       el.addEventListener('click', () => {
