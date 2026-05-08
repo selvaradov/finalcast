@@ -824,14 +824,13 @@ const App = (() => {
       }
     }
 
+    const routeSubjects = new Set(papers.map(p => p.subject));
     let bestCandidate = null;
     for (const [name, data] of Object.entries(DATA.paper_catalogue)) {
       if (selectedNames.has(name)) continue;
       if (data.reliable === false) continue;
       if (!data.latest_candidates) continue;
-      const remaining = papers.filter(p => p.name !== worstSelected.name);
-      const subjects = new Set([...remaining.map(p => p.subject), data.subject]);
-      if (subjects.size < 2) continue;
+      if (!routeSubjects.has(data.subject)) continue;
       const v = marginalValue(name);
       if (!bestCandidate || v > bestCandidate.value) {
         bestCandidate = { name, value: v };
