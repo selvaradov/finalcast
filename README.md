@@ -1,8 +1,14 @@
 # Finalcast — Oxford PPE Results
 
-Statistical analysis of 15 years (2011--2025) of Oxford PPE Final Honour School examiners' reports. Extracts structured data from PDF reports, fits per-paper mark distributions, and runs Monte Carlo simulations to estimate classification probabilities given a student's paper choices.
+Analysis of 15 years of PPE FHS outcomes (2011-2025), estimating classification probabilities given a student's paper choices.
 
-**Live site**: https://selvaradov.github.io/finalcast
+**Explore the data and simulate your own papers [here](https://selvaradov.github.io/finalcast)**.
+
+Data extraction and coding by Claude; it's possible that there are errors (particularly in data extraction) -- although I
+have manually verified some results and they seem broadly reasonable.
+
+The remainder of this README describes the implementation details. To look at some headline statistics, look at the
+[PDF report](output/report.pdf).
 
 ## Data pipeline
 
