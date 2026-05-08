@@ -245,6 +245,7 @@ def pool_and_fit_papers():
                     "n_years": len(set(data["years"])),
                     "subject": data["subject"],
                     "method": "mle_bands",
+                    "bands": data["bands"],
                 }
         elif data["year_means"]:
             mu = np.mean(data["year_means"])
@@ -367,16 +368,25 @@ def compute_paper_profiles(paper_fits):
     profiles = []
     for name, fit in paper_fits.items():
         mu, sigma = fit["mu"], fit["sigma"]
-        # Use truncated normal CDF to compute band probabilities
-        a, b = (0 - mu) / sigma, (100 - mu) / sigma
-        Z = stats.norm.cdf(b) - stats.norm.cdf(a)
+        bands = fit.get("bands")
 
-        def cdf(x):
-            return (stats.norm.cdf((x - mu) / sigma) - stats.norm.cdf(a)) / Z
+        if bands and sum(bands.values()) > 0:
+            # Use observed band counts directly
+            total = sum(bands.values())
+            pct_first = round(100 * bands.get(">=70", 0) / total, 1)
+            pct_21 = round(100 * bands.get("60-69", 0) / total, 1)
+            pct_below_50 = round(100 * (bands.get("40-49", 0) + bands.get("30-39", 0) + bands.get("<30", 0)) / total, 1)
+        else:
+            # Fall back to model CDF for papers without band data
+            a, b = (0 - mu) / sigma, (100 - mu) / sigma
+            Z = stats.norm.cdf(b) - stats.norm.cdf(a)
 
-        pct_first = round(100 * (1 - cdf(70)), 1)
-        pct_21 = round(100 * (cdf(70) - cdf(60)), 1)
-        pct_below_50 = round(100 * cdf(50), 1)
+            def cdf(x, mu=mu, sigma=sigma, a=a, Z=Z):
+                return (stats.norm.cdf((x - mu) / sigma) - stats.norm.cdf(a)) / Z
+
+            pct_first = round(100 * (1 - cdf(70)), 1)
+            pct_21 = round(100 * (cdf(70) - cdf(60)), 1)
+            pct_below_50 = round(100 * cdf(50), 1)
 
         profiles.append({
             "paper": name,

@@ -566,9 +566,28 @@ const App = (() => {
     }
     const items = Array.from(selectedPapers.entries()).map(([name, p]) => {
       const subjectCls = p.subject === 'Philosophy' ? 'phil' : p.subject === 'Politics' ? 'pol' : 'econ';
-      return `<span class="selected-chip"><span class="subject-dot subject-dot--${subjectCls}"></span>${name}</span>`;
+      return `<span class="selected-chip"><span class="subject-dot subject-dot--${subjectCls}"></span>${name}<button class="chip-remove" data-name="${name}" aria-label="Remove ${name}">&times;</button></span>`;
     });
-    el.innerHTML = `<div class="selected-chips">${items.join('')}</div>`;
+    const clearBtn = `<button class="btn-clear-all" id="btn-clear-all">Clear all</button>`;
+    el.innerHTML = `<div class="selected-chips">${items.join('')}</div>${clearBtn}`;
+
+    el.querySelectorAll('.chip-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.name;
+        selectedPapers.delete(name);
+        const checkbox = document.querySelector(`.paper-item[data-name="${name}"] input`);
+        if (checkbox) checkbox.checked = false;
+        document.querySelector(`.paper-item[data-name="${name}"]`)?.classList.remove('selected');
+        updateSelectionCount();
+      });
+    });
+
+    document.getElementById('btn-clear-all').addEventListener('click', () => {
+      selectedPapers.clear();
+      document.querySelectorAll('.paper-item input').forEach(cb => cb.checked = false);
+      document.querySelectorAll('.paper-item').forEach(el => el.classList.remove('selected'));
+      updateSelectionCount();
+    });
   }
 
   function onSearch(e) {
@@ -997,15 +1016,15 @@ const App = (() => {
     const explanation = document.getElementById('whatif-explanation');
 
     if (threshold !== null) {
-      heading.textContent = `You'd need the ~${threshold}th percentile`;
-      explanation.textContent = `To have a ≥50% chance of a First, assuming the same performance level across your ${freeCount} free papers, given the marks you entered.`;
+      heading.textContent = `You'd need the ~${threshold}th percentile…`;
+      explanation.textContent = `… to have a ≥50% chance of a First given the marks you entered, assuming a constant performance level across your ${freeCount} free papers.`;
     } else if (distribution['1st'] < 0.01) {
       heading.textContent = 'A First looks unlikely';
       explanation.textContent = `With these fixed marks, even the 95th percentile on remaining papers doesn't give a ≥50% chance of a First.`;
     } else {
       const top = CLASS_ORDER.find(c => distribution[c] > 0.01) || '2.1';
       heading.textContent = `~${Math.round(distribution[top] * 100)}% chance of a ${top}`;
-      explanation.textContent = `With the marks you've entered held fixed and remaining papers simulated at the selected percentile.`;
+      explanation.textContent = `With the marks you've entered held fixed and remaining papers simulated at your selected ability level.`;
     }
   }
 
@@ -1044,7 +1063,7 @@ const App = (() => {
     // Classification breakdown card
     let classificationHtml = `
       <div class="whatif-secondary">
-        <h3>Classification probabilities at the ${pct}th percentile</h3>
+        <h3>Classification probabilities (at ${pct}th percentile ability)</h3>
         <div class="headline-breakdown">${breakdown}</div>
         <p class="whatif-secondary-note">Holding your entered marks fixed and simulating the rest at your selected ability level, the model assigns these probabilities to each classification. Estimates are approximate (±3pp from model limitations).</p>
       </div>`;
@@ -1084,8 +1103,8 @@ const App = (() => {
       <table class="whatif-table">
         <thead><tr>
           <th>Paper</th>
-          <th>At selected percentile (${pct}th)</th>
-          <th>${threshold !== null ? `Needed for First (${threshold}th %ile)` : 'Needed for First'}</th>
+          <th>Expected mark (${pct}th %ile ability)</th>
+          <th>${threshold !== null ? `Needed for First (${threshold}th %ile ability)` : 'Needed for First'}</th>
         </tr></thead>
         <tbody>${tableRows}</tbody>
       </table>
