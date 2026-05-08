@@ -3,6 +3,30 @@
    Educational-yet-scrappy. White chalk, blue, red accents.
    ================================================================ */
 
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('fonts/inter-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('fonts/caveat-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fredericka the Great';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/fredericka-latin.woff2') format('woff2');
+}
+
 :root {
   --bg: #1a1a1e;
   --bg-card: #222228;

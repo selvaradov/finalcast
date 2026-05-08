@@ -31,7 +31,7 @@ const App = (() => {
 
     if (page === 'explorer' && DATA) Explorer.init(DATA);
     if (page === 'overview' && DATA) Overview.init(DATA);
-    if (page === 'methodology') wireMethodologyToc();
+    if (page === 'methodology') { wireMethodologyToc(); loadKaTeX(); }
 
     window.scrollTo(0, 0);
   }
@@ -1119,6 +1119,28 @@ const App = (() => {
     if (methTocWired) return;
     methTocWired = true;
     Overview.wireTocNav('.methodology-toc');
+  }
+
+  let katexLoaded = false;
+
+  function loadKaTeX() {
+    if (katexLoaded) return;
+    katexLoaded = true;
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js';
+    js.onload = () => {
+      const ar = document.createElement('script');
+      ar.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js';
+      ar.onload = () => renderMathInElement(document.body, {
+        delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]
+      });
+      document.head.appendChild(ar);
+    };
+    document.head.appendChild(js);
   }
 
   // ── Methodology modal ─────────────────────────────────────

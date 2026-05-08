@@ -17,15 +17,16 @@
   <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
   <link rel="manifest" href="favicon/site.webmanifest">
   <title>Finalcast — Oxford PPE Results</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Fredericka+the+Great&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/fredericka-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="data.json" as="fetch">
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
-    onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script defer src="engine.js"></script>
+  <script defer src="explorer.js"></script>
+  <script defer src="overview.js"></script>
+  <script defer src="app.js"></script>
 </head>
 <body>
   <!-- SVG filters for hand-drawn effects -->
@@ -388,9 +389,5 @@
     <p class="footer-caveat">It's a prior, not a prediction.</p>
   </footer>
 
-  <script src="engine.js"></script>
-  <script src="explorer.js"></script>
-  <script src="overview.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>
