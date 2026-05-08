@@ -1584,17 +1584,26 @@ body::after {
 /* ── Mobile responsive ────────────────────────────────────── */
 
 @media (max-width: 600px) {
-  /* Nav: shrink title and links to fit one line */
+  /* Nav: show/hide on scroll direction */
+  .top-nav {
+    position: sticky;
+    transition: transform 0.25s ease;
+  }
+
+  .top-nav.nav-hidden {
+    transform: translateY(-100%);
+  }
+
   .nav-title {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   .nav-links {
-    gap: 12px;
+    gap: 10px;
   }
 
   .nav-link {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .nav-inner {
@@ -1693,6 +1702,23 @@ body::after {
   /* Hide desktop-only line breaks */
   .desktop-only {
     display: none;
+  }
+
+/* Sticky TOC: match mobile padding */
+  .sticky-toc {
+    margin: 0 -14px 24px;
+    padding: 10px 14px;
+    top: 44px;
+    transition: top 0.25s ease;
+  }
+
+  body.nav-hidden .sticky-toc {
+    top: 0;
+  }
+
+/* Slider: prevent touch drag from scrolling page */
+  .chalk-slider {
+    touch-action: none;
   }
 
   /* Containers: tighter padding */

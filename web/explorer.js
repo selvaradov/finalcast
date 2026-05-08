@@ -33,9 +33,6 @@ const Explorer = (() => {
     const catalogue = DATA.paper_catalogue;
     const popularity = DATA.paper_popularity || {};
 
-    const allMus = Object.values(catalogue).map(p => p.mu);
-    const muMin = Math.floor(Math.min(...allMus) - 0.1);
-    const muMax = Math.ceil(Math.max(...allMus) + 0.1);
 
     const datasets = ['Philosophy', 'Politics', 'Economics'].map(subj => {
       const points = Object.entries(catalogue)
@@ -70,7 +67,7 @@ const Explorer = (() => {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: { color: '#e8e5dc', font: { family: "'Caveat', cursive", size: 16, weight: 700 } }
+            labels: { color: '#e8e5dc', font: { family: "'Caveat', cursive", size: 16, weight: 700 }, padding: 16 }
           },
           tooltip: {
             mode: 'nearest',
@@ -99,16 +96,13 @@ const Explorer = (() => {
           x: {
             title: { display: true, text: 'Mean mark (μ)', color: '#9a978e', font: { family: "'Inter', system-ui", size: 13 } },
             grid: { color: 'rgba(232,229,220,0.06)' },
-            ticks: { color: '#9a978e', font: { size: 11 } },
-            min: muMin,
-            max: muMax
+            ticks: { color: '#9a978e', font: { size: 11 } }
           },
           y: {
             title: { display: true, text: 'Volatility (σ)', color: '#9a978e', font: { family: "'Inter', system-ui", size: 13 } },
             grid: { color: 'rgba(232,229,220,0.06)' },
             ticks: { color: '#9a978e', font: { size: 11 } },
-            min: 0,
-            max: 16
+            beginAtZero: true
           }
         },
         onClick: (evt, elements) => {

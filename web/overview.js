@@ -13,7 +13,7 @@ const Overview = (() => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        labels: { color: CHALK, font: { family: "'Caveat', cursive", size: 15, weight: 700 } }
+        labels: { color: CHALK, font: { family: "'Caveat', cursive", size: 15, weight: 700 }, padding: 16 }
       },
       tooltip: {
         backgroundColor: '#222228',
@@ -91,8 +91,7 @@ const Overview = (() => {
           y: {
             ...CHART_DEFAULTS.scales.y,
             title: { display: true, text: '% First', color: CHALK_DIM, font: { size: 12 } },
-            min: 0,
-            max: 45
+            beginAtZero: true
           }
         }
       }
@@ -141,8 +140,7 @@ const Overview = (() => {
           y: {
             ...CHART_DEFAULTS.scales.y,
             title: { display: true, text: '% First', color: CHALK_DIM, font: { size: 12 } },
-            min: 0,
-            max: 55
+            beginAtZero: true
           }
         }
       }
@@ -188,7 +186,7 @@ const Overview = (() => {
             ...CHART_DEFAULTS.scales.x,
             title: { display: true, text: 'Weighted mean mark', color: CHALK_DIM, font: { size: 12 } },
             min: 60,
-            max: 72
+            max: 70
           },
           y: {
             ...CHART_DEFAULTS.scales.y,
@@ -388,7 +386,18 @@ const Overview = (() => {
     // Sort by end share descending (biggest papers at top)
     items.sort((a, b) => b.endShare - a.endShare);
 
-    const labels = items.map(d => d.name.length > 30 ? d.name.slice(0, 28) + '…' : d.name);
+    const mobile = window.innerWidth <= 600;
+
+    function wrapLabel(name) {
+      if (!mobile || name.length <= 16) return name;
+      const mid = Math.ceil(name.length / 2);
+      let splitAt = name.lastIndexOf(' ', mid);
+      if (splitAt <= 0) splitAt = name.indexOf(' ', mid);
+      if (splitAt <= 0) return name;
+      return [name.slice(0, splitAt), name.slice(splitAt + 1)];
+    }
+
+    const labels = items.map(d => wrapLabel(d.name));
     const xMax = Math.ceil(Math.max(...items.map(d => Math.max(d.startShare, d.endShare))) + 0.5);
 
     // Use scatter with points at midpoint of each arrow for tooltip hit area
@@ -447,7 +456,7 @@ const Overview = (() => {
             },
             ticks: {
               color: CHALK_DIM,
-              font: { size: window.innerWidth <= 600 ? 9 : 11 },
+              font: { size: mobile ? 10 : 11 },
               autoSkip: false,
               callback: (val) => Number.isInteger(val) ? (labels[val] || '') : ''
             },

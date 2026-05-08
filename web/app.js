@@ -179,8 +179,9 @@ const App = (() => {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     // Canvas is larger than the border box — extra bleed for particles
+    const containerW = canvas.parentElement.offsetWidth;
     const bleed = 24;
-    const innerW = 360, innerH = 180;
+    const innerW = Math.min(360, containerW - bleed * 2), innerH = 180;
     const w = innerW + bleed * 2, h = innerH + bleed * 2;
     const backingW = Math.max(1, Math.round(w * dpr));
     const backingH = Math.max(1, Math.round(h * dpr));
@@ -1236,6 +1237,19 @@ const App = (() => {
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeMethodologyModal();
     });
+
+    // Hide nav on scroll down, show on scroll up (mobile)
+    if (window.innerWidth <= 600) {
+      const nav = document.querySelector('.top-nav');
+      let lastY = 0;
+      window.addEventListener('scroll', () => {
+        const y = window.scrollY;
+        const hidden = y > lastY && y > 60;
+        nav.classList.toggle('nav-hidden', hidden);
+        document.body.classList.toggle('nav-hidden', hidden);
+        lastY = y;
+      }, { passive: true });
+    }
   }
 
   return { init };
