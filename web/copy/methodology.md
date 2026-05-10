@@ -9,7 +9,7 @@ This page describes the statistical model behind the grade prior calculator. The
 Your mark on any particular paper can be modelled as a function of:
 - how well people on average do in that paper,
 - your ability, and
-- random external factors
+- random external factors.
 
 In expectation, a more academically-capable student will score higher across all their papers, but there's still randomness (e.g., from question selection, marker idiosyncrasies, and luck on the day).
 
@@ -25,22 +25,22 @@ $$\text{mark}_i = \mu_i + \sigma_i \sqrt{\rho} \cdot \theta + \varepsilon_i$$
 
 where:
 
-- $\mu_i$ — the average mean on paper $i$ (fitted from data).
-- $\sigma_i$ — the spread of marks on paper $i$ (fitted from data).
-- $\theta$ — your overall ability, on a standard normal scale.
+- $\mu_i$ is the average mean on paper $i$ (fitted from data).
+- $\sigma_i$ is the spread of marks on paper $i$ (fitted from data).
+- $\theta$ is your overall ability, on a standard normal scale.
   - The ability slider sets $\theta = \Phi^{-1}(\text{percentile})$, where $\Phi^{-1}$ is the standard normal quantile function.
   - So the 50th percentile → $\theta = 0$; the 95th percentile → $\theta \approx 1.64$.
-- $\rho$ — the fraction of each paper's variance explained by ability. This is assumed constant across all papers (about 0.2, i.e. ~20%), calibrated to match the observed population-wide first-class rate.
-- $\varepsilon_i \sim \mathcal{N}(0,\\; \sigma_i^2(1-\rho))$ — residual noise (making up 80% of variance), independent across papers.
+- $\rho$ is the fraction of each paper's variance explained by ability. This is assumed constant across all papers (about 0.2, i.e. ~20%), calibrated to match the observed population-wide first-class rate.
+- $\varepsilon_i \sim \mathcal{N}(0,\\; \sigma_i^2(1-\rho))$ is residual noise (making up 80% of variance), independent across papers.
 
-The $\sigma_i \sqrt{\rho}$ term means that ability matters more on high-spread papers -- i.e., they're more discriminating.
+The $\sigma_i \sqrt{\rho}$ term means that ability matters more on high-spread papers — i.e., they're more discriminating.
 
 ### Variance decomposition
 
 The total variance in marks on paper $i$ is $\sigma_i^2$. The model splits this into:
 
-- **Ability-driven variance** ($\sigma_i^2 \rho \approx 20\%$): the part that correlates across papers, since it comes from the shared factor $\theta$.
-- **Noise variance** ($\sigma_i^2 (1-\rho) \approx 80\%$): the part that's independent across papers.
+- **Ability-driven variance** ($\sigma_i^2 \rho \approx 20\\%$): the part that correlates across papers, since it comes from the shared factor $\theta$.
+- **Noise variance** ($\sigma_i^2 (1-\rho) \approx 80\\%$): the part that's independent across papers.
 
 So, doing well on one paper is (weak) Bayesian evidence that your $\theta$ is high, which in turn predicts slightly higher marks on your other papers.
 
