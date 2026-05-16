@@ -40,7 +40,7 @@
 | 14 | British Politics and Government since 1900 | Politics | 65.41 | 7.48 | 27.0 | 2.0 | 487 |
 | 15 | Econometrics | Economics | 65.52 | 14.02 | 37.0 | 13.5 | 170 |
 
-## Highest Volatility (σ)
+## Highest Spread (σ)
 
 | # | Paper | Subject | σ | μ | %1st | %<50 | n |
 |---|-------|---------|---|---|------|------|---|

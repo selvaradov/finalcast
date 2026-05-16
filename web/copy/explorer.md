@@ -2,7 +2,7 @@
 
 Browse and compare 79 papers across Philosophy, Politics, and Economics.
 
-## Mean mark vs Volatility
+## Mean mark vs Spread
 
 Each dot is a paper — size proportional to candidate numbers, ✕ markers have limited data. Hover for details, click to see a full profile.
 

@@ -152,7 +152,7 @@ def chart_popularity_vs_difficulty():
     ax.legend()
     ax.set_xlabel("Average candidates per year")
     ax.set_ylabel("Standard deviation (σ)")
-    ax.set_title("Paper Volatility vs Popularity")
+    ax.set_title("Paper Spread vs Popularity")
     ax.grid(True, alpha=0.3)
 
     # Annotate outliers (high sigma)
@@ -163,7 +163,7 @@ def chart_popularity_vs_difficulty():
                 ax.annotate(name, (n, fit["sigma"]), fontsize=7, alpha=0.8,
                           xytext=(5, 3), textcoords="offset points")
 
-    plt.suptitle("Paper Difficulty/Volatility vs Popularity", fontsize=14, y=1.01)
+    plt.suptitle("Paper Difficulty/Spread vs Popularity", fontsize=14, y=1.01)
     plt.savefig(OUTPUT_DIR / "popularity_vs_difficulty.png", dpi=150, bbox_inches="tight")
     plt.close()
     print("  popularity_vs_difficulty.png")
@@ -194,7 +194,7 @@ def chart_kingmakers():
     ax.legend(loc="upper left")
     ax.set_xlabel("Mean mark (μ)")
     ax.set_ylabel("Standard deviation (σ)")
-    ax.set_title("Paper Risk/Reward: Mean vs Volatility")
+    ax.set_title("Paper Risk/Reward: Mean vs Spread")
     ax.grid(True, alpha=0.3)
 
     plt.savefig(OUTPUT_DIR / "kingmaker_papers.png", dpi=150, bbox_inches="tight")
@@ -262,9 +262,9 @@ def table_paper_rankings():
             f"| {p['pct_first']} | {p['pct_below_50']} | {p['n_total']} |"
         )
 
-    # Top 15 by sigma (most volatile)
+    # Top 15 by sigma (highest spread)
     by_sigma = sorted(profiles, key=lambda p: -p["sigma"])
-    lines.extend(["", "## Highest Volatility (σ)", ""])
+    lines.extend(["", "## Highest Spread (σ)", ""])
     lines.append("| # | Paper | Subject | σ | μ | %1st | %<50 | n |")
     lines.append("|---|-------|---------|---|---|------|------|---|")
     for i, p in enumerate(by_sigma[:15], 1):
@@ -343,12 +343,12 @@ def table_popularity_difficulty_correlation():
     r_spearman_mu, p_spearman_mu = sp_stats.spearmanr(ns, mus)
     r_spearman_sig, p_spearman_sig = sp_stats.spearmanr(ns, sigmas)
 
-    lines = ["# Popularity vs Difficulty/Volatility", "",
+    lines = ["# Popularity vs Difficulty/Spread", "",
              f"n = {len(papers_with_data)} papers with both fitted distributions and candidate count data.", ""]
     lines.append("| Relationship | Pearson r | p-value | Spearman ρ | p-value |")
     lines.append("|-------------|-----------|---------|-----------|---------|")
     lines.append(f"| Popularity vs Mean (μ) | {r_mu:.3f} | {p_mu:.4f} | {r_spearman_mu:.3f} | {p_spearman_mu:.4f} |")
-    lines.append(f"| Popularity vs Volatility (σ) | {r_sig:.3f} | {p_sig:.4f} | {r_spearman_sig:.3f} | {p_spearman_sig:.4f} |")
+    lines.append(f"| Popularity vs Spread (σ) | {r_sig:.3f} | {p_sig:.4f} | {r_spearman_sig:.3f} | {p_spearman_sig:.4f} |")
 
     lines.extend(["", "## Interpretation", ""])
     if p_mu < 0.05:
@@ -358,10 +358,10 @@ def table_popularity_difficulty_correlation():
         lines.append(f"- No significant relationship between popularity and mean difficulty (r={r_mu:.3f}, p={p_mu:.4f}).")
 
     if p_sig < 0.05:
-        direction = "more volatile" if r_sig > 0 else "less volatile"
-        lines.append(f"- More popular papers tend to be **{direction}** (r={r_sig:.3f}, p={p_sig:.4f}).")
+        direction = "higher spread" if r_sig > 0 else "lower spread"
+        lines.append(f"- More popular papers tend to have **{direction}** (r={r_sig:.3f}, p={p_sig:.4f}).")
     else:
-        lines.append(f"- No significant relationship between popularity and volatility (r={r_sig:.3f}, p={p_sig:.4f}).")
+        lines.append(f"- No significant relationship between popularity and spread (r={r_sig:.3f}, p={p_sig:.4f}).")
 
     text = "\n".join(lines) + "\n"
     (TABLE_DIR / "popularity_difficulty.md").write_text(text)

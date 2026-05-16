@@ -183,7 +183,7 @@ def make_report():
         ax.set_ylabel("Standard deviation (σ)")
         ax.axhline(subject.get("kingmaker_threshold", 10.2), color="#ef4444", linestyle="--",
                    linewidth=0.8, alpha=0.5, label=f"Kingmaker threshold (2× median σ)")
-        ax.set_title("Paper Risk/Reward: Mean vs Volatility")
+        ax.set_title("Paper Risk/Reward: Mean vs Spread")
         ax.grid(True, alpha=0.3)
         fig.tight_layout()
         pdf.savefig(fig)
@@ -195,7 +195,7 @@ def make_report():
         for title, sorted_profiles, n_show in [
             ("Highest Mean (Easiest Papers)", profiles[:15], 15),
             ("Lowest Mean (Hardest Papers)", list(reversed(profiles[-15:])), 15),
-            ("Highest Volatility (σ)", sorted(profiles, key=lambda p: -p["sigma"])[:15], 15),
+            ("Highest Spread (σ)", sorted(profiles, key=lambda p: -p["sigma"])[:15], 15),
         ]:
             fig, ax = plt.subplots(figsize=(10, 6))
             ax.axis("off")
@@ -235,7 +235,7 @@ def make_report():
         fig, axes = plt.subplots(1, 2, figsize=(12, 6))
         for ax, attr, ylabel, title in [
             (axes[0], "mu", "Mean mark (μ)", "Mean vs Popularity"),
-            (axes[1], "sigma", "Standard deviation (σ)", "Volatility vs Popularity"),
+            (axes[1], "sigma", "Standard deviation (σ)", "Spread vs Popularity"),
         ]:
             for name, fit in fits.items():
                 n = avg_n.get(name, 0)
@@ -264,7 +264,7 @@ def make_report():
         sigs = np.array([fits[n]["sigma"] for n in papers_with])
         r_mu, p_mu = sp_stats.pearsonr(ns, mus)
         r_sig, p_sig = sp_stats.pearsonr(ns, sigs)
-        fig.suptitle(f"Popularity vs Difficulty/Volatility   "
+        fig.suptitle(f"Popularity vs Difficulty/Spread   "
                      f"(r_mean={r_mu:.2f}, p={p_mu:.3f}  |  r_sigma={r_sig:.2f}, p={p_sig:.3f})",
                      fontsize=11)
         fig.tight_layout()

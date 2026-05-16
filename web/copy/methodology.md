@@ -73,7 +73,7 @@ For reference, the classification rules given in the examination conventions are
 </tbody>
 </table>
 
-Because the rules are conjunctive, volatile papers introduce additional risk. For instance, a single mark below 50 blocks a First regardless of average, making high-$\sigma$ papers risky even when their mean is above 70.
+Because the rules are conjunctive, high-variance papers introduce additional risk. For instance, a single mark below 50 blocks a First regardless of average, making high-$\sigma$ papers risky even when their mean is above 70.
 
 ## 3. Simulation
 

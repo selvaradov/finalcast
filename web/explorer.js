@@ -120,7 +120,7 @@ const Explorer = (() => {
             ticks: { color: '#9a978e', font: { size: 11 } }
           },
           y: {
-            title: { display: true, text: 'Volatility (σ)', color: '#9a978e', font: { family: "'Inter', system-ui", size: 13 } },
+            title: { display: true, text: 'Spread (σ)', color: '#9a978e', font: { family: "'Inter', system-ui", size: 13 } },
             grid: { color: 'rgba(232,229,220,0.06)' },
             ticks: { color: '#9a978e', font: { size: 11 } },
             beginAtZero: true
@@ -234,7 +234,7 @@ const Explorer = (() => {
 
   function diffBadge(sigma) {
     if (sigma >= 10.2) return { label: 'Kingmaker', cls: 'badge-kingmaker' };
-    if (sigma >= 7)    return { label: 'Volatile', cls: 'badge-volatile' };
+    if (sigma >= 7)    return { label: 'High spread', cls: 'badge-high-spread' };
     if (sigma >= 5)    return { label: 'Moderate', cls: 'badge-moderate' };
     return { label: 'Predictable', cls: 'badge-predictable' };
   }

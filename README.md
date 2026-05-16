@@ -124,7 +124,7 @@ OLS regression of mean mark on year for each paper with >= 4 years of data (excl
 
 ### Subject-level analysis
 
-**Variance decomposition**: within-paper variance dominates in all subjects (29--75x between-paper). Economics within-paper var = 71.8 vs Philosophy 30.2. The wide economics SD is individual paper volatility, not differences in paper difficulty.
+**Variance decomposition**: within-paper variance dominates in all subjects (29--75x between-paper). Economics within-paper var = 71.8 vs Philosophy 30.2. The wide economics SD is individual paper spread, not differences in paper difficulty.
 
 **Kingmaker papers** (sigma >= 10, one full grade class width): Econometrics (sigma=14.0), Game Theory (sigma=12.3), Quantitative Economics (sigma=10.7) -- all economics.
 
@@ -160,7 +160,7 @@ OLS regression of mean mark on year for each paper with >= 4 years of data (excl
 |------|-------------|
 | `charts/gender_gap_time_series.png` | First-class rate by gender, 2006--2025 |
 | `charts/popularity_vs_difficulty.png` | Mean and SD vs candidate count by subject |
-| `charts/kingmaker_papers.png` | Risk/reward scatter: mean vs volatility |
+| `charts/kingmaker_papers.png` | Risk/reward scatter: mean vs spread |
 | `tables/subject_summary.md` | Subject means, SDs, variance decomposition |
 | `tables/paper_rankings.md` | Top/bottom papers by mean, sigma, %1st |
 | `tables/temporal_trends.md` | Significant and near-significant trends |
@@ -173,7 +173,7 @@ OLS regression of mean mark on year for each paper with >= 4 years of data (excl
 Four pages, hash-routed:
 
 - **Calculator** (`#calculator`) -- Pick 8 papers, set ability percentile, get classification probabilities via Monte Carlo simulation. Features: "use typical papers" quick-start, paper swap suggestions, what-if comparison vs default papers, per-paper breakdown with P(70+) and below-50 risk, conditional marks mode ("what do I need?").
-- **Explorer** (`#explorer`) -- Interactive scatter plot (mean vs volatility, bubble size = popularity). Click any paper for a profile card with stats, temporal trends, and candidate sparkline. Filter by subject, sort by various metrics. Temporal trends section shows significant score drift and popularity shifts.
+- **Explorer** (`#explorer`) -- Interactive scatter plot (mean vs spread, bubble size = popularity). Click any paper for a profile card with stats, temporal trends, and candidate sparkline. Filter by subject, sort by various metrics. Temporal trends section shows significant score drift and popularity shifts.
 - **Overview** (`#overview`) -- First-class rate time series, gender gap chart, subject comparison, classification breakdown, score trends (3 significant papers), popularity growth rates. COVID 2020 and kingmaker callouts. Table of contents for in-page navigation.
 - **Methodology** (`#methodology`) -- Full model description with KaTeX rendering (copyable math).
 

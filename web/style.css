@@ -541,7 +541,7 @@ body::after {
 
 .badge-predictable { background: rgba(91,155,245,0.12); color: var(--blue); }
 .badge-moderate { background: rgba(240,199,94,0.12); color: var(--gold); }
-.badge-volatile { background: rgba(232,97,77,0.12); color: var(--red); }
+.badge-high-spread { background: rgba(232,97,77,0.12); color: var(--red); }
 .badge-kingmaker { background: rgba(232,97,77,0.2); color: var(--red); border: 1px solid rgba(232,97,77,0.3); }
 .badge-trend-up { background: rgba(91,155,245,0.15); color: var(--blue); font-size: 11px; }
 .badge-trend-down { background: rgba(232,97,77,0.15); color: var(--red); font-size: 11px; }
