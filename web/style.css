@@ -153,6 +153,10 @@ body::after {
   align-items: center;
 }
 
+@media (max-width: 850px) {
+  .desktop-only { display: none; }
+}
+
 @media (max-width: 768px) {
   .landing-inner { grid-template-columns: 1fr; gap: 32px; }
 }
@@ -165,6 +169,7 @@ body::after {
   margin-bottom: 16px;
   text-shadow: 0 0 10px rgba(232,229,220,0.1);
   color: var(--chalk);
+  text-wrap: balance;
 }
 
 .landing-sub {
@@ -1788,10 +1793,6 @@ body::after {
     height: 560px;
   }
 
-  /* Hide desktop-only line breaks */
-  .desktop-only {
-    display: none;
-  }
 
 /* Sticky TOC: match mobile padding */
   .sticky-toc {
